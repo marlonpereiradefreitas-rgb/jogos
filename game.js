@@ -3574,7 +3574,14 @@ function drawTower(t){
   const gc=t.paragon?'#ffd24a':TIER_GLOW[Math.min(5,t.tier)];
   if(gc){const gs=glowSprite(gc,t.paragon?34:26,t.paragon?'66':'38');ctx.drawImage(gs,Math.round(t.x-gs.width/2),Math.round(t.y-gs.height/2));}
   drawTowerSprite(t.key,t.x,t.y,t.angle,t.recoil,t.level,t.spec,G.simT,t.pulse);
-  if(t.paragon){ctx.strokeStyle='#f2c230';ctx.lineWidth=2;ctx.beginPath();ctx.arc(t.x,t.y+3,22,0,6.283);ctx.stroke();}
+  if(t.paragon){
+    // Ascensao: anel dourado pulsante + aro tracejado giratorio (barato: 2 tracos por torre)
+    const pu=.5+.5*Math.sin(G.simT*4);
+    ctx.save();ctx.strokeStyle='#f2c230';ctx.lineWidth=2;ctx.globalAlpha=.75+.25*pu;ctx.beginPath();ctx.arc(t.x,t.y+3,22,0,6.283);ctx.stroke();
+    ctx.setLineDash([4,5]);ctx.lineDashOffset=-G.simT*14;ctx.globalAlpha=.45+.3*pu;ctx.strokeStyle='#fff1a8';ctx.beginPath();ctx.arc(t.x,t.y+3,26,0,6.283);ctx.stroke();ctx.restore();
+  }
+  // Pontos de nivel sob a torre: leitura rapida da evolucao em telas pequenas
+  if(!t.paragon&&t.tier>0){const n=Math.min(5,t.tier),c=TIER_GLOW[n]||'#fff';ctx.fillStyle=c;for(let i=0;i<n;i++){ctx.fillRect(Math.round(t.x-(n*4-1)/2+i*4),t.y+19,3,3);}}
   if(t.recoil>.35&&t.key!=='flame'&&t.key!=='ice'&&t.def.kind!=='support_eco'&&t.def.kind!=='support_debuff'){const fx=t.x+Math.cos(t.angle)*22,fy=t.y-4+Math.sin(t.angle)*22;ctx.fillStyle='rgba(255,225,130,'+Math.min(.85,t.recoil)+')';ctx.beginPath();ctx.arc(fx,fy,7,0,6.283);ctx.fill();}
   if(t.weak>0){ctx.fillStyle='rgba(120,220,60,'+(.22+.12*Math.sin(G.simT*10))+')';ctx.beginPath();ctx.arc(t.x,t.y,18,0,6.283);ctx.fill();R(t.x-3,t.y-26,6,6,'#a6e05a');}
   if(t.key==='ice'){ctx.strokeStyle='rgba(160,220,255,.25)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(t.x,t.y,t.s.range,0,6.283);ctx.stroke();}

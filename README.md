@@ -1,23 +1,23 @@
-# Quarentena Z
+﻿# Quarentena Z
 
-Tower defense de zumbis em HTML5/JS, com versão para PC (Electron), Web/PWA e servidor opcional para ranking e saves em nuvem.
+Tower defense de zumbis em HTML5/JS, com versÃ£o para PC (Electron), Web/PWA e servidor opcional para ranking e saves em nuvem.
 
-> **Status:** em preparação. Ainda não há releases, capturas de tela nem link do GitHub Pages publicados.
+> **Status:** em preparaÃ§Ã£o. Ainda nÃ£o hÃ¡ releases, capturas de tela nem link do GitHub Pages publicados.
 
 ## Recursos
-- 22 torres com 3 caminhos de upgrade e 5 níveis cada
-- Vários mapas e dificuldades, conquistas e ranking
-- PWA instalável (`manifest.webmanifest` e `sw.js`)
+- 22 torres com 3 caminhos de upgrade e 5 nÃ­veis cada
+- VÃ¡rios mapas e dificuldades, conquistas e ranking
+- PWA instalÃ¡vel (`manifest.webmanifest` e `sw.js`)
 - Empacotamento para Windows com Electron
 
 ## Lore
-Vale Cinzento foi isolada pela Corporação Aurora quando a Febre Pálida escapou dos seus laboratórios. Você comanda o último perímetro. A história completa está em [LORE.md](LORE.md).
+Vale Cinzento foi isolada pela CorporaÃ§Ã£o Aurora quando a Febre PÃ¡lida escapou dos seus laboratÃ³rios. VocÃª comanda o Ãºltimo perÃ­metro. A histÃ³ria completa estÃ¡ em [LORE.md](LORE.md).
 
 ## Como rodar
 ```bash
 npm install
 npm run web      # servidor em http://localhost:8080
-npm start        # versão desktop (Electron)
+npm start        # versÃ£o desktop (Electron)
 npm run dist     # build para Windows
 ```
 Antes de rodar o servidor, copie `.env.example` para `.env` e defina `QZ_SECRET` (`openssl rand -hex 32`).
@@ -25,8 +25,8 @@ Antes de rodar o servidor, copie `.env.example` para `.env` e defina `QZ_SECRET`
 ## Testes
 `node tools/test-backend.js` e `node tools/test-upgrades.js game.js`.
 
-## Segurança e mudanças
+## SeguranÃ§a e mudanÃ§as
 Veja [SECURITY.md](SECURITY.md) e [CHANGELOG.md](CHANGELOG.md).
 
-## Créditos e licença
-Veja `CREDITS.txt`. A licença ainda não foi definida.
+## CrÃ©ditos e licenÃ§a
+Veja `CREDITS.txt`. A licenÃ§a ainda nÃ£o foi definida.
