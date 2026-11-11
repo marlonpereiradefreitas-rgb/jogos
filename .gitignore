@@ -29,3 +29,9 @@ Thumbs.db
 *.exe
 INSTALADOR_WINDOWS/
 
+
+# Necessario para o instalador NSIS
+!build/
+build/*
+!build/installer.nsh
+
