@@ -1,0 +1,20 @@
+APOCALIPSE — REVISÃO V16
+
+Correções aplicadas após auditoria do projeto:
+
+1. Habilidades temporárias das torres
+- Tesla agora ativa o bônus de dano sem empilhar multiplicadores ao reativar.
+- O bônus é removido pelo relógio da simulação, e não por setTimeout do navegador.
+- A estação médica aplica velocidade de ataque sem empilhar bônus e restaura o valor ao fim da duração.
+- Pausar, trocar a velocidade ou alternar entre abas não deixa os bônus presos permanentemente.
+
+2. Relógios e atualização
+- O temporizador de suprimentos era atualizado duas vezes por quadro: uma em tempo real e outra dentro dos passos de simulação.
+- Removida a atualização duplicada. A janela de 5 minutos passa a avançar uma única vez por quadro ativo, sem acelerar com 2x/3x.
+
+3. Verificações realizadas
+- game.js passou na validação sintática do Node.js.
+- Todos os IDs consultados diretamente pelo JavaScript existem no index.html.
+- Os cinco mapas, imagens e arquivos originais foram preservados.
+
+Observação: esta revisão corrige problemas identificados por inspeção estática e validação sintática. Uma campanha completa de balanceamento e testes manuais de todas as combinações de torres/ondas ainda exige jogar cada mapa e dificuldade.

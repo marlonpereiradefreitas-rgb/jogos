@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self';">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07090f">
+<meta name="description" content="Quarentena Z: defenda sua base contra hordas de zumbis neste tower defense. Jogue grátis no navegador.">
+<meta name="application-name" content="Apocalipse">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icon.svg">
+<title>Quarentena Z — Tower Defense de Zumbis</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="theme-v19.css">
+</head>
+<body class="menu-mode">
+<div id="app">
+
+  <!-- ===== BARRA SUPERIOR ===== -->
+  <header id="topbar">
+    <div id="lifeHud" class="life-hud" data-lv="ok" title="Vida da base">
+      <svg class="life-svg" viewBox="0 0 380 84" aria-hidden="true">
+        <polygon class="lh-body" points="84,20 98,13 352,13 378,70 98,70 84,62"/>
+        <polyline class="lh-line" points="98,9 330,9 337,5 374,5"/>
+        <rect class="lh-blk" x="100" y="2" width="9" height="4"/><rect class="lh-blk" x="112" y="2" width="9" height="4"/><rect class="lh-blk dim" x="124" y="2" width="9" height="4"/>
+        <polygon class="lh-strip" points="100,74 200,74 194,80 94,80"/>
+        <line class="lh-dots" x1="208" y1="77" x2="374" y2="77"/>
+        <polygon class="lh-hex1" points="4,42 23,9 61,9 80,42 61,75 23,75"/>
+        <polygon class="lh-hex2" points="11,42 27,15 57,15 73,42 57,69 27,69"/>
+        <polygon class="lh-hex3" points="22,42 31,26 53,26 62,42 53,58 31,58"/>
+      </svg>
+      <div class="life-num"><b id="life">100</b></div>
+      <div class="life-bar"><i id="lifeGhost"></i><i id="lifeBar" data-lv="ok"></i><span class="life-lbl">VIDA DA BASE</span></div>
+    </div>
+    <div class="hud-mod hud-coins" id="stCoins" title="Moedas disponíveis">
+      <svg class="hud-mod-svg" viewBox="0 0 236 84" aria-hidden="true">
+        <polygon class="hm-body" points="76,18 90,11 218,11 232,68 90,68 76,60"/>
+        <polyline class="hm-line" points="90,7 196,7 203,3 230,3"/>
+        <rect class="hm-blk" x="92" y="1" width="8" height="3.5"/><rect class="hm-blk" x="103" y="1" width="8" height="3.5"/><rect class="hm-blk dim" x="114" y="1" width="8" height="3.5"/>
+        <polygon class="hm-strip" points="92,72 162,72 157,78 87,78"/>
+        <line class="hm-dots" x1="168" y1="75" x2="228" y2="75"/>
+        <polygon class="hm-hex1" points="4,42 21,11 55,11 72,42 55,73 21,73"/>
+        <polygon class="hm-hex2" points="11,42 25,17 51,17 65,42 51,67 25,67"/>
+        <polygon class="hm-hex3" points="20,42 29,26 47,26 56,42 47,58 29,58"/>
+      </svg>
+      <div class="hm-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 6.5v11M14.6 9.3c-.5-1-1.4-1.5-2.6-1.5-1.5 0-2.5.8-2.5 1.9 0 2.6 5.2 1.3 5.2 4 0 1.2-1 2-2.7 2-1.3 0-2.3-.5-2.9-1.6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
+      </div>
+      <div class="hm-content">
+        <span class="hud-lbl">MOEDAS</span>
+        <div class="hm-val-row"><b id="coins" class="hud-val">800</b></div>
+        <div class="hm-mini-bar"><i id="hudCoinBar" style="width:65%"></i></div>
+      </div>
+    </div>
+
+    <div class="hud-mod hud-wave" id="hudWave" data-state="idle" title="Onda atual">
+      <svg class="hud-mod-svg" viewBox="0 0 236 84" aria-hidden="true">
+        <polygon class="hm-body" points="76,18 90,11 218,11 232,68 90,68 76,60"/>
+        <polyline class="hm-line" points="90,7 196,7 203,3 230,3"/>
+        <rect class="hm-blk" x="92" y="1" width="8" height="3.5"/><rect class="hm-blk" x="103" y="1" width="8" height="3.5"/><rect class="hm-blk dim" x="114" y="1" width="8" height="3.5"/>
+        <polygon class="hm-strip" points="92,72 162,72 157,78 87,78"/>
+        <line class="hm-dots" x1="168" y1="75" x2="228" y2="75"/>
+        <polygon class="hm-hex1" points="4,42 21,11 55,11 72,42 55,73 21,73"/>
+        <polygon class="hm-hex2" points="11,42 25,17 51,17 65,42 51,67 25,67"/>
+        <polygon class="hm-hex3" points="20,42 29,26 47,26 56,42 47,58 29,58"/>
+      </svg>
+      <div class="hm-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 3v18h2.2v-6.8h11.3l-2.3-4.6L17.5 5H6.2V3H4z"/></svg>
+      </div>
+      <div class="hm-content">
+        <span class="hud-lbl">ONDA ATUAL</span>
+        <div class="hm-val-row"><b id="waveNum" class="hud-val">0</b><small class="hm-sub">/ 40</small></div>
+        <div class="hm-mini-bar"><i id="hudWaveBar" style="width:0%"></i></div>
+      </div>
+    </div>
+
+    <div class="hud-mod hud-zombies" id="hudZombies" data-threat="low" title="Zumbis restantes (em campo + a surgir)">
+      <svg class="hud-mod-svg" viewBox="0 0 236 84" aria-hidden="true">
+        <polygon class="hm-body" points="76,18 90,11 218,11 232,68 90,68 76,60"/>
+        <polyline class="hm-line" points="90,7 196,7 203,3 230,3"/>
+        <rect class="hm-blk" x="92" y="1" width="8" height="3.5"/><rect class="hm-blk" x="103" y="1" width="8" height="3.5"/><rect class="hm-blk dim" x="114" y="1" width="8" height="3.5"/>
+        <polygon class="hm-strip" points="92,72 162,72 157,78 87,78"/>
+        <line class="hm-dots" x1="168" y1="75" x2="228" y2="75"/>
+        <polygon class="hm-hex1" points="4,42 21,11 55,11 72,42 55,73 21,73"/>
+        <polygon class="hm-hex2" points="11,42 25,17 51,17 65,42 51,67 25,67"/>
+        <polygon class="hm-hex3" points="20,42 29,26 47,26 56,42 47,58 29,58"/>
+      </svg>
+      <div class="hm-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2C7 2 3.5 5.6 3.5 10c0 2.7 1.3 4.7 3 6V20c0 .6.4 1 1 1H9v-2h1.5v2h3v-2H15v2h1.5c.6 0 1-.4 1-1v-4c1.7-1.3 3-3.3 3-6C20.5 5.6 17 2 12 2zM8.5 12.5a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm7 0a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/></svg>
+      </div>
+      <div class="hm-content">
+        <span class="hud-lbl">ZUMBIS</span>
+        <div class="hm-val-row"><b id="enemies" class="hud-val">0</b><small id="hudThreatLbl" class="hm-sub">LIMPO</small></div>
+        <div class="hm-mini-bar"><i id="hudZombieBar" style="width:0%"></i></div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="grp">
+      <button id="btnPause" title="Pausar / continuar (Espaço)">&#10074;&#10074;</button>
+      <button class="spd active" data-speed="1" title="Velocidade normal (F alterna)">1x</button>
+      <button class="spd" data-speed="2" title="Velocidade 2x">2x</button>
+      <button class="spd" data-speed="3" title="Velocidade 3x">3x</button>
+    </div>
+    <div class="grp">
+      <button id="btnMute" title="Silenciar / ativar som">&#128266;</button>
+      <input type="range" id="vol" min="0" max="100" value="50" title="Volume">
+      <button id="btnInGameSettings" class="ingame-nav" title="Abrir configurações durante a partida">⚙ Configurações</button>
+      <button id="btnInGameHome" class="ingame-nav" title="Voltar ao menu inicial">⌂ HOME</button>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- ===== ÁREA DO JOGO ===== -->
+    <section id="stage">
+      <canvas id="game" width="960" height="640"></canvas>
+      <div id="toast"></div>
+      <div id="hint"></div>
+      <div id="towerPanel" class="hidden"></div>
+      <div id="pauseOv" class="hidden">PAUSADO</div>
+
+      <!-- Barra de Ação Rápida Exclusiva para Mobile / Toque durante a partida -->
+      <div id="mobileQuickBar" class="mobile-quick-bar" aria-label="Controles rápidos mobile">
+        <button type="button" id="btnMobWave" class="mob-qbtn mob-qbtn-wave" title="Enviar próxima onda">▶ ONDA</button>
+        <button type="button" id="btnMobSpeed" class="mob-qbtn" title="Alternar velocidade (1x/2x/3x)">⚡ 1x</button>
+        <button type="button" id="btnMobPause" class="mob-qbtn" title="Pausar ou retomar">❚❚</button>
+        <button type="button" id="btnMobCancel" class="mob-qbtn mob-qbtn-cancel hidden" title="Cancelar ação atual">✕ CANCELAR</button>
+      </div>
+
+      <div id="homeScreen" class="screen home-screen">
+        <canvas id="menuBgCanvas" class="menu-bg-canvas" width="1280" height="720" aria-hidden="true"></canvas>
+        <div class="home-vignette" aria-hidden="true"></div>
+        <div class="home-scanlines" aria-hidden="true"></div>
+
+        <div class="home-shell">
+          <!-- Barra de status tática superior -->
+          <div class="home-topbar">
+            <div class="home-status-pill">
+              <span class="status-dot"></span>
+              <span class="status-code">REDE DE DEFESA // SETOR Z-19</span>
+              <span class="status-sep">|</span>
+              <span class="status-online">CONTENÇÃO ATIVA</span>
+            </div>
+            <div class="home-quick-stats">
+              <button type="button" id="btnQuickRank" class="hq-pill hq-cmd-pill" title="Clique para abrir o Ranking e alterar seu nome">
+                <span class="hq-lbl">JOGADOR</span>
+                <b id="homeStatPlayer">Comandante</b>
+              </button>
+              <div class="hq-pill" title="Maior onda alcançada">
+                <span class="hq-lbl">ONDA MÁX.</span>
+                <b id="homeStatWave">Onda 0</b>
+              </div>
+              <div class="hq-pill" title="Total de zumbis eliminados na carreira">
+                <span class="hq-lbl">MORTOS</span>
+                <b id="homeStatKills">0</b>
+              </div>
+              <div class="hq-pill" title="Tempo total de combate">
+                <span class="hq-lbl">TEMPO</span>
+                <b id="homeStatTime">00:00</b>
+              </div>
+              <div class="hq-pill" title="Conquistas desbloqueadas">
+                <span class="hq-lbl">CONQUISTAS</span>
+                <b id="homeStatAch">0 / 50</b>
+              </div>
+              <button type="button" id="btnMenuMusic" class="hq-pill hq-music-pill active" title="Ativar/Desativar música da tela de menu">
+                <span class="hq-lbl">TRILHA SONORA</span>
+                <b id="menuMusicLabel">♫ ATIVA</b>
+              </button>
+            </div>
+          </div>
+
+          <!-- Conteúdo central dividido em Comando (Esquerda) e Inteligência (Direita) -->
+          <div class="home-body">
+            <div class="home-left-col">
+              <div class="game-logo">
+                <div class="logo-badge">
+                  <svg class="logo-biohazard" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/>
+                    <path fill="currentColor" d="M12 2a6.5 6.5 0 0 0-5.6 9.8l2.2-1.3a4 4 0 0 1 6.8 0l2.2 1.3A6.5 6.5 0 0 0 12 2zm-6.2 11a6.5 6.5 0 0 0 5.6 9v-2.6a4 4 0 0 1-3.4-5.9L5.8 13zm12.4 0-2.2.5a4 4 0 0 1-3.4 5.9V22a6.5 6.5 0 0 0 5.6-9z"/>
+                  </svg>
+                  <span class="logo-small">PROTOCOLO DE EMERGÊNCIA · DEFESA TÁTICA</span>
+                </div>
+                <h1 class="hero-title">
+                  <span class="hero-word">QUARENTENA</span>
+                  <em class="hero-z">Z</em>
+                </h1>
+                <div class="logo-sub-row">
+                  <span class="logo-line"></span>
+                  <span class="logo-sub">TOWER DEFENSE DE SOBREVIVÊNCIA</span>
+                  <span class="logo-line"></span>
+                </div>
+                <p class="home-tagline">Fortifique o perímetro, comande 18 torres especializadas e resista às hordas implacáveis de infectados.</p>
+              </div>
+
+              <!-- Seletor Visual de Plataforma (Automático | PC / Mouse | Mobile / Toque) -->
+              <div id="homePlatformBar" class="platform-bar" role="group" aria-label="Seletor de Plataforma">
+                <div class="platform-bar-head">
+                  <span class="platform-lbl">PLATAFORMA:</span>
+                  <small id="platformStatusLabel" class="platform-status-tag">Detectando...</small>
+                </div>
+                <div class="platform-btn-group">
+                  <button type="button" class="platform-opt active" data-platform="auto">⚙ Automático</button>
+                  <button type="button" class="platform-opt" data-platform="pc">🖥 PC / Mouse</button>
+                  <button type="button" class="platform-opt" data-platform="mobile">📱 Mobile / Toque</button>
+                </div>
+              </div>
+
+              <nav class="home-buttons home-tl" aria-label="Menu principal">
+                <button id="btnHomeContinue" class="menu-button continue-menu hidden">
+                  <span class="mb-ico">⏵</span>
+                  <span class="mb-text">
+                    <span class="mb-title">CONTINUAR OPERAÇÃO</span>
+                    <small id="continueSub" class="mb-sub">Retomar partida salva</small>
+                  </span>
+                  <span class="mb-arrow">→</span>
+                </button>
+                <button id="btnHomePlay" class="menu-button primary-menu">
+                  <span class="mb-ico">▶</span>
+                  <span class="mb-text">
+                    <span class="mb-title">JOGAR</span>
+                    <small class="mb-sub">Selecionar zona de combate e dificuldade</small>
+                  </span>
+                  <span class="mb-arrow">→</span>
+                </button>
+                <button id="btnHomeRank" class="menu-button">
+                  <span class="mb-ico">👑</span>
+                  <span class="mb-text">
+                    <span class="mb-title">RANKING</span>
+                    <small id="homeRankSub" class="mb-sub">Placar de líderes, onda máxima, tempo e abates</small>
+                  </span>
+                  <span class="mb-arrow">→</span>
+                </button>
+                <button id="btnHomeAch" class="menu-button">
+                  <span class="mb-ico">🏆</span>
+                  <span class="mb-text">
+                    <span class="mb-title">CONQUISTAS</span>
+                    <small id="homeAchSub" class="mb-sub">50 medalhas e desafios secretos</small>
+                  </span>
+                  <span class="mb-arrow">→</span>
+                </button>
+                <button id="btnHomeSettings" class="menu-button">
+                  <span class="mb-ico">⚙</span>
+                  <span class="mb-text">
+                    <span class="mb-title">CONFIGURAÇÕES</span>
+                    <small class="mb-sub">Áudio, gráficos, atalhos e tela cheia</small>
+                  </span>
+                  <span class="mb-arrow">→</span>
+                </button>
+                <button id="btnHomeAbout" class="menu-button home-about">
+                  <span class="mb-ico">ⓘ</span>
+                  <span class="mb-text">
+                    <span class="mb-title">SOBRE O JOGO</span>
+                    <small class="mb-sub">Manual tático e informações da missão</small>
+                  </span>
+                  <span class="mb-arrow">→</span>
+                </button>
+              </nav>
+            </div>
+
+            <!-- Painel direito: Dossiê de Inteligência e Status -->
+            <aside class="home-right-col" aria-label="Dossiê de Inteligência">
+              <div class="intel-card">
+                <div class="intel-header">
+                  <span class="intel-tag">☣ BRIEFING TÁTICO</span>
+                  <span class="intel-blink">AO VIVO</span>
+                </div>
+                <h2 class="intel-title">DIRETRIZES DE SOBREVIVÊNCIA</h2>
+                <div class="intel-list">
+                  <div class="intel-item">
+                    <div class="intel-icon ii-cyan">🗼</div>
+                    <div>
+                      <b>18 Torres &amp; 3 Linhas de Evolução</b>
+                      <p>Combine dano físico, fogo, gelo, eletricidade, veneno e artilharia pesada.</p>
+                    </div>
+                  </div>
+                  <div class="intel-item">
+                    <div class="intel-icon ii-gold">◆</div>
+                    <div>
+                      <b>Protocolo de Ascensão</b>
+                      <p>Una 3 torres idênticas no nível máximo para despertar uma unidade <em>Ascendida</em> suprema.</p>
+                    </div>
+                  </div>
+                  <div class="intel-item">
+                    <div class="intel-icon ii-red">⚠</div>
+                    <div>
+                      <b>Ameaças Camufladas e Aéreas</b>
+                      <p>Posicione <em>Radar Sentinela</em> e <em>Drone de Patrulha</em> para revelar e abater mutantes furtivos.</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="intel-footer">
+                  <div class="intel-stat-box">
+                    <span>MAPAS TÁTICOS</span>
+                    <b>18 ZONAS</b>
+                  </div>
+                  <div class="intel-stat-box">
+                    <span>INFECTADOS</span>
+                    <b>21 CLASSES</b>
+                  </div>
+                  <div class="intel-stat-box">
+                    <span>CAMPANHA</span>
+                    <b>40 ONDAS + ∞</b>
+                  </div>
+                </div>
+                <div class="home-mini-rank">
+                  <div class="hmr-head">
+                    <span>👑 TOP COMANDANTES (RANKING)</span>
+                    <button type="button" id="btnHomeMiniRank" class="hmr-link">VER TUDO →</button>
+                  </div>
+                  <div id="homeMiniRankList" class="hmr-list"></div>
+                </div>
+              </div>
+            </aside>
+          </div>
+
+          <!-- Rodapé da tela inicial -->
+          <div class="home-footer-bar">
+            <div class="hf-shortcuts">
+              <span><kbd>1</kbd>–<kbd>0</kbd> / <kbd>Q</kbd>–<kbd>I</kbd> Torres</span>
+              <span><kbd>Espaço</kbd> Pausar</span>
+              <span><kbd>N</kbd> Próxima Onda</span>
+              <span><kbd>F</kbd> Velocidade</span>
+              <span><kbd>F11</kbd> Tela Cheia</span>
+            </div>
+            <div class="hf-version">QUARENTENA Z · DEFESA DE PERÍMETRO</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="rankScreen" class="screen hidden rank-screen">
+        <div class="ach-head rank-head">
+          <div class="screen-title-group">
+            <span class="screen-kicker">👑 HALL DA FAMA &amp; ESTATÍSTICAS</span>
+            <h1>RANKING DE COMANDANTES</h1>
+          </div>
+          <div class="rank-name-editor">
+            <label for="playerNameInput">SEU NOME NO RANK:</label>
+            <div class="rank-name-row">
+              <input id="playerNameInput" type="text" maxlength="22" placeholder="Digite seu nome..." autocomplete="off">
+              <button id="btnSavePlayerName" type="button" class="primary">SALVAR NOME</button>
+            </div>
+          </div>
+          <button id="btnRankBack" class="menu-button btn-back-compact">← VOLTAR AO MENU</button>
+        </div>
+
+        <div class="rank-body">
+          <!-- Cartões de Resumo do Jogador -->
+          <div class="rank-summary-cards">
+            <div class="rsc-card rsc-player">
+              <div class="rsc-ico">🎖</div>
+              <div class="rsc-info">
+                <span class="rsc-lbl">NOME DO JOGADOR</span>
+                <b id="rankPlayerName">Comandante</b>
+                <small id="rankPlayerPatent">Patente: Recruta</small>
+              </div>
+            </div>
+            <div class="rsc-card rsc-wave">
+              <div class="rsc-ico">🌊</div>
+              <div class="rsc-info">
+                <span class="rsc-lbl">ONDA MÁXIMA ALCANÇADA</span>
+                <b id="rankBestWave">Onda 0</b>
+                <small>Recorde absoluto de sobrevivência</small>
+              </div>
+            </div>
+            <div class="rsc-card rsc-time">
+              <div class="rsc-ico">⏱</div>
+              <div class="rsc-info">
+                <span class="rsc-lbl">TEMPO DE JOGO</span>
+                <b id="rankTotalTime">00:00</b>
+                <small id="rankBestRunTime">Maior partida: 00:00</small>
+              </div>
+            </div>
+            <div class="rsc-card rsc-kills">
+              <div class="rsc-ico">☠</div>
+              <div class="rsc-info">
+                <span class="rsc-lbl">ZUMBIS MORTOS</span>
+                <b id="rankTotalKills">0</b>
+                <small id="rankBestRunKills">Recorde em 1 partida: 0</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Controles e Tabela do Ranking -->
+          <div class="rank-board-box">
+            <div class="rank-board-bar">
+              <div class="rbb-left">
+                <h2>REGISTRO DE OPERAÇÕES (PLACAR DE LÍDERES)</h2>
+              </div>
+              <div class="rbb-sort" role="tablist" aria-label="Ordenar ranking">
+                <span>ORDENAR POR:</span>
+                <button type="button" class="rank-sort active" data-sort="wave">🌊 ONDA MÁXIMA</button>
+                <button type="button" class="rank-sort" data-sort="kills">☠ ZUMBIS MORTOS</button>
+                <button type="button" class="rank-sort" data-sort="time">⏱ TEMPO DE JOGO</button>
+                <button type="button" id="btnClearRank" class="rank-clear-btn" title="Excluir todos os registros do ranking">🗑 EXCLUIR RANKS</button>
+              </div>
+            </div>
+            <div class="rank-table-wrap">
+              <table class="rank-table">
+                <thead>
+                  <tr>
+                    <th>POS.</th>
+                    <th>NOME DO JOGADOR</th>
+                    <th>ONDA MÁXIMA</th>
+                    <th>TEMPO DE JOGO</th>
+                    <th>ZUMBIS MORTOS</th>
+                    <th>ZONA / DIFICULDADE</th>
+                    <th>DATA</th>
+                    <th>AÇÃO</th>
+                  </tr>
+                </thead>
+                <tbody id="rankListBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="achScreen" class="screen hidden ach-screen">
+        <div class="ach-head">
+          <div class="screen-title-group">
+            <span class="screen-kicker">☣ REGISTRO DE SERVIÇO</span>
+            <h1>CONQUISTAS &amp; MEDALHAS</h1>
+          </div>
+          <div class="ach-total"><span id="achCount"></span><div class="ach-totbar"><i id="achTotBar"></i></div></div>
+          <button id="btnAchBack" class="menu-button btn-back-compact">← VOLTAR AO MENU</button>
+        </div>
+        <div id="achList" class="ach-grid"></div>
+      </div>
+
+      <div id="aboutScreen" class="screen hidden">
+        <div class="box about-box">
+          <span class="screen-kicker">☣ DOSSIÊ DE OPERAÇÃO</span>
+          <h1>SOBRE O JOGO</h1>
+          <div class="about-mark">☣ QUARENTENA Z <span>TACTICAL TOWER DEFENSE</span></div>
+          <p><strong>Quarentena Z</strong> é um jogo de estratégia e defesa de base em um mundo devastado pela infecção. Fortifique o perímetro, gerencie sua economia, posicione torres especializadas e acione poderes táticos para impedir que a horda alcance o abrigo dos sobreviventes.</p>
+          <div class="about-facts">
+            <div><b>GÊNERO</b><span>Estratégia · Tower Defense</span></div>
+            <div><b>ARSENAL</b><span>22 Torres (Combate + Suporte)</span></div>
+            <div><b>CENÁRIOS</b><span>18 Mapas · 4 Dificuldades</span></div>
+          </div>
+          <div class="about-tips-grid">
+            <div class="about-tip">
+              <b>🎯 Prioridade de Alvo</b>
+              <span>Ajuste cada torre para focar no Primeiro, Último, Mais Forte ou Mais Próximo.</span>
+            </div>
+            <div class="about-tip">
+              <b>📡 Radar &amp; Drones</b>
+              <span>A partir da onda 5 e 7 surgem zumbis Camuflados e Voadores. Use Radar e Drone!</span>
+            </div>
+            <div class="about-tip">
+              <b>⚡ Habilidades &amp; Suprimentos</b>
+              <span>Peça Suprimentos a cada 5 min de partida e use habilidades ativas das torres.</span>
+            </div>
+          </div>
+          <p class="about-note">Planeje sua economia, combine sinergias entre torres de controle e dano massivo e adapte sua estratégia a cada chefe.</p>
+          <button id="btnAboutBack" class="menu-button btn-back-center">← VOLTAR AO INÍCIO</button>
+        </div>
+      </div>
+
+      <div id="settingsScreen" class="screen hidden">
+        <div class="box settings-box">
+          <span class="screen-kicker">⚙ SISTEMA E PREFERÊNCIAS</span>
+          <h1>CONFIGURAÇÕES</h1>
+          <p>Personalize os parâmetros táticos, áudio e qualidade visual do jogo.</p>
+          <div class="settings-grid">
+            <label>Mapa padrão<select id="settingsMap"><option value="four">Cidade Abandonada</option><option value="forest">Floresta Contaminada</option><option value="industrial">Complexo Industrial</option><option value="metro">Metrô Subterrâneo</option><option value="highway">Rodovia do Apocalipse</option></select></label>
+            <label>Dificuldade padrão<select id="settingsDifficulty"><option value="easy">Fácil</option><option value="normal">Normal</option><option value="hard">Difícil</option><option value="apocalypse">Apocalipse</option></select></label>
+            <label>Volume do áudio<input id="settingsVolume" type="range" min="0" max="100" value="50"></label>
+            <label>Qualidade gráfica<select id="qualitySelect"><option value="high">Alta (Clima + Partículas Máx.)</option><option value="balanced" selected>Equilibrada (Recomendado)</option><option value="low">Desempenho (Alto FPS)</option></select></label>
+            <label class="settings-full-row">Plataforma (Modo de Controle e Desempenho)
+              <div class="platform-btn-group settings-platform-group" role="group" aria-label="Plataforma nas configurações">
+                <button type="button" class="platform-opt active" data-platform="auto">⚙ Automático</button>
+                <button type="button" class="platform-opt" data-platform="pc">🖥 PC / Mouse</button>
+                <button type="button" class="platform-opt" data-platform="mobile">📱 Mobile / Toque</button>
+              </div>
+              <select id="settingsPlatform" class="hidden">
+                <option value="auto" selected>Automático</option>
+                <option value="pc">PC / Mouse</option>
+                <option value="mobile">Mobile / Toque</option>
+              </select>
+            </label>
+            <label class="settings-full-row">Modo de exibição<button id="btnFullscreen" type="button">⛶ Alternar Tela Cheia (F11)</button></label>
+            <div class="settings-full-row license-drm-box">
+              <div class="license-drm-head">
+                <span class="license-drm-lbl">🔒 LICENÇA COMERCIAL &amp; INTEGRIDADE (DRM)</span>
+                <small id="licenseStatusText" class="license-status-badge">Verificado · Proteção Ativa</small>
+              </div>
+              <div class="license-drm-row">
+                <input id="licenseKeyInput" type="text" maxlength="24" placeholder="QZ19-XXXX-XXXX-XXXX-XXXX" autocomplete="off">
+                <button id="btnActivateLicense" type="button" class="primary">ATIVAR CHAVE</button>
+              </div>
+            </div>
+          </div>
+          <div class="shortcuts-panel">
+            <div class="shortcuts-title">ATALHOS DE COMANDO</div>
+            <div class="shortcuts-list">
+              <span><kbd>1</kbd>–<kbd>0</kbd>, <kbd>Q</kbd>–<kbd>I</kbd> Escolher torre</span>
+              <span><kbd>Shift</kbd> + Clique Construir várias</span>
+              <span><kbd>Espaço</kbd> Pausar / Continuar</span>
+              <span><kbd>N</kbd> Enviar próxima onda</span>
+              <span><kbd>F</kbd> Alternar velocidade (1x/2x/3x)</span>
+              <span><kbd>Esc</kbd> Cancelar / Fechar painel</span>
+              <span><kbd>F3</kbd> Exibir medidor de FPS</span>
+            </div>
+          </div>
+          <button id="btnSaveSettings" class="big">SALVAR CONFIGURAÇÕES</button>
+          
+          <div class="settings-footer-actions"><button id="btnQuitApp" class="menu-button hidden">✕ &nbsp; SAIR DO JOGO</button><button id="btnSettingsReturnGame" class="menu-button hidden">↩ VOLTAR À PARTIDA</button><button id="btnSettingsBack" class="menu-button">⌂ VOLTAR AO HOME</button></div>
+        </div>
+      </div>
+
+      <div id="startScreen" class="screen hidden map-screen">
+        <div class="map-header">
+          <div class="map-header-left">
+            <button id="btnMapsBack" class="menu-button btn-back-compact">← VOLTAR</button>
+            <div class="map-title-block">
+              <span class="screen-kicker">☣ SELEÇÃO DE MISSÃO</span>
+              <h1>ZONA DE OPERAÇÃO</h1>
+            </div>
+          </div>
+          <div class="map-filter-group" role="tablist" aria-label="Filtrar mapas por dificuldade">
+            <button type="button" class="map-filter active" data-filter="all">TODOS (18)</button>
+            <button type="button" class="map-filter" data-filter="easy">FÁCIL</button>
+            <button type="button" class="map-filter" data-filter="normal">MÉDIO</button>
+            <button type="button" class="map-filter" data-filter="hard">DIFÍCIL</button>
+          </div>
+          <p id="careerRecord" class="career-record">Recorde: carregando...</p>
+        </div>
+
+        <div class="map-stage-wrap">
+          <button type="button" id="btnMapPrev" class="map-page-arrow prev" aria-label="Página anterior de mapas" title="Página anterior">
+            <span class="arrow-glyph">‹</span>
+            <small>ANTERIOR</small>
+          </button>
+
+          <div id="mapCards" class="map-cards">
+            <button class="map-card selected" data-map="four" data-diff="easy"><span class="map-thumb thumb-city" role="img" aria-label="Cidade abandonada em ruínas"><em class="map-diff-badge diff-easy">FÁCIL</em></span><b>CIDADE ABANDONADA</b><small>FÁCIL · 4 rotatórias urbanas</small></button>
+            <button class="map-card" data-map="forest" data-diff="normal"><span class="map-thumb thumb-forest" role="img" aria-label="Floresta contaminada"><em class="map-diff-badge diff-normal">MÉDIO</em></span><b>FLORESTA CONTAMINADA</b><small>MÉDIO · Vegetação e curvas fechadas</small></button>
+            <button class="map-card" data-map="industrial" data-diff="normal"><span class="map-thumb thumb-industrial" role="img" aria-label="Complexo industrial abandonado"><em class="map-diff-badge diff-normal">MÉDIO</em></span><b>COMPLEXO INDUSTRIAL</b><small>MÉDIO · Fábricas e corredores</small></button>
+            <button class="map-card" data-map="metro" data-diff="normal"><span class="map-thumb thumb-metro" role="img" aria-label="Metrô subterrâneo"><em class="map-diff-badge diff-normal">MÉDIO</em></span><b>METRÔ SUBTERRÂNEO</b><small>MÉDIO · Túneis e plataformas</small></button>
+            <button class="map-card" data-map="highway" data-diff="hard"><span class="map-thumb thumb-highway" role="img" aria-label="Rodovia destruída"><em class="map-diff-badge diff-hard">DIFÍCIL</em></span><b>RODOVIA DO APOCALIPSE</b><small>DIFÍCIL · Estradas e zonas abertas</small></button>
+          </div>
+
+          <button type="button" id="btnMapNext" class="map-page-arrow next" aria-label="Próxima página de mapas" title="Próxima página">
+            <span class="arrow-glyph">›</span>
+            <small>PRÓXIMA</small>
+          </button>
+        </div>
+
+        <div class="map-pagination-bar">
+          <span id="mapPageInfo" class="map-page-info">PÁGINA 1 DE 3 · 18 ZONAS TÁTICAS</span>
+          <div id="mapPageDots" class="map-page-dots" role="tablist" aria-label="Páginas de mapas"></div>
+        </div>
+
+        <div class="map-bar">
+          <div class="start-options">
+            <label>ZONA SELECIONADA
+              <select id="mapSelect">
+                <option value="four">Cidade Abandonada</option>
+                <option value="forest">Floresta Contaminada</option>
+                <option value="industrial">Complexo Industrial</option>
+                <option value="metro">Metrô Subterrâneo</option>
+                <option value="highway">Rodovia do Apocalipse</option>
+              </select>
+            </label>
+            <label>GRAU DE AMEAÇA (DIFICULDADE)
+              <select id="difficultySelect">
+                <option value="easy">Fácil — Hordas reduzidas</option>
+                <option value="normal" selected>Normal — Padrão tático</option>
+                <option value="hard">Difícil — Infectados fortalecidos</option>
+                <option value="apocalypse">Apocalipse — Sobrevivência extrema</option>
+              </select>
+            </label>
+          </div>
+          <div class="diff-pills" aria-label="Seleção rápida de dificuldade">
+            <button type="button" class="diff-pill" data-diff="easy">FÁCIL</button>
+            <button type="button" class="diff-pill active" data-diff="normal">NORMAL</button>
+            <button type="button" class="diff-pill" data-diff="hard">DIFÍCIL</button>
+            <button type="button" class="diff-pill apoc" data-diff="apocalypse">☣ APOCALIPSE</button>
+          </div>
+          <div class="map-nav">
+            <button id="btnPlay" class="big">INICIAR OPERAÇÃO ▶</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="endScreen" class="screen hidden">
+        <div class="box end-box">
+          <span class="screen-kicker">☣ RELATÓRIO DE MISSÃO</span>
+          <h1 id="endTitle">DERROTA</h1>
+          <p id="endSub">A base foi destruída.</p>
+          <div class="end-rank-box">
+            <label for="endPlayerName">JOGADOR REGISTRADO NO RANKING:</label>
+            <div class="end-rank-row">
+              <input id="endPlayerName" type="text" maxlength="22" placeholder="Seu nome...">
+              <button id="btnSaveEndName" type="button" class="primary">ATUALIZAR</button>
+            </div>
+          </div>
+          <div id="endStats"></div>
+          <div class="end-actions">
+            <button id="btnContinue" class="big hidden">CONTINUAR (MODO INFINITO)</button>
+            <button id="btnAgain" class="big">JOGAR NOVAMENTE</button>
+            <button id="btnEndRank" class="menu-button">👑 &nbsp; VER RANKING</button>
+            <button id="btnEndExit" class="menu-button">⌂ &nbsp; VOLTAR AO MENU</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== LATERAL ===== -->
+    <aside id="sidebar">
+      <h3>TORRES DE COMBATE</h3>
+      <div id="towerList"></div>
+      <h3 class="support-h3">🛡 TORRES DE SUPORTE</h3>
+      <div id="supportList"></div>
+      <h3>PODERES ESPECIAIS</h3>
+      <div id="powerList"></div>
+    </aside>
+  </main>
+
+  <!-- ===== BARRA INFERIOR ===== -->
+  <footer id="bottombar">
+    <button id="btnNext" class="primary" title="Envia a próxima onda agora (N)">&#9654; Próxima onda</button>
+    <label class="auto" title="Inicia a próxima onda automaticamente após um breve intervalo">
+      <input type="checkbox" id="chkAuto"> Envio automático
+    </label>
+    <div id="progress" title="Progresso da onda atual">
+      <i id="progBar"></i><span id="progTxt">Pronto para começar</span>
+    </div>
+    <button id="btnCancel" class="hidden" title="Cancela a ação atual (ESC)">Cancelar (ESC)</button>
+    <button id="btnRestart" title="Reinicia a partida sem recarregar a página">Reiniciar</button>
+  </footer>
+</div>
+
+<div id="tooltip" class="hidden"></div>
+
+<!-- Camada de Aviso de Orientação Obrigatória (Landscape / Celular Deitado) -->
+<div id="rotateDeviceOverlay" role="alert" aria-live="assertive">
+  <div class="rotate-card">
+    <div class="rotate-icon-wrap" aria-hidden="true">
+      <svg class="rotate-phone-svg" viewBox="0 0 80 80" width="76" height="76">
+        <rect x="22" y="10" width="36" height="60" rx="6" ry="6" fill="none" stroke="#27c9ff" stroke-width="3.5"/>
+        <circle cx="40" cy="63" r="2.5" fill="#27c9ff"/>
+        <line x1="34" y1="15" x2="46" y2="15" stroke="#27c9ff" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M64 26 A26 26 0 0 1 64 54" fill="none" stroke="#ffd166" stroke-width="3" stroke-linecap="round"/>
+        <polyline points="58,53 65,56 67,48" fill="none" stroke="#ffd166" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <span class="rotate-kicker">☣ ORIENTAÇÃO TÁTICA OBRIGATÓRIA</span>
+    <h2>GIRE SEU APARELHO</h2>
+    <p>Por favor, gire o seu aparelho para o modo horizontal (paisagem) para jogar.</p>
+    <small class="rotate-sub">A simulação permanece pausada automaticamente até o aparelho ficar na horizontal.</small>
+  </div>
+</div>
+
+<script src="game.js"></script>
+<script>
+// O jogo também pode ser instalado como aplicativo (PWA) quando hospedado em HTTPS.
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(err => console.warn("Modo offline indisponível:", err)));
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+"appbuild"
+{
+  "appid" "SEU_APP_ID"
+  "desc" "Quarentena Z 1.0.0"
+  "buildoutput" "..\steam\output\"
+  "contentroot" "..\dist\win-unpacked\"
+  "setlive" ""
+  "depots"
+  {
+    "SEU_DEPOT_ID" "depot_build.vdf"
+  }
+}

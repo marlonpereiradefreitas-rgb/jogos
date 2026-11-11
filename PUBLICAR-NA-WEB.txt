@@ -1,0 +1,35 @@
+APOCALIPSE — PACOTE WEB V18
+===========================
+
+JOGAR NO COMPUTADOR
+- Para abrir localmente: dê dois cliques em INICIAR_JOGO.bat.
+- Se o navegador bloquear recursos locais, use INICIAR_COM_SERVIDOR.bat.
+- O jogo é HTML/CSS/JavaScript; não é um .EXE nativo.
+
+PUBLICAR NA INTERNET (SEM PROGRAMAR)
+1. Acesse https://itch.io/ e crie uma conta.
+2. Crie um projeto e escolha o tipo HTML.
+3. Envie o arquivo ZIP deste pacote como arquivo HTML.
+4. Marque a opção para que o jogo seja executado no navegador.
+5. Publique o projeto. O itch.io fornecerá um endereço para jogar.
+
+ALTERNATIVA: NETLIFY DROP
+1. Extraia o ZIP.
+2. Abra https://app.netlify.com/drop.
+3. Arraste a pasta que contém index.html, style.css, game.js e assets.
+4. Aguarde a publicação; o site fornecerá um link público HTTPS.
+
+ALTERNATIVA: GITHUB PAGES
+- Envie o conteúdo desta pasta para um repositório GitHub.
+- Em Settings > Pages, escolha publicar a partir da branch principal e da raiz (/).
+- Salve e aguarde o endereço público.
+
+INSTALAÇÃO COMO APLICATIVO
+- Depois de publicar em HTTPS e abrir o jogo, use o menu do Chrome/Edge > Instalar página como app (ou Instalar Apocalipse, se aparecer).
+- O service worker guarda os arquivos do jogo em cache. Abra o jogo online uma vez para baixar os recursos antes de jogar offline.
+
+OBSERVAÇÕES
+- Este pacote é um jogo web estático e não precisa de servidor de backend.
+- Os recordes e configurações ficam no armazenamento local do navegador/dispositivo.
+- Não há contas, multiplayer ou sincronização de progresso entre dispositivos.
+- Para atualizar uma publicação, envie os arquivos novos e mantenha a estrutura da pasta assets.

@@ -1,0 +1,89 @@
+v19 — Etapa 1 (bugs) + Etapa 2 (interface "Neon Fallout")
+Etapa 2: novo tema em theme-v19.css (carregado depois de style.css): paleta preto-azulada com ciano/laranja,
+fonte sem serifa, HUD em "pílulas", menu com botões laterais animados, cards de mapa com destaque,
+painel de torre com brilho e animação de entrada, toasts coloridos, tela de pausa com desfoque, barras com brilho.
+Para voltar ao visual antigo, remova a linha do theme-v19.css no index.html.
+Não testado visualmente em navegador.
+
+Etapa 3 (mapas e torres): gradação de cor e luzes ambientes em cada um dos 5 mapas; a base pulsa verde/amarelo/vermelho
+conforme a vida; torres ganham sombra no chão, aura que muda a cada melhoria (ciano, verde, dourado, laranja, roxo),
+aura dourada no Paragon, clarão no cano ao atirar e anel ciano ao melhorar. Equilíbrio de jogo não foi alterado.
+Pendente: arte própria (sprites) das 7 torres que usam modelo de outra família. Não testado visualmente em navegador.
+
+Parte 2 do prompt (novos mapas): +6 mapas originais (total 11): Subúrbio Silencioso e Clareira dos Corvos (fácil, com lago),
+Espiral da Quarentena e Cruzamento Sinuoso (médio, caminhos que se cruzam), Zigue-Zague de Concreto e Anéis de Aço (difícil,
+curvas fechadas e círculos concêntricos com lagoa). Áreas de água bloqueiam construção. Cards, opções e miniaturas são gerados por código.
+Ainda não feito: filtro por dificuldade, recordes por mapa, dois caminhos que se juntam, pontes.
+
+Partes 1 e 3 do prompt (7 torres): Radar, Escopeta, Drone, Demolidor, Canhão EM, Estação de Apoio e Lançador Ácido agora têm
+3 caminhos x 5 níveis próprios (nomes, efeitos e custos únicos; ver UPGRADES-TABELA.md) e sprite próprio animado
+(antena giratória, drone flutuante com rotores, trilhos com brilho, bobina pulsante, tanque de ácido com bolhas).
+Ainda NÃO feito: caminhos 2 e 3 das outras 11 torres continuam genéricos (+% dano/alcance/cadência); realismo de texturas/sombras dos mapas;
+animações de clima. Balanceamento dos novos upgrades não foi testado em partidas reais.
+
+Etapa final de torres e mapas:
+- Upgrades: as 18 torres têm 3 caminhos x 5 níveis próprios, sem nomes repetidos (270 upgrades testados). Ver UPGRADES-TABELA.md.
+- Sprites: as 11 torres originais ganharam sombreamento, rebites e detalhes próprios (sacos de areia, rede de camuflagem, arcos elétricos,
+  cristais de gelo, aljava, lâmina giratória etc.); as 7 novas já tinham arte própria.
+- Mapas: rachaduras, poças com reflexo, manchas de óleo, grama, sujeira nas bordas do caminho, 16 objetos altos com sombra longa
+  (prédios, árvores, tanques, carros) e clima animado por mapa (chuva, folhas, brasas, poeira, partículas). O clima segue a Qualidade gráfica
+  (desligado em "baixa"). 
+NÃO conferido visualmente em navegador: posição exata dos detalhes dos sprites, aparência dos objetos e desempenho real (fps).
+
+Desempenho (muitos zumbis):
+- Base e carcaça das torres e corpo dos zumbis (16 quadros de caminhada por tipo) agora são desenhados uma vez e reaproveitados (cache).
+- Brilho das torres em cache, clarão do cano mais leve, chuva em um único traçado.
+- Loop principal com orçamento de ~14 ms por quadro: sob sobrecarga o jogo desacelera em vez de congelar.
+- "Modo desempenho" automático (reduz clima e partículas) se a média de FPS ficar baixa por ~2 s; reaplicar a Qualidade gráfica o desativa.
+- Tecla F3 mostra FPS e quantidade de zumbis.
+Medido por simulação: chamadas de desenho por quadro com 450 zumbis + 40 torres: 17,8 mil -> 7,5 mil (-58%); com 100 zumbis: 10,9 mil -> 3,8 mil (-65%).
+A lógica do jogo custou em média 3,8 ms por passo com 2.169 zumbis. FPS real em navegador NÃO foi medido.
+
+Base profissional / multiplayer + engajamento:
+- RNG com semente (srand) na simulação; ações viram comandos (dispatch + CMDLOG); stateHash(); teste de determinismo em tools/.
+- Corrigido: render reordenava a lista de zumbis (agora usa cópia); deslocamento lateral dos zumbis usava Math.random.
+- Faixa animada de onda e aviso de CHEFE; 19 conquistas com tela própria (menu > CONQUISTAS); estrelas na tela final;
+  dicas de tutorial na primeira partida (aparecem uma única vez).
+- MULTIPLAYER-ROADMAP.md com arquitetura, fases e pendências.
+Não conferido visualmente em navegador. Redesign de zumbis, HUD de ícones e animações de menu ficam para a próxima rodada.
+
+Direitos autorais, salvamento e Steam:
+- Jogo renomeado para "Quarentena Z" (confirme que o nome está livre antes de publicar). "Paragon" virou "Ascensão/Ascendida",
+  "Four Circles" e o chefe "Nêmesis" (agora "Devastador") foram renomeados.
+- Código de administrador e ferramentas de trapaça REMOVIDOS.
+- Imagens .jpg de origem desconhecida REMOVIDAS: fundo do menu e miniaturas dos mapas agora são gerados por código.
+- Salvamento automático a cada onda + botão CONTINUAR (reconstrói a partida pela semente e pelos comandos; idêntico ao salvo, testado).
+- Tela cheia (F11), lista de atalhos nas configurações, botão Sair real no app desktop.
+- Pasta electron/ + package.json (app desktop + Steamworks), steam/ (scripts SteamPipe), docs-steam/ (loja, publicação, build).
+NÃO testado: o .exe, a integração real com a Steam, a aparência no navegador e o tempo de carregamento de saves muito longos.
+
+v19.1 (ajustes de interface e suprimentos):
+- Tela inicial: sem caixa, título, subtítulo e botão Sair. Botões JOGAR/CONQUISTAS/CONFIGURAÇÕES no canto superior esquerdo e SOBRE O JOGO no canto inferior direito.
+  O botão SAIR DO JOGO fica nas Configurações e só aparece no app desktop.
+- Seleção de mapas: tela inteira, sem caixa/bordas e sem dicas; só os mapas e as opções (mapa, dificuldade, voltar, iniciar).
+- Jogo: bordas do canvas e brilhos de contorno removidos.
+- HUD novo: cartões com ícone para Vida da base (barra verde/amarela/vermelha), Moedas, Onda e Zumbis.
+- Suprimentos: 1 uso a cada 5 minutos de JOGO (não dá mais para usar 3 de uma vez), máximo de 3 por partida. Agora passam pelos comandos,
+  então CONTINUAR reproduz corretamente os suprimentos usados (antes usavam o relógio real e não eram gravados).
+  Obs.: a contagem dos 5 minutos segue o tempo do jogo; em 2x/3x a espera real fica proporcionalmente menor.
+Não conferido visualmente em navegador.
+
+v19.2: botão SAIR na tela de fim de jogo (volta ao menu inicial).
+
+v19.3: conquistas
+- 50 conquistas (40 normais + 10 secretas) em 9 categorias, com estatísticas permanentes (salvas no navegador/app).
+- Tela de conquistas em tela cheia: contador geral com barra, categorias, barras de progresso, data de desbloqueio; secretas aparecem como
+  "Conquista secreta" com uma dica até serem desbloqueadas.
+- A tela final mostra quantas conquistas novas foram obtidas; CONTINUAR (carregar save) não conta estatísticas em dobro (testado).
+- Cache do navegador/PWA atualizado (v19-3) para não servir a tela inicial antiga. Se ainda aparecer a tela antiga: Ctrl+F5.
+- Lista completa e API Names para a Steam em docs-steam/01-LOJA.md.
+
+v19.4 (testado em navegador real - Chromium):
+- CORRIGIDO: a tela de CONQUISTAS não abria (showScreen tinha uma lista fixa de telas sem a achScreen). Agora abre e mostra as 50 conquistas.
+- Conquistas: ícone ao lado do título e barras de progresso em largura total.
+- NOVA BARRA DE VIDA inspirada na imagem enviada: moldura hexagonal com o número da vida + barra inclinada com contorno, traços e pontilhado;
+  muda de cor (verde/amarelo/vermelho), rastro branco de dano, tremor ao levar dano e brilho pulsante com pouca vida.
+- CORRIGIDO (importante): a simulação usava passo de tempo variável e o CONTINUAR não reproduzia a partida idêntica no navegador real.
+  Agora a simulação roda em passo fixo de 1/60 s (acumulador), independente da taxa de quadros. Validado: continuar após recarregar a página = idêntico.
+- Contraste dos botões principais (orange) em Configurações, Iniciar partida e fim de jogo; títulos sem encostar na borda; subtítulo das configurações.
+- Medido no Chromium headless (rasterização por CPU): 61 FPS com 450 zumbis + 40 torres; 54 FPS com 900 zumbis. Velocidades 1x/2x/3x = 60/120/180 passos/s.

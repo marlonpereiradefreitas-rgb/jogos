@@ -1,0 +1,4 @@
+Quarentena Z — Créditos
+Código, interface, sprites das torres, cenários, miniaturas dos mapas e fundo do menu: desenhados por código (canvas/CSS), sem imagens externas.
+Sons: gerados por código (Web Audio), sem arquivos de áudio.
+Único arquivo de imagem: assets/icon.svg (ícone). Confirme que é de sua autoria antes de publicar.

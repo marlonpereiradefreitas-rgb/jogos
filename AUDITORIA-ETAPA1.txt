@@ -1,0 +1,38 @@
+AUDITORIA E CORREÇÕES — ETAPA 1 (v18 -> v19)
+Linhas referem-se ao game.js ORIGINAL (v18). Testado com simulação sem navegador
+(45 ondas, 5 mapas, 18 torres, Paragons, habilidades). Não houve teste visual em navegador.
+
+BUGS CORRIGIDOS
+ 1. [CRÍTICO] Paragon travava o painel: nextUpgrade() devolvia null e refreshPanel() chamava .map  (game.js:1434).
+    Resultado: erro a cada quadro e o painel (inclusive o botão VENDER) não abria. Testado: 0/18 -> 18/18 torres.
+ 2. Anel dourado do Paragon desenhado no lugar errado (coordenadas aplicadas duas vezes)  (game.js:1221).
+ 3. Paragon/torres no máx. mostravam "Nível 6/5" e "Nível 8/5". Agora "Melhorias x/5" e "PARAGON".
+ 4. 7 torres sem arma/cano desenhado (Radar, Escopeta, Drone, Demolidor, Canhão EM, Estação, Lançador Ácido): sprite só tinha a base (game.js:1227).
+    Agora usam o modelo da família + faixa de cor própria (arte definitiva fica para a Etapa 3).
+ 5. Habilidades (Tesla/Estação de Apoio): melhorar a torre durante o buff cortava dano/cadência para sempre (game.js:902).
+    Testado: Tesla 25,5 -> 51,0 (correto).
+ 6. Mira Térmica dava ALCANCE GLOBAL ao Radar e ao Drone (herdavam upgrades do Sniper). Agora só o Sniper; os outros ganham +35%.
+ 7. Demolidor: "ignora armadura" nunca era aplicado ao projétil (game.js:957).
+ 8. Lançador Ácido: "corrói armadura" não fazia nada. Agora cada acerto reduz a armadura do alvo.
+ 9. Habilidade do Drone usava tipo de dano inexistente ("bullet") e ignorava armadura.
+10. Barra de progresso passava de 100% (fragmentos do Fragmentador não entravam no total).
+11. "Envio automático" ignorava a caixinha: a próxima onda sempre começava na hora e CFG.prepTime nunca era usado (game.js:1074).
+    Agora respeita a caixinha (ligada por padrão) e dá s entre ondas. A 1ª onda é sempre manual.
+12. Atalhos: só 11 das 18 torres tinham tecla e 8 cards mostravam "-". Agora 1-9, 0, Q W E R T Y U I.
+13. Teclas funcionavam por trás dos menus (Espaço despausava a partida escondida).
+14. Botão HOME dizia "partida será encerrada" mas não encerrava.
+15. Qualidade gráfica não tinha efeito e o volume não era salvo. Qualidade agora limita partículas; volume é salvo.
+16. Descrições erradas: Escopeta ("leque") e Estação de Apoio ("aumenta cadência") não faziam isso. Textos corrigidos.
+17. Código morto removido: MAP_CONFIGS (caminhos nunca usados) e pré-carregamento inútil de 5 imagens.
+
+AVISOS DE DESIGN (não alterei a mecânica, só avisei na interface)
+ - Camuflados (onda 5+) e voadores (onda 7+) SÓ podem ser atacados por Radar e Drone. Quem não tem os dois perde sem aviso.
+   Agora a prévia da onda mostra "exige Radar ou Drone" e o tooltip de cada torre diz se ela vê esses alvos.
+ - Torre Elétrica encadeia raios em camuflados/voadores mesmo sem poder mirar neles (inconsistente, mantido).
+ - Arqueiro e Bumerangue ficaram sem hotkey nas versões anteriores; resolvido pelo item 12.
+
+PENDÊNCIAS PARA AS PRÓXIMAS ETAPAS
+ - Código de admin "ZOMBIE-ADM-2026" está legível no código (game.js:452). Remover/travar no build Steam (Etapa 5).
+ - Botão SAIR só mostra uma tela; precisa fechar a janela de verdade no app desktop (Etapa 5).
+ - Não existe salvamento de partida em andamento (só recordes) (Etapa 5).
+ - Nome "Four Circles" e o termo "Paragon" vêm de Bloons TD 6 (Etapa 4).

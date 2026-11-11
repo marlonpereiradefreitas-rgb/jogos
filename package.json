@@ -1,0 +1,26 @@
+{
+  "name": "quarentena-z",
+  "productName": "Quarentena Z",
+  "version": "1.0.0",
+  "description": "Quarentena Z - tower defense de zumbis",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "server": "node server.js",
+    "web": "node server.js",
+    "test:backend": "node tools/test-backend.js",
+    "dist": "electron-builder --win --dir"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": { "steamworks.js": "^0.4.0" },
+  "devDependencies": { "electron": "^31.0.0", "electron-builder": "^24.13.3" },
+  "build": {
+    "appId": "com.seuestudio.quarentenaz",
+    "productName": "Quarentena Z",
+    "files": ["electron/**", "index.html", "game.js", "style.css", "theme-v19.css", "manifest.webmanifest", "assets/**", "package.json"],
+    "asarUnpack": ["node_modules/steamworks.js/**"],
+    "win": { "target": "dir" }
+  }
+}

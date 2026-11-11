@@ -1,0 +1,44 @@
+// Teste de ponta a ponta no navegador real (precisa do Playwright). Uso: node tools/test-browser.js http://localhost:8123/index.html
+const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
+const url = process.argv[2] || 'http://localhost:8123/index.html';
+let ok = true; const chk = (c, m) => { console.log((c ? 'OK    ' : 'FALHA ') + m); if (!c) ok = false; };
+(async () => {
+  const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1280, height: 720 } }); const p = await ctx.newPage();
+  const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+  await p.goto(url); await p.waitForTimeout(800);
+  const vis = sel => p.$eval(sel, e => !e.classList.contains('hidden') && e.offsetParent !== null);
+  chk(JSON.stringify(await p.$$eval('#homeScreen button', bs => bs.filter(b => b.offsetParent).map(b => b.textContent.trim().replace(/\s+/g, ' ')))) === JSON.stringify(['▶ JOGAR', '🏆 CONQUISTAS', '⚙ CONFIGURAÇÕES', 'ⓘ SOBRE O JOGO']), 'home: só os 4 botões (sem título, caixa ou Sair)');
+  await p.click('#btnHomeAch'); await p.waitForTimeout(300);
+  chk(await vis('#achScreen') && (await p.$$('.ach-item')).length === 50, 'conquistas: tela abre e mostra 50 cartões');
+  chk((await p.$$('.ach-item.secret')).length === 10, 'conquistas: 10 secretas ocultas');
+  await p.click('#btnAchBack'); await p.waitForTimeout(200);
+  await p.click('#btnHomeAbout'); await p.waitForTimeout(200); chk(await vis('#aboutScreen'), 'sobre o jogo abre');
+  await p.evaluate(() => { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); document.getElementById('homeScreen').classList.remove('hidden'); });
+  await p.click('#btnHomePlay'); await p.waitForTimeout(2200);
+  chk((await p.$$('.map-card')).length === 11, 'seleção: 11 mapas');
+  chk(await p.$$eval('.map-thumb', t => t.every(x => (x.style.backgroundImage || '').startsWith('url("data:'))), 'seleção: miniaturas geradas por código');
+  await p.click('#btnPlay'); await p.waitForTimeout(500);
+  chk(await p.$eval('#lifeHud', e => e.dataset.lv) === 'ok', 'HUD: nova barra de vida (verde)');
+  await p.evaluate(() => { window.ZTD.G.life = 40; }); await p.waitForTimeout(400);
+  chk(await p.$eval('#lifeHud', e => e.dataset.lv) === 'mid', 'HUD: barra amarela com vida média');
+  await p.evaluate(() => { window.ZTD.G.life = 100; });
+  await p.keyboard.press('1'); await p.mouse.click(400, 300); await p.waitForTimeout(150);
+  chk(await p.evaluate(() => window.ZTD.towers.length) === 1, 'jogo: clique no mapa constrói a torre');
+  // jogar um pouco em 3x e salvar
+  await p.evaluate(() => { const Z = window.ZTD; let gx = 30, gy = 30, n = 0; for (let i = 0; n < 4 && i < 5000; i++) { gx += 34; if (gx > 780) { gx = 30; gy += 34; if (gy > 600) gy = 30; } if (!Z.validSpot(gx, gy)) { Z.dispatch({ type: 'place', key: 'gunner', x: gx, y: gy }); n++; } } });
+  await p.click('#btnNext'); await p.evaluate(() => { window.ZTD.G.speed = 3; }); await p.waitForTimeout(9000);
+  const before = await p.evaluate(() => { const Z = window.ZTD; Z.dispatch({ type: 'wave' }); return { hash: Z.stateHash(), tick: Z.G.tick, wave: Z.WM.num, towers: Z.towers.length }; });
+  chk(before.tick > 1000, 'jogo: partida de ' + before.tick + ' ticks, onda ' + before.wave + ', ' + before.towers + ' torres');
+  await p.reload(); await p.waitForTimeout(900);
+  chk(await p.$eval('#btnHomeContinue', e => !e.classList.contains('hidden')), 'continuar: botão aparece após recarregar a página');
+  await p.click('#btnHomeContinue');
+  await p.waitForFunction(() => window.ZTD.G.replay === null || window.ZTD.G.replay === undefined, null, { timeout: 60000 });
+  await p.waitForTimeout(300);
+  const after = await p.evaluate(() => { const Z = window.ZTD; return { hash: Z.stateHash(), tick: Z.G.tick, wave: Z.WM.num, towers: Z.towers.length, paused: Z.G.paused }; });
+  chk(after.hash === before.hash && after.tick === before.tick, 'continuar: partida idêntica à salva no navegador real (tick ' + after.tick + ')');
+  await p.evaluate(() => window.ZTD.endGame()); await p.waitForTimeout(500);
+  chk(JSON.stringify(await p.$$eval('#endScreen button', bs => bs.filter(b => b.offsetParent).map(b => b.textContent.trim().replace(/\s+/g, ' ')))) === JSON.stringify(['REINICIAR', '✕ SAIR']), 'derrota: REINICIAR e SAIR');
+  await p.click('#btnEndExit'); await p.waitForTimeout(300); chk(await vis('#homeScreen'), 'derrota: SAIR volta ao menu');
+  chk(errs.length === 0, 'nenhum erro de JavaScript/console ' + (errs.length ? JSON.stringify(errs.slice(0, 3)) : ''));
+  await b.close(); process.exit(ok ? 0 : 1);
+})();

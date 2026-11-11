@@ -1,0 +1,22 @@
+APOCALIPSE — VERSÃO 17 (EXECUTÁVEL)
+
+Melhorias desta entrega:
+1. Inicialização com duplo clique no Windows por INICIAR_JOGO.bat.
+2. Inicialização alternativa via servidor local em INICIAR_COM_SERVIDOR.bat,
+   útil para navegadores que restringem arquivos locais. Requer Python 3.
+3. Script iniciar_jogo.sh para Linux/macOS.
+4. Guia de instalação, requisitos, salvamento e solução de problemas.
+5. Verificador local verificar_projeto.js para validar sintaxe JavaScript,
+   ligações HTML/CSS/JS, IDs consultados e presença das imagens dos mapas.
+6. Projeto mantido offline e sem dependências externas: imagens, HTML, CSS e
+   JavaScript permanecem incluídos no pacote.
+
+Validação executada nesta entrega:
+- node --check game.js: aprovado.
+- node verificar_projeto.js: todas as verificações estáticas passaram.
+- Tentativa de abertura automatizada em Chromium headless excedeu o limite de
+  execução; portanto, não é declarada como teste completo de jogabilidade.
+
+Observação: esta é uma aplicação web local iniciável por navegador, não um
+executável Windows nativo (.exe). Não foram adicionadas dependências ou
+instaladores que exijam download.
