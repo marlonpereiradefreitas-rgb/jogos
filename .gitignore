@@ -1,0 +1,26 @@
+# Dependências e módulos
+node_modules/
+
+# Variáveis de ambiente e segredos locais
+.env
+.env.local
+.env.*.local
+data/.server_secret
+
+# Dados gerados localmente e banco de dados
+data/db.json
+data/*.tmp
+
+# Diretórios de distribuição e builds
+dist/
+release/
+out/
+build/
+
+# Logs e arquivos de sistema
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db

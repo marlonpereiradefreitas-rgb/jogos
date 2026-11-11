@@ -92,12 +92,18 @@ try {
 }
 
 function createWindow() {
+  const iconPath = fs.existsSync(path.join(__dirname, '..', 'assets', 'icon.ico'))
+    ? path.join(__dirname, '..', 'assets', 'icon.ico')
+    : path.join(__dirname, '..', 'assets', 'icon.png');
+
   const win = new BrowserWindow({
+    title: 'Quarentena Z',
+    icon: iconPath,
     width: 1280,
     height: 720,
     minWidth: 960,
     minHeight: 600,
-    backgroundColor: '#07090f',
+    backgroundColor: '#121417',
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -123,7 +129,8 @@ function createWindow() {
 
   win.loadFile(path.join(__dirname, '..', 'index.html'));
   win.webContents.on('before-input-event', (e, input) => {
-    if (input.type === 'keyDown' && input.key === 'F11') {
+    // Alternar Tela Cheia com F11 ou Alt+Enter
+    if (input.type === 'keyDown' && (input.key === 'F11' || (input.alt && input.key === 'Enter'))) {
       win.setFullScreen(!win.isFullScreen());
       e.preventDefault();
       return;

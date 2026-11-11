@@ -8,8 +8,8 @@
   "scope": "./",
   "display": "fullscreen",
   "orientation": "landscape",
-  "background_color": "#101512",
-  "theme_color": "#101512",
+  "background_color": "#121417",
+  "theme_color": "#121417",
   "categories": [
     "games",
     "strategy"
@@ -20,6 +20,11 @@
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icon.png",
+      "sizes": "256x256",
+      "type": "image/png"
     }
   ]
 }

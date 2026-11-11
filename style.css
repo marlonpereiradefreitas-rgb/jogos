@@ -1,8 +1,31 @@
 /* ===== ZOMBIE TOWER DEFENSE — estilos ===== */
 :root{
-  --bg:#10130c; --panel:#1b2014; --panel2:#262d1b; --line:#3e4b2b;
-  --text:#e8e4d0; --dim:#9aa183; --gold:#f2c230; --red:#d6402f;
-  --green:#6bbf3a; --blue:#4aa3e0;
+  /* Design Tokens Oficiais — Verde, Cinza e Branco */
+  --ui-primary: #10B981;
+  --ui-primary-hover: #34D399;
+  --ui-primary-active: #059669;
+  --ui-primary-glow: rgba(16, 185, 129, 0.45);
+  --ui-bg-base: #121417;
+  --ui-bg-surface: #1E2228;
+  --ui-bg-elevated: #2A2F37;
+  --ui-border: #374151;
+  --ui-text-muted: #9CA3AF;
+  --ui-text-primary: #FFFFFF;
+  --ui-text-secondary: #F3F4F6;
+
+  /* Aliases para retrocompatibilidade cirúrgica */
+  --bg: var(--ui-bg-base);
+  --panel: var(--ui-bg-surface);
+  --panel2: var(--ui-bg-elevated);
+  --line: var(--ui-border);
+  --text: var(--ui-text-primary);
+  --dim: var(--ui-text-muted);
+  --gold: var(--ui-primary);
+  --red: #ef4444;
+  --green: var(--ui-primary);
+  --blue: var(--ui-primary);
+  --neon: var(--ui-primary);
+  --warn: var(--ui-primary-hover);
 }
 *{box-sizing:border-box}
 html,body{
@@ -17,8 +40,8 @@ button{
 }
 button:hover{filter:brightness(1.25)}
 button:active{transform:translateY(1px)}
-button.active{background:#4a5a2a;border-color:var(--gold);color:var(--gold)}
-button.primary{background:#2f5a1f;border-color:var(--green);font-weight:bold}
+button.active{background:var(--ui-bg-elevated);border-color:var(--ui-primary);color:var(--ui-primary)}
+button.primary{background:linear-gradient(90deg,var(--ui-primary),var(--ui-primary-active));border-color:var(--ui-primary-hover);color:#fff;font-weight:bold}
 button:disabled{opacity:.45;cursor:not-allowed}
 .hidden{display:none !important}
 
@@ -534,8 +557,8 @@ body.is-mobile .shortcuts-panel {
   margin-top: 4px;
   padding: 10px 12px;
   border-radius: 10px;
-  background: linear-gradient(180deg, rgba(10, 20, 36, 0.9), rgba(6, 12, 22, 0.95));
-  border: 1px solid rgba(43, 227, 161, 0.32);
+  background: linear-gradient(180deg, var(--ui-bg-surface), var(--ui-bg-base));
+  border: 1px solid var(--ui-primary);
 }
 
 .license-drm-head {
@@ -551,15 +574,15 @@ body.is-mobile .shortcuts-panel {
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 1.2px;
-  color: #ecf3ff;
+  color: var(--ui-text-primary);
 }
 
 .license-status-badge {
   font-size: 10.5px;
   font-weight: 800;
-  color: #2be3a1;
-  background: rgba(43, 227, 161, 0.14);
-  border: 1px solid rgba(43, 227, 161, 0.38);
+  color: var(--ui-primary);
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid var(--ui-primary);
   padding: 2px 8px;
   border-radius: 999px;
 }
@@ -621,7 +644,7 @@ body.is-mobile #sidebar {
   height: 100% !important;
   min-height: 0 !important;
   border-top: 0 !important;
-  border-left: 1px solid rgba(110, 150, 210, 0.22) !important;
+  border-left: 1px solid var(--ui-border) !important;
   padding: 5px !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
@@ -750,7 +773,7 @@ body.is-mobile .map-screen .map-thumb {
     height: 100% !important;
     min-height: 0 !important;
     border-top: 0 !important;
-    border-left: 1px solid rgba(110, 150, 210, 0.22) !important;
+    border-left: 1px solid var(--ui-border) !important;
     padding: 5px !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;

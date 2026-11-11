@@ -2022,9 +2022,42 @@ function renderAch(){const d=achLoad(),fmt=n=>Math.floor(n).toLocaleString('pt-B
       html+='<div class="ach-item'+(ok?' done':'')+(hide?' secret':'')+'"><div class="ach-ico">'+(ok?'🏆':hide?'❓':'🔒')+'</div><div class="ach-info"><b>'+(hide?'Conquista secreta':a.name)+'</b><span>'+(hide?(a.hint||'???'):a.desc)+'</span>'+extra+'</div></div>';}}
   $('achList').innerHTML=html;$('achCount').textContent=total+' / '+ACH.length+' desbloqueadas';$('achTotBar').style.width=Math.round(total/ACH.length*100)+'%';}
 const GAME_SAVE_KEY='ztd_v19_save';
+function computeSaveSig(obj){
+  let h=0x811c9dc5;
+  const s=`${obj.map}:${obj.diff}:${obj.seed}:${obj.ticks}:${obj.wave}:${(obj.log&&obj.log.length)||0}`;
+  for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0;}
+  return h.toString(16);
+}
 function saveGame(){if(G.replay||G.mode!=='play')return;
-  try{const js=JSON.stringify({v:1,map:activeMap,diff:activeDifficulty,seed:G.seed,auto0:G.auto0,ticks:G.tick,wave:WM.num,log:CMDLOG});localStorage.setItem(GAME_SAVE_KEY,js);if(window.steamBridge&&window.steamBridge.writeSave)window.steamBridge.writeSave(js);OnlineAPI.pushCloudSave(js);refreshContinue();}catch(e){}}
-function readSave(){try{let raw=localStorage.getItem(GAME_SAVE_KEY);if(!raw&&window.steamBridge&&window.steamBridge.readSave)raw=window.steamBridge.readSave();const d=JSON.parse(raw||'null');return d&&d.v===1?d:null;}catch(e){return null;}}
+  try{
+    const payload={v:1,map:activeMap,diff:activeDifficulty,seed:G.seed,auto0:G.auto0,ticks:G.tick,wave:WM.num,log:CMDLOG};
+    payload.sig=computeSaveSig(payload);
+    const js=JSON.stringify(payload);
+    localStorage.setItem(GAME_SAVE_KEY,js);
+    if(window.steamBridge&&window.steamBridge.writeSave)window.steamBridge.writeSave(js);
+    OnlineAPI.pushCloudSave(js);
+    refreshContinue();
+  }catch(e){}
+}
+function readSave(){
+  try{
+    let raw=localStorage.getItem(GAME_SAVE_KEY);
+    if(!raw&&window.steamBridge&&window.steamBridge.readSave)raw=window.steamBridge.readSave();
+    if(!raw)return null;
+    const d=JSON.parse(raw);
+    if(!d||d.v!==1)return null;
+    if(typeof d.map!=='string'||!MAPS[d.map])return null;
+    if(!['easy','normal','hard','apocalypse'].includes(d.diff))return null;
+    if(!Number.isFinite(d.seed)||!Number.isFinite(d.ticks)||d.ticks<0)return null;
+    if(!Number.isFinite(d.wave)||d.wave<0||d.wave>5000)return null;
+    if(!Array.isArray(d.log))return null;
+    if(d.sig&&d.sig!==computeSaveSig(d)){
+      SecurityGuard.tamperCount++;
+      return null;
+    }
+    return d;
+  }catch(e){return null;}
+}
 
 /* ===== SISTEMA DE SEGURANÇA BLINDADA, COFRE DE MEMÓRIA E ANTI-CHEAT (SECURITY GUARD) ===== */
 const CLIENT_TOKEN_KEY='quarentenaz_client_token';
@@ -3826,8 +3859,35 @@ function updateUI(){
 /* --- progresso local e recordes --- */
 const SAVE_KEY='quarentenaz_career_v4';
 let career={bestWave:0,totalKills:0,games:0,lastMap:'four',lastDifficulty:'normal'};
-function loadCareer(){try{const d=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');career=Object.assign(career,d);if(!MAPS[career.lastMap])career.lastMap='four';if(!['easy','normal','hard','apocalypse'].includes(career.lastDifficulty))career.lastDifficulty='normal';}catch(e){} updateCareerLabel();}
-function saveCareer(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(career));}catch(e){toast('Não foi possível salvar o recorde neste navegador.','bad');}updateCareerLabel();}
+function loadCareer(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(raw){
+      const d=JSON.parse(raw);
+      if(d&&typeof d==='object'){
+        if(Number.isFinite(d.bestWave)&&d.bestWave>=0&&d.bestWave<=5000)career.bestWave=Math.floor(d.bestWave);
+        if(Number.isFinite(d.totalKills)&&d.totalKills>=0&&d.totalKills<=100000000)career.totalKills=Math.floor(d.totalKills);
+        if(Number.isFinite(d.games)&&d.games>=0&&d.games<=1000000)career.games=Math.floor(d.games);
+        if(typeof d.lastMap==='string'&&MAPS[d.lastMap])career.lastMap=d.lastMap;
+        if(['easy','normal','hard','apocalypse'].includes(d.lastDifficulty))career.lastDifficulty=d.lastDifficulty;
+      }
+    }
+  }catch(e){}
+  updateCareerLabel();
+}
+function saveCareer(){
+  try{
+    const sanitized={
+      bestWave:Math.max(0,Math.min(5000,Math.floor(career.bestWave||0))),
+      totalKills:Math.max(0,Math.min(100000000,Math.floor(career.totalKills||0))),
+      games:Math.max(0,Math.min(1000000,Math.floor(career.games||0))),
+      lastMap:MAPS[career.lastMap]?career.lastMap:'four',
+      lastDifficulty:['easy','normal','hard','apocalypse'].includes(career.lastDifficulty)?career.lastDifficulty:'normal'
+    };
+    localStorage.setItem(SAVE_KEY,JSON.stringify(sanitized));
+  }catch(e){toast('Não foi possível salvar o recorde neste navegador.','bad');}
+  updateCareerLabel();
+}
 function updateCareerLabel(){const el=$('careerRecord');if(el)el.textContent='Recorde: onda '+career.bestWave+' · Zumbis eliminados: '+career.totalKills+' · Partidas: '+career.games;}
 
 /* --- fim de jogo --- */
