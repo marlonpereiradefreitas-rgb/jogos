@@ -21,8 +21,8 @@ jobs:
       - name: Montar site estatico
         run: |
           mkdir site
-          cp index.html game.js style.css theme-v19.css manifest.webmanifest sw.js site/
-          cp -r assets site/assets
+          cd quarentena-z && cp index.html game.js style.css theme-v19.css manifest.webmanifest sw.js ../site/
+          cp -r assets ../site/assets
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
