@@ -1,8 +1,14 @@
-﻿# Quarentena Z
+# Quarentena Z
 
 Tower defense de zumbis em HTML5/JS, com versÃ£o para PC (Electron), Web/PWA e servidor opcional para ranking e saves em nuvem.
 
-> **Status:** em preparaÃ§Ã£o. Ainda nÃ£o hÃ¡ releases, capturas de tela nem link do GitHub Pages publicados.
+## Jogar / Baixar
+
+- **Navegador (PC e celular, instalável como PWA):** https://marlonpereiradefreitas-rgb.github.io/jogos/
+- **Windows (instalador e portátil):** https://github.com/marlonpereiradefreitas-rgb/jogos/releases/latest
+- **Android:** use o PWA acima (menu do navegador > Instalar app). Não há APK nativo ainda.
+
+> Os links ficam ativos depois que o GitHub Actions concluir o deploy do Pages (Settings > Pages > Source: GitHub Actions) e o build da Release. Capturas de tela e GIFs ainda não foram adicionados.
 
 ## Recursos
 - 22 torres com 3 caminhos de upgrade e 5 nÃ­veis cada
