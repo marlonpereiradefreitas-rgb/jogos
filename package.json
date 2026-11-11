@@ -2,6 +2,7 @@
   "name": "quarentena-z",
   "productName": "Quarentena Z",
   "version": "1.0.0",
+  "author": "Quarentena Z Studio",
   "description": "Quarentena Z - tower defense de zumbis",
   "main": "electron/main.js",
   "scripts": {
@@ -33,6 +34,8 @@
       "style.css",
       "theme-v19.css",
       "manifest.webmanifest",
+      "sw.js",
+      "steam_appid.txt",
       "assets/**",
       "package.json"
     ],
@@ -42,12 +45,23 @@
     "directories": {
       "output": "dist"
     },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "Quarentena Z",
+      "runAfterFinish": true,
+      "include": "build/installer.nsh"
+    },
     "win": {
       "target": [
         { "target": "nsis", "arch": ["x64"] },
         { "target": "portable", "arch": ["x64"] }
       ],
-      "icon": "assets/icon.ico"
+      "icon": "assets/icon.ico",
+      "signAndEditExecutable": false
     },
     "linux": {
       "target": ["AppImage", "zip"],

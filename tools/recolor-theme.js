@@ -45,9 +45,17 @@ const replacements = [
   // Ciano neon e azul vibrante
   [/#27c9ff/gi, 'var(--ui-primary)'],
   [/#38e8ff/gi, 'var(--ui-primary-hover)'],
+  [/#0f7ea3/gi, 'var(--ui-primary-active)'],
+  [/#2be3a1/gi, 'var(--ui-primary)'],
+  [/#17a673/gi, 'var(--ui-primary-active)'],
+  [/#7ee06a/gi, 'var(--ui-primary)'],
+  [/#48f5a2/gi, 'var(--ui-primary-hover)'],
+  [/#5cffb0/gi, 'var(--ui-primary-hover)'],
   [/rgba\(39,\s*201,\s*255/gi, 'rgba(16, 185, 129'],
-  
-  // Laranja e ouro legados em UI/botões
+  [/rgba\(72,\s*245,\s*162/gi, 'rgba(16, 185, 129'],
+  [/rgba\(43,\s*227,\s*161/gi, 'rgba(16, 185, 129'],
+
+  // Laranja, roxo e ouro legados em UI/botões/conquistas
   [/#ff9a2a/gi, 'var(--ui-primary)'],
   [/#d9570a/gi, 'var(--ui-primary-active)'],
   [/#ffc27a/gi, 'var(--ui-primary-hover)'],
@@ -58,10 +66,53 @@ const replacements = [
   [/#ffb347/gi, 'var(--ui-primary-hover)'],
   [/#e86010/gi, 'var(--ui-primary-active)'],
   [/#d95208/gi, 'var(--ui-primary-active)'],
+  [/#ff8c24/gi, 'var(--ui-primary)'],
+  [/#d9381e/gi, 'var(--ui-primary-active)'],
+  [/#d98a0b/gi, 'var(--ui-primary-active)'],
+  [/#ff9a3d/gi, 'var(--ui-primary-hover)'],
+  [/#fff2b0/gi, '#d1fae5'],
+  [/#b36b00/gi, 'var(--ui-primary-active)'],
+  [/#8a5200/gi, '#065f46'],
   [/#ffd08a/gi, 'var(--ui-primary-hover)'],
+  [/#ffd0a6/gi, 'var(--ui-text-secondary)'],
   [/#ffd468/gi, '#ffffff'],
   [/#ffd86b/gi, '#ffffff'],
   [/#ffe07d/gi, '#ffffff'],
+  [/#ffb988/gi, '#e5e7eb'],
+  [/#8a6cff/gi, 'var(--ui-primary)'],
+  [/#c9b8ff/gi, 'var(--ui-primary-hover)'],
+  [/#9cecd0/gi, 'var(--ui-primary-hover)'],
+
+  // Fundos azuis/roxos/marrons legados -> Cinzas do tema
+  [/#0d1424/gi, 'var(--ui-bg-surface)'],
+  [/#0e1420/gi, 'var(--ui-bg-surface)'],
+  [/#0e1930/gi, 'var(--ui-bg-surface)'],
+  [/#0f1b33/gi, 'var(--ui-bg-surface)'],
+  [/#121a2e/gi, 'var(--ui-bg-elevated)'],
+  [/#131d33/gi, 'var(--ui-bg-elevated)'],
+  [/#131d31/gi, 'var(--ui-bg-elevated)'],
+  [/#1c1926/gi, '#182820'],
+  [/#120f1d/gi, '#121f19'],
+  [/#1c1a0c/gi, '#182820'],
+  [/#0d0b1c/gi, 'var(--ui-bg-surface)'],
+  [/#001018/gi, '#ffffff'],
+  [/#1a0d12/gi, 'var(--ui-bg-base)'],
+  [/#5a2030/gi, 'var(--ui-border)'],
+  [/#d8ecff/gi, '#e5e7eb'],
+  [/#8ab4d8/gi, '#9ca3af'],
+  [/#e8f2ff/gi, '#ffffff'],
+  [/#e2eefc/gi, '#f3f4f6'],
+  [/#ff4a3d/gi, '#ef4444'],
+  [/#ff5a4d/gi, '#ef4444'],
+  [/#ff6a5e/gi, '#f87171'],
+  [/#d6281c/gi, '#dc2626'],
+  [/#5c1616/gi, '#374151'],
+  [/#380a0a/gi, '#1E2228'],
+  [/#ffd2cc/gi, '#FFFFFF'],
+  [/#3a1018/gi, 'var(--ui-bg-elevated)'],
+  [/#240a10/gi, 'var(--ui-bg-surface)'],
+  [/#8a2a38/gi, 'var(--ui-border)'],
+  [/#ffb0b8/gi, '#fca5a5'],
   [/rgba\(255,\s*140,\s*30/gi, 'rgba(16, 185, 129'],
   [/rgba\(255,\s*154,\s*42/gi, 'rgba(16, 185, 129'],
   [/rgba\(255,\s*176,\s*32/gi, 'rgba(16, 185, 129'],
@@ -385,7 +436,9 @@ const mobileMediaBlock = `
 }
 `;
 
-css += '\n' + mobileMediaBlock;
+if (!css.includes('TAREFA 2: CORREÇÃO DE RESPONSIVIDADE')) {
+  css += '\n' + mobileMediaBlock;
+}
 
 fs.writeFileSync(themePath, css, 'utf8');
 console.log('theme-v19.css atualizado com sucesso com Design Tokens e Responsividade Mobile!');

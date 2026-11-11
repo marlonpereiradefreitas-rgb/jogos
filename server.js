@@ -1069,7 +1069,9 @@ const ALLOWED_FILES = new Set([
   '/game.js',
   '/sw.js',
   '/manifest.webmanifest',
-  '/assets/icon.svg'
+  '/assets/icon.svg',
+  '/assets/icon.png',
+  '/assets/icon.ico'
 ]);
 
 function serveStatic(req, res, urlObj) {
@@ -1131,6 +1133,19 @@ function serveStatic(req, res, urlObj) {
 const server = http.createServer((req, res) => {
   try {
     const urlObj = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+    if (urlObj.pathname === '/baixar' || urlObj.pathname === '/download' || urlObj.pathname === '/instalar') {
+      const installerFile = path.resolve(ROOT_DIR, 'INSTALADOR_WINDOWS', 'Instalar_Quarentena_Z.exe');
+      if (fs.existsSync(installerFile)) {
+        const stat = fs.statSync(installerFile);
+        res.writeHead(200, {
+          'Content-Type': 'application/vnd.microsoft.portable-executable',
+          'Content-Disposition': 'attachment; filename="Instalar_Quarentena_Z.exe"',
+          'Content-Length': stat.size
+        });
+        fs.createReadStream(installerFile).pipe(res);
+        return;
+      }
+    }
     if (urlObj.pathname.startsWith('/api/')) {
       handleApi(req, res, urlObj);
     } else {

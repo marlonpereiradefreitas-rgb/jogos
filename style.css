@@ -32,6 +32,7 @@ html,body{
   margin:0;height:100%;background:var(--bg);color:var(--text);
   font-family:"Courier New",ui-monospace,Menlo,monospace;font-size:14px;
   overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:manipulation;
+  overscroll-behavior:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;
 }
 button{
   font-family:inherit;font-size:14px;color:var(--text);background:var(--panel2);
@@ -249,20 +250,15 @@ body.settings-in-game #settingsScreen .settings-box{max-height:calc(100dvh - 20p
 
 
 /* Polimento visual — leitura de HUD, profundidade e estados de interação */
-:root{
-  --bg:#0b100d; --panel:#171f19; --panel2:#202d25; --line:#3d5947;
-  --text:#edf4e9; --dim:#a2b6a3; --gold:#ffd166; --red:#e35d52;
-  --green:#8bcf69; --blue:#63c8e8;
-}
 button,.btn,.tp-up,.tp-sell{
   transition:transform .12s ease,filter .12s ease,border-color .12s ease,box-shadow .12s ease;
 }
 button:hover,.btn:hover,.tp-up:hover,.tp-sell:hover{
-  filter:brightness(1.13); border-color:#8bcf69; box-shadow:0 0 0 1px #8bcf6930,0 4px 14px #0005;
+  filter:brightness(1.13); border-color:var(--ui-primary); box-shadow:0 0 0 1px var(--ui-primary-glow),0 4px 14px #0005;
 }
 button:active,.btn:active,.tp-up:active,.tp-sell:active{transform:translateY(1px)}
 button:focus-visible,.btn:focus-visible,.tp-up:focus-visible,.tp-sell:focus-visible{
-  outline:2px solid var(--gold); outline-offset:2px;
+  outline:2px solid var(--ui-primary); outline-offset:2px;
 }
 #topbar{
   background:linear-gradient(180deg,#1d2a22f5,#111a15f5);
@@ -369,7 +365,7 @@ button, .tcard, .pcard, .map-card, .diff-pill, .map-filter, .rank-sort, .platfor
   font-size: 10.5px;
   font-weight: 900;
   letter-spacing: 2px;
-  color: #ffd166;
+  color: var(--ui-primary);
 }
 
 .rotate-card h2 {
@@ -377,20 +373,20 @@ button, .tcard, .pcard, .map-card, .diff-pill, .map-filter, .rank-sort, .platfor
   font-size: 22px;
   font-weight: 900;
   letter-spacing: 1.5px;
-  color: #ffffff;
+  color: var(--ui-text-primary);
 }
 
 .rotate-card p {
   margin: 4px 0;
   font-size: 14px;
   line-height: 1.5;
-  color: #bfe8ff;
+  color: var(--ui-text-secondary);
   font-weight: 700;
 }
 
 .rotate-sub {
   font-size: 11px;
-  color: #8ba3c7;
+  color: var(--ui-text-muted);
 }
 
 /* Media Query obrigatória para modo retrato em dispositivos móveis */
@@ -412,8 +408,8 @@ body.is-mobile.is-portrait #rotateDeviceOverlay {
   margin: 0 0 10px 0;
   padding: 8px 11px;
   border-radius: 10px;
-  background: linear-gradient(180deg, rgba(11, 20, 36, 0.88), rgba(7, 13, 24, 0.92));
-  border: 1px solid rgba(39, 201, 255, 0.28);
+  background: linear-gradient(180deg, rgba(30, 34, 40, 0.92), rgba(18, 20, 23, 0.95));
+  border: 1px solid var(--ui-border);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 }
 
@@ -428,15 +424,15 @@ body.is-mobile.is-portrait #rotateDeviceOverlay {
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 1.6px;
-  color: #8ba3c7;
+  color: var(--ui-text-muted);
 }
 
 .platform-status-tag {
   font-size: 10px;
   font-weight: 800;
-  color: #2be3a1;
-  background: rgba(43, 227, 161, 0.12);
-  border: 1px solid rgba(43, 227, 161, 0.32);
+  color: var(--ui-primary);
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.35);
   padding: 1px 7px;
   border-radius: 999px;
 }
@@ -450,9 +446,9 @@ body.is-mobile.is-portrait #rotateDeviceOverlay {
 .platform-opt {
   padding: 7px 8px;
   border-radius: 7px;
-  background: rgba(16, 28, 48, 0.85);
-  border: 1px solid rgba(120, 160, 220, 0.25);
-  color: #b8cae6;
+  background: var(--ui-bg-elevated);
+  border: 1px solid var(--ui-border);
+  color: var(--ui-text-secondary);
   font-size: 11px;
   font-weight: 800;
   cursor: pointer;
@@ -461,10 +457,10 @@ body.is-mobile.is-portrait #rotateDeviceOverlay {
 }
 
 .platform-opt.active {
-  background: linear-gradient(180deg, rgba(39, 201, 255, 0.26), rgba(16, 110, 165, 0.36));
-  border-color: #27c9ff;
-  color: #ffffff;
-  box-shadow: 0 0 12px rgba(39, 201, 255, 0.28);
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.28), rgba(5, 150, 105, 0.38));
+  border-color: var(--ui-primary);
+  color: var(--ui-text-primary);
+  box-shadow: 0 0 12px var(--ui-primary-glow);
 }
 
 /* 4. Barra de Ação Rápida Mobile (visível apenas quando IS_MOBILE === true em jogo) */
@@ -492,9 +488,9 @@ body:not(.is-mobile) .mobile-quick-bar {
   min-height: 46px;
   padding: 8px 14px;
   border-radius: 10px;
-  background: rgba(10, 18, 34, 0.88);
-  border: 1.5px solid rgba(39, 201, 255, 0.48);
-  color: #ecf3ff;
+  background: rgba(30, 34, 40, 0.92);
+  border: 1.5px solid var(--ui-border);
+  color: var(--ui-text-primary);
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.8px;
@@ -503,14 +499,14 @@ body:not(.is-mobile) .mobile-quick-bar {
 }
 
 .mob-qbtn-wave {
-  background: linear-gradient(180deg, rgba(43, 227, 161, 0.28), rgba(16, 130, 88, 0.42));
-  border-color: #2be3a1;
+  background: linear-gradient(180deg, var(--ui-primary), var(--ui-primary-active));
+  border-color: var(--ui-primary-hover);
   color: #ffffff;
 }
 
 .mob-qbtn-cancel {
-  background: linear-gradient(180deg, rgba(255, 74, 61, 0.32), rgba(170, 30, 25, 0.48));
-  border-color: #ff4a3d;
+  background: linear-gradient(180deg, #dc2626, #991b1b);
+  border-color: #ef4444;
   color: #ffffff;
 }
 
@@ -922,5 +918,174 @@ body.is-mobile .map-screen .map-thumb {
     gap: 6px !important;
   }
 }
+
+/* ===== MODAL DE CONFIRMAÇÃO DE PERIGO / ALERTA: VOLTAR AO HOME ===== */
+.confirm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(8, 10, 14, 0.88);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: confirmFadeIn 0.2s ease-out;
+}
+.confirm-modal-overlay.hidden {
+  display: none !important;
+}
+.confirm-modal-card.danger-alert-card {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  background: #14171d;
+  border: 2px solid #ef4444;
+  border-radius: 8px;
+  box-shadow: 0 0 32px rgba(239, 68, 68, 0.45), 0 20px 40px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+  animation: confirmPop 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+.confirm-hazard-stripe {
+  height: 8px;
+  width: 100%;
+  background: repeating-linear-gradient(
+    -45deg,
+    #ef4444,
+    #ef4444 12px,
+    #14171d 12px,
+    #14171d 24px
+  );
+  animation: hazardStripeMove 1.5s linear infinite;
+}
+.confirm-hazard-stripe.bottom {
+  transform: scaleY(-1);
+}
+@keyframes hazardStripeMove {
+  from { background-position: 0 0; }
+  to { background-position: 48px 0; }
+}
+@keyframes confirmFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes confirmPop {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.confirm-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.08);
+}
+.confirm-alert-icon {
+  font-size: 26px;
+  animation: confirmPulseIcon 0.8s ease-in-out infinite alternate;
+}
+@keyframes confirmPulseIcon {
+  from { transform: scale(1); filter: drop-shadow(0 0 2px #ef4444); }
+  to { transform: scale(1.15); filter: drop-shadow(0 0 10px #ef4444); }
+}
+.confirm-header-text {
+  flex: 1;
+}
+.confirm-kicker {
+  display: block;
+  font-size: 9.5px;
+  letter-spacing: 1.5px;
+  color: #fca5a5;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.confirm-modal-title {
+  margin: 2px 0 0;
+  font-size: 19px;
+  font-weight: 900;
+  color: #ef4444;
+  letter-spacing: 1px;
+}
+.confirm-modal-body {
+  padding: 20px;
+  text-align: center;
+}
+.confirm-danger-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: rgba(239, 68, 68, 0.16);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  border-radius: 4px;
+  color: #f87171;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+.confirm-modal-lead {
+  font-size: 17px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 10px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+}
+.confirm-modal-desc {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #9ca3af;
+  margin: 0;
+}
+.confirm-modal-actions {
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px 20px;
+  background: rgba(10, 12, 16, 0.6);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.confirm-btn-stay,
+.confirm-btn-exit {
+  flex: 1;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+  letter-spacing: 0.5px;
+}
+.confirm-btn-stay {
+  background: #1e2228;
+  color: #10b981;
+  border: 1px solid #10b981;
+}
+.confirm-btn-stay:hover,
+.confirm-btn-stay:focus-visible {
+  background: #10b981;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.5);
+}
+.confirm-btn-exit {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fca5a5;
+  border: 1px solid #ef4444;
+}
+.confirm-btn-exit:hover,
+.confirm-btn-exit:focus-visible {
+  background: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 0 18px rgba(239, 68, 68, 0.65);
+}
+@media (max-width: 560px) {
+  .confirm-modal-actions {
+    flex-direction: column-reverse;
+  }
+}
+
 
 

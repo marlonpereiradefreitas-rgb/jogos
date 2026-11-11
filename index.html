@@ -638,16 +638,45 @@
 
 <div id="tooltip" class="hidden"></div>
 
+<!-- Modal de Confirmação em Forma de Perigo e Alerta para Voltar ao Home -->
+<div id="homeConfirmModal" class="confirm-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+  <div class="confirm-modal-card danger-alert-card">
+    <div class="confirm-hazard-stripe"></div>
+    <div class="confirm-modal-header">
+      <span class="confirm-alert-icon" aria-hidden="true">⚠️</span>
+      <div class="confirm-header-text">
+        <span class="confirm-kicker">PROTOCOLO DE CONTENÇÃO // AVISO CRÍTICO</span>
+        <h3 id="confirmModalTitle" class="confirm-modal-title">ALERTA DE PERIGO</h3>
+      </div>
+      <span class="confirm-alert-icon right" aria-hidden="true">🚨</span>
+    </div>
+    <div class="confirm-modal-body">
+      <div class="confirm-danger-badge">⚠ PERIGO // ABANDONO DE POSTO</div>
+      <p class="confirm-modal-lead">Certeza que quer voltar ao Home?</p>
+      <p class="confirm-modal-desc">Você está prestes a evacuar a zona de combate. Se voltar ao menu inicial agora, a partida em andamento será encerrada e as defesas ativas serão desmobilizadas.</p>
+    </div>
+    <div class="confirm-modal-actions">
+      <button type="button" id="btnConfirmHomeCancel" class="confirm-btn-stay">
+        <span class="cb-ico">🛡️</span> CONTINUAR NA PARTIDA
+      </button>
+      <button type="button" id="btnConfirmHomeExit" class="confirm-btn-exit">
+        <span class="cb-ico">⚠️</span> SIM, VOLTAR AO HOME
+      </button>
+    </div>
+    <div class="confirm-hazard-stripe bottom"></div>
+  </div>
+</div>
+
 <!-- Camada de Aviso de Orientação Obrigatória (Landscape / Celular Deitado) -->
 <div id="rotateDeviceOverlay" role="alert" aria-live="assertive">
   <div class="rotate-card">
     <div class="rotate-icon-wrap" aria-hidden="true">
       <svg class="rotate-phone-svg" viewBox="0 0 80 80" width="76" height="76">
-        <rect x="22" y="10" width="36" height="60" rx="6" ry="6" fill="none" stroke="#27c9ff" stroke-width="3.5"/>
-        <circle cx="40" cy="63" r="2.5" fill="#27c9ff"/>
-        <line x1="34" y1="15" x2="46" y2="15" stroke="#27c9ff" stroke-width="2.2" stroke-linecap="round"/>
-        <path d="M64 26 A26 26 0 0 1 64 54" fill="none" stroke="#ffd166" stroke-width="3" stroke-linecap="round"/>
-        <polyline points="58,53 65,56 67,48" fill="none" stroke="#ffd166" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="22" y="10" width="36" height="60" rx="6" ry="6" fill="none" stroke="#10B981" stroke-width="3.5"/>
+        <circle cx="40" cy="63" r="2.5" fill="#10B981"/>
+        <line x1="34" y1="15" x2="46" y2="15" stroke="#10B981" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M64 26 A26 26 0 0 1 64 54" fill="none" stroke="#34D399" stroke-width="3" stroke-linecap="round"/>
+        <polyline points="58,53 65,56 67,48" fill="none" stroke="#34D399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
     <span class="rotate-kicker">☣ ORIENTAÇÃO TÁTICA OBRIGATÓRIA</span>
