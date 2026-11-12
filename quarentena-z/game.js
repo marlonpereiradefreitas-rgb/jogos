@@ -2290,6 +2290,8 @@ const SecurityGuard={
       this.deepFreeze(TOWERS);
       this.deepFreeze(ZOMBIES);
       if(typeof DIFFS==='object')this.deepFreeze(DIFFS);
+      if(typeof BALANCE==='object')this.deepFreeze(BALANCE);
+      if(typeof ASCENSION_BALANCE==='object')this.deepFreeze(ASCENSION_BALANCE);
       this.deepFreeze(POWERS);
     }catch(e){}
   },
@@ -2741,7 +2743,7 @@ function loadSave(){const d=readSave();if(!d)return;Snd.init();document.body.cla
   activeDifficulty=d.diff;selectMap(d.map);G.auto=d.auto0;$('chkAuto').checked=d.auto0;resetGame(d.seed);G.replay={log:d.log,i:0,target:d.ticks};}
 function stepReplay(){const R=G.replay,t0=performance.now();
   while(performance.now()-t0<22){while(R.i<R.log.length&&R.log[R.i].tick<=G.tick)dispatch(R.log[R.i++]);if(G.tick>=R.target)break;update(STEP);if(G.mode!=='play')break;}
-  if(G.tick>=R.target||G.mode!=='play'){while(R.i<R.log.length&&R.log[R.i].tick<=G.tick)dispatch(R.log[R.i++]);G.replay=null;G.paused=true;toast('Partida carregada. Pressione Espaço para continuar.','good');}}
+  if(G.tick>=R.target||G.mode!=='play'){while(R.i<R.log.length&&R.log[R.i].tick<=G.tick)dispatch(R.log[R.i++]);G.replay=null;G.paused=true;SecurityGuard.syncVault();toast('Partida carregada. Pressione Espaço para continuar.','good');}}
 function updateSupportAuras(){
   let hasSup=false;
   for(let i=0;i<towers.length;i++){if(towers[i].def.role==='support'){hasSup=true;break;}}
@@ -2751,12 +2753,13 @@ function updateSupportAuras(){
     if(sup.def.role!=='support')continue;
     const s=sup.s,r=s.range;
     if(!s.auraDmg&&!s.auraRate&&!s.auraRange&&!s.auraCamo&&!s.purify)continue;
+    const maxD=sup.paragon?.60:.45, maxRt=sup.paragon?.55:.40, maxRg=sup.paragon?.45:.30;
     for(const t of towers){
       if(t===sup)continue;
       if(dist(t.x,t.y,sup.x,sup.y)<=r){
-        if(s.auraDmg)t._auraDmg=Math.min(.45,Math.max(t._auraDmg,s.auraDmg));
-        if(s.auraRate)t._auraRate=Math.min(.40,Math.max(t._auraRate,s.auraRate));
-        if(s.auraRange&&t.key!=='sniper')t._auraRange=Math.min(.30,Math.max(t._auraRange,s.auraRange));
+        if(s.auraDmg)t._auraDmg=Math.min(maxD,Math.max(t._auraDmg,s.auraDmg));
+        if(s.auraRate)t._auraRate=Math.min(maxRt,Math.max(t._auraRate,s.auraRate));
+        if(s.auraRange&&t.key!=='sniper')t._auraRange=Math.min(maxRg,Math.max(t._auraRange,s.auraRange));
         if(s.auraCamo)t._auraCamo=true;
         if(s.purify)t._purify=true;
       }
@@ -4501,7 +4504,10 @@ function renderMapPagination(keepSelectedVisible){
   }
   const infoEl=$('mapPageInfo');
   if(infoEl){
-    infoEl.textContent='PÁGINA '+(mapPage+1)+' DE '+totalPages+' · EXIBINDO '+pageCards.length+' DE '+filtered.length+' MAPAS';
+    const compact=IS_MOBILE||(typeof window!=='undefined'&&window.innerWidth<=768);
+    infoEl.textContent=compact
+      ?('PÁG. '+(mapPage+1)+'/'+totalPages+' · '+pageCards.length+' DE '+filtered.length+' MAPAS')
+      :('PÁGINA '+(mapPage+1)+' DE '+totalPages+' · EXIBINDO '+pageCards.length+' DE '+filtered.length+' MAPAS');
   }
   const prevBtn=$('btnMapPrev'),nextBtn=$('btnMapNext');
   if(prevBtn)prevBtn.classList.toggle('disabled',totalPages<=1);

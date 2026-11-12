@@ -88,3 +88,13 @@ Método: DPS base × cadência dividido pelo custo (alvo único) e revisão da a
   - **Desktop**: mantém **6 mapas por página** (3×2 em 3 páginas).
 - Removido `backgroundImage: url(...)` com `backgroundSize: cover` atrás de `.map-thumb-img` para não vazar borda cortada atrás da miniatura `contain`.
 - Recalcula a paginação automaticamente em `resize`, `orientationchange` e troca de modo de plataforma.
+
+## [v1.0.5] — 2026-11-12
+
+### Revisão Geral e Correções Finais (`v19.21`)
+- **Teto de aura para Suporte Ascendido (`updateSupportAuras`)**: torres de suporte Ascendidas (`beacon`, `nanomed`) agora aplicam até `+60%` dano, `+55%` cadência e `+45%` alcance aos aliados (antes o clamp fixo em `0.45`/`0.40`/`0.30` desperdiçava o bônus da Ascensão).
+- **Integridade do cofre pós-replay (`stepReplay`)**: chamado `SecurityGuard.syncVault()` ao finalizar o carregamento de partida salva (`loadSave`), prevenindo falso-positivo no primeiro comando após retomar.
+- **Blindagem de tabelas de balanceamento**: `BALANCE` e `ASCENSION_BALANCE` congelados em `SecurityGuard.lockDefinitions()`.
+- **Paginação mobile estreita**: texto compacto (`PÁG. X/Y · 3 DE 18 MAPAS`) e `overflow-x: auto` em `.map-pagination-bar` para caber sem quebra até em telas de `568px`.
+- **Verificador e CI**: atualizado `verificar_projeto.js` (todas as verificações passando) e expandido `.github/workflows/test.yml` para rodar os 10 testes em cada push.
+- **Manifest PWA**: atualizada a descrição em `manifest.webmanifest` para `18 cenários táticos`.

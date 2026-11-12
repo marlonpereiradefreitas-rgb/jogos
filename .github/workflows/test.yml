@@ -12,6 +12,13 @@ jobs:
         with:
           node-version: 20
       - run: node --check game.js && node --check server.js
+      - run: node verificar_projeto.js
+      - run: node tools/determinism-test.js game.js
       - run: node tools/test-upgrades.js game.js
       - run: node tools/test-save.js game.js
+      - run: node tools/test-features.js game.js
+      - run: node tools/test-achievements.js game.js
+      - run: node tools/test-maps.js game.js
+      - run: node tools/test-supplies.js game.js
+      - run: node tools/test-end-screen.js game.js
       - run: node tools/test-backend.js

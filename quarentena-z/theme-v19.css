@@ -1223,10 +1223,16 @@ button.big:hover,.box button.big:hover{box-shadow:0 0 22px rgba(16, 185, 129,.6)
   }
   .map-pagination-bar {
     flex: none !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
     padding: 2px 8px !important;
     gap: 8px !important;
     font-size: 10px !important;
     min-height: 46px !important;
+  }
+  .map-page-dot {
+    flex-shrink: 0 !important;
   }
   .map-bar {
     flex: none !important;
