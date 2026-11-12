@@ -78,3 +78,13 @@ Método: DPS base × cadência dividido pelo custo (alvo único) e revisão da a
 - Corrigida regra em `theme-v19.css` onde `.map-screen .map-card { display: flex !important }` dentro da media query paisagem sobrescrevia `.map-card.hidden-page` e exibia todos os 18 mapas esmagados ao mesmo tempo em 6 linhas. Agora `.map-screen .map-card.hidden-filter, .map-screen .map-card.hidden-page { display: none !important }` garante 6 mapas por página com altura proporcional.
 - Alterado `.map-thumb-img` em paisagem mobile para `object-fit: contain !important`, exibindo 100% da área de cada mapa sem cortar bordas.
 - Ajustado `.map-bar` e `#btnPlay { width: auto !important }` em paisagem estreita (`667x375` e `844x390`) para manter seletores de dificuldade e o botão `INICIAR OPERAÇÃO ▶` lado a lado sem empurrar nem cortar a grade de mapas.
+
+## [v1.0.4] — 2026-11-12
+
+### Paginação Responsiva dos Mapas no Mobile (`v19.20`)
+- Substituído `MAPS_PER_PAGE = 6` fixo pela função `getMapsPerPage()` em `game.js`:
+  - **Mobile paisagem** (`IS_MOBILE` ou altura `<= 540px`): **3 mapas grandes por página** (1 linha × 3 colunas em 6 páginas para os 18 mapas), dobrando a altura útil de cada card e exibindo miniatura inteira (`object-fit: contain`), título e descrição sem cortar nada.
+  - **Mobile retrato / tablet estreito** (`<= 768px`): **4 mapas por página** (2×2 em 5 páginas).
+  - **Desktop**: mantém **6 mapas por página** (3×2 em 3 páginas).
+- Removido `backgroundImage: url(...)` com `backgroundSize: cover` atrás de `.map-thumb-img` para não vazar borda cortada atrás da miniatura `contain`.
+- Recalcula a paginação automaticamente em `resize`, `orientationchange` e troca de modo de plataforma.

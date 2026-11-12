@@ -4207,6 +4207,7 @@ function applyPlatformMode(pref){
   }
   applyQuality();
   fitCanvas();
+  if($('startScreen')&&!$('startScreen').classList.contains('hidden'))renderMapPagination(true);
 }
 
 /* --- ajuste de tamanho e densidade de pixels (DPR controlado + proporção 1:1 sem achatamento) --- */
@@ -4415,7 +4416,14 @@ function renderMenuBg(dt){
 let THUMBS_DONE=false;
 const MAP_THUMB_CACHE={};
 let mapPage=0,activeMapFilter='all';
-const MAPS_PER_PAGE=6;
+function getMapsPerPage(){
+  try{
+    const h=window.innerHeight||720, w=window.innerWidth||1280;
+    if((IS_MOBILE||h<=540)&&w>h) return 3; // mobile paisagem: 1 linha com 3 mapas grandes
+    if(IS_MOBILE||w<=768) return 4;       // mobile retrato / tablet estreito: 2x2 mapas grandes
+  }catch(_){}
+  return 6;
+}
 
 function ensureMapThumb(id){
   if(!id||!MAPS[id])return;
@@ -4433,9 +4441,7 @@ function ensureMapThumb(id){
   if(!url)return;
   const th=document.querySelector('.map-card[data-map="'+id+'"] .map-thumb');
   if(th){
-    th.style.backgroundImage='url('+url+')';
-    th.style.backgroundSize='cover';
-    th.style.backgroundPosition='center';
+    th.style.backgroundImage='none';
     let img=th._thumbImg;
     if(!img){
       img=document.createElement('img');
@@ -4476,16 +4482,17 @@ function renderMapPagination(keepSelectedVisible){
     c.classList.toggle('hidden-filter',activeMapFilter!=='all'&&c.dataset.diff!==activeMapFilter);
   });
   const filtered=allCards.filter(c=>!c.classList.contains('hidden-filter'));
-  const totalPages=Math.max(1,Math.ceil(filtered.length/MAPS_PER_PAGE));
+  const perPage=getMapsPerPage();
+  const totalPages=Math.max(1,Math.ceil(filtered.length/perPage));
   if(keepSelectedVisible){
     const selVal=$('mapSelect')?$('mapSelect').value:'';
     const idx=filtered.findIndex(c=>c.dataset.map===selVal);
-    if(idx>=0)mapPage=Math.floor(idx/MAPS_PER_PAGE);
+    if(idx>=0)mapPage=Math.floor(idx/perPage);
   }
   if(mapPage>=totalPages)mapPage=0;
   if(mapPage<0)mapPage=totalPages-1;
-  const start=mapPage*MAPS_PER_PAGE;
-  const pageCards=filtered.slice(start,start+MAPS_PER_PAGE);
+  const start=mapPage*perPage;
+  const pageCards=filtered.slice(start,start+perPage);
   allCards.forEach(c=>{
     c.classList.toggle('hidden-page',!pageCards.includes(c));
   });
@@ -4869,8 +4876,8 @@ function bindEvents(){
     else if(e.key==='f'||e.key==='F'){setSpeed(G.speed%3+1);}
     else { const ix=TOWER_KEYS.indexOf(e.key.toLowerCase()); if(ix>=0&&TOWER_ORDER[ix]&&!G.paused)pickTower(TOWER_ORDER[ix]); }
   });
-  window.addEventListener('resize',fitCanvas);
-  window.addEventListener('orientationchange',fitCanvas);
+  window.addEventListener('resize',()=>{fitCanvas();if($('startScreen')&&!$('startScreen').classList.contains('hidden'))renderMapPagination(true);});
+  window.addEventListener('orientationchange',()=>{fitCanvas();if($('startScreen')&&!$('startScreen').classList.contains('hidden'))renderMapPagination(true);});
   if(window.ResizeObserver)new ResizeObserver(fitCanvas).observe($('stage'));
   // Gerenciamento de Ciclo de Vida: pausa a simulação e silencia o áudio ao minimizar/alternar aba
   document.addEventListener('visibilitychange',()=>{

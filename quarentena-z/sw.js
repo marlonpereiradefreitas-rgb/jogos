@@ -1,11 +1,11 @@
 /* Cache offline para o Apocalipse. Atualize CACHE_VERSION ao publicar novas versões. */
-const CACHE_VERSION = 'quarentena-z-v19-19';
+const CACHE_VERSION = 'quarentena-z-v19-20';
 const APP_SHELL = [
   './',
   './index.html',
-  './style.css?v=19.19',
-  './theme-v19.css?v=19.19',
-  './game.js?v=19.19',
+  './style.css?v=19.20',
+  './theme-v19.css?v=19.20',
+  './game.js?v=19.20',
   './manifest.webmanifest',
   './assets/icon.svg',
 ];
