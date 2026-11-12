@@ -1108,7 +1108,7 @@ function serveStatic(req, res, urlObj) {
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
     const headers = Object.assign({}, SECURITY_HEADERS, {
       'Content-Type': contentType,
-      'Cache-Control': ext === '.html' || reqPath === '/sw.js' ? 'no-cache, must-revalidate' : 'public, max-age=3600'
+      'Cache-Control': (ext === '.html' || ext === '.js' || ext === '.css' || reqPath === '/sw.js') ? 'no-cache, must-revalidate' : 'public, max-age=3600'
     });
 
     const acceptEncoding = req.headers['accept-encoding'] || '';

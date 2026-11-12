@@ -284,7 +284,9 @@ TOWERS.nanomed = Object.assign({}, TOWERS.engineer, {name:'Estação Nano-Médic
 const BALANCE = {
   antitank:{cost:660},   // 620 -> 660 (+6,5%): melhor DPS/custo do jogo
   shotgun:{dmg:16.5},    // 15 -> 16.5 (+10%): pior DPS/custo entre torres de combate basicas
-  tesla:{dmg:24}         // 22 -> 24 (+9%): DPS/custo muito abaixo da media
+  tesla:{dmg:24},        // 22 -> 24 (+9%): DPS/custo muito abaixo da media
+  railgun:{cost:940},    // 880 -> 940 (+6,8%): maior DPS/custo pos-upgrade em endgame
+  cryogen:{cost:450}     // 480 -> 450 (-6,2%): suporte criogenico caro no inicio de partida
 };
 for (const [k, o] of Object.entries(BALANCE)) {
   if (!TOWERS[k]) continue;
@@ -1227,17 +1229,25 @@ powerState.supply.uses=0;powerState.supply.nextAt=0;
 
 /* ===================== 5. EFEITOS (FX) E SONS (Snd) ===================== */
 let _partRingIdx = 0;
+const _partPool = [], _ringPool = [];
 const FX = {
   part(x,y,vx,vy,life,col,size,g){
     const maxP=CFG.maxParts||450;
     if(parts.length<maxP){
-      parts.push({x,y,vx,vy,life,max:life,c:col,s:size||2,g:g||0});
+      const p=_partPool.length?_partPool.pop():{};
+      p.x=x;p.y=y;p.vx=vx;p.vy=vy;p.life=life;p.max=life;p.c=col;p.s=size||2;p.g=g||0;
+      parts.push(p);
     } else if(maxP>0){
       const p=parts[_partRingIdx++%parts.length];
       if(p){p.x=x;p.y=y;p.vx=vx;p.vy=vy;p.life=life;p.max=life;p.c=col;p.s=size||2;p.g=g||0;}
     }
   },
-  ring(x,y,r0,r1,life,col,lw){ if(rings.length<(IS_MOBILE?45:80))rings.push({x,y,r0,r1,life,max:life,c:col,lw:lw||3}); },
+  ring(x,y,r0,r1,life,col,lw){
+    if(rings.length>=(IS_MOBILE?45:80))return;
+    const r=_ringPool.length?_ringPool.pop():{};
+    r.x=x;r.y=y;r.r0=r0;r.r1=r1;r.life=life;r.max=life;r.c=col;r.lw=lw||3;
+    rings.push(r);
+  },
   popup(x,y,text,col,big){ if(popups.length<(IS_MOBILE?24:70))popups.push({x,y,text,c:col||'#fff',life:.8,max:.8,big:!!big}); },
   blood(x,y,n,col){ for(let i=0;i<n;i++)this.part(x,y-6,rand(-50,50),rand(-70,10),rand(.3,.6),col||'#8a1a14',rand(2,3),200); },
   spark(x,y,col,n){ for(let i=0;i<(n||3);i++)this.part(x,y,rand(-60,60),rand(-60,20),rand(.15,.35),col,2,80); },
@@ -1984,9 +1994,15 @@ function updateMinesBombsHazards(h){
   pruneArr(hazards,hz=>hz.life>0);
 }
 function updateFX(h){
-  for(const p of parts){p.life-=h;p.x+=p.vx*h;p.y+=p.vy*h;p.vy+=p.g*h;} pruneArr(parts,p=>p.life>0);
+  for(let i=parts.length-1;i>=0;i--){
+    const p=parts[i];p.life-=h;p.x+=p.vx*h;p.y+=p.vy*h;p.vy+=p.g*h;
+    if(p.life<=0){if(_partPool.length<900)_partPool.push(p);parts[i]=parts[parts.length-1];parts.pop();}
+  }
   for(const p of popups){p.life-=h;p.y-=26*h;} pruneArr(popups,p=>p.life>0);
-  for(const r of rings)r.life-=h; pruneArr(rings,r=>r.life>0);
+  for(let i=rings.length-1;i>=0;i--){
+    const r=rings[i];r.life-=h;
+    if(r.life<=0){if(_ringPool.length<120)_ringPool.push(r);rings[i]=rings[rings.length-1];rings.pop();}
+  }
   for(const b of bolts)b.life-=h; pruneArr(bolts,b=>b.life>0);
 }
 /* ---- v19: núcleo determinístico (pronto para servidor autoritativo / replay) ----
@@ -3571,14 +3587,19 @@ function drawTower(t){
     ctx.beginPath();ctx.ellipse(t.x,t.y+8,16,7,0,0,6.283);ctx.stroke();
     ctx.restore();
   }
+  const ac=TOWER_ACCENT[t.key]||'#38bdf8';
+  // Anel tematico sutil na base para diferenciar classes rapidamente no mapa e no mobile
+  ctx.strokeStyle=ac;ctx.globalAlpha=t.paragon?.65:.34;ctx.lineWidth=1.4;ctx.beginPath();ctx.ellipse(t.x,t.y+9,17.5,7.5,0,0,6.283);ctx.stroke();ctx.globalAlpha=1;
   const gc=t.paragon?'#ffd24a':TIER_GLOW[Math.min(5,t.tier)];
   if(gc){const gs=glowSprite(gc,t.paragon?34:26,t.paragon?'66':'38');ctx.drawImage(gs,Math.round(t.x-gs.width/2),Math.round(t.y-gs.height/2));}
   drawTowerSprite(t.key,t.x,t.y,t.angle,t.recoil,t.level,t.spec,G.simT,t.pulse);
   if(t.paragon){
-    // Ascensao: anel dourado pulsante + aro tracejado giratorio (barato: 2 tracos por torre)
+    // Ascensao: anel dourado pulsante + aro tracejado giratorio + 2 orbes orbitais
     const pu=.5+.5*Math.sin(G.simT*4);
     ctx.save();ctx.strokeStyle='#f2c230';ctx.lineWidth=2;ctx.globalAlpha=.75+.25*pu;ctx.beginPath();ctx.arc(t.x,t.y+3,22,0,6.283);ctx.stroke();
-    ctx.setLineDash([4,5]);ctx.lineDashOffset=-G.simT*14;ctx.globalAlpha=.45+.3*pu;ctx.strokeStyle='#fff1a8';ctx.beginPath();ctx.arc(t.x,t.y+3,26,0,6.283);ctx.stroke();ctx.restore();
+    ctx.setLineDash([4,5]);ctx.lineDashOffset=-G.simT*14;ctx.globalAlpha=.45+.3*pu;ctx.strokeStyle='#fff1a8';ctx.beginPath();ctx.arc(t.x,t.y+3,26,0,6.283);ctx.stroke();ctx.setLineDash([]);
+    for(let i=0;i<2;i++){const oa=G.simT*3.4+i*Math.PI,ox=t.x+Math.cos(oa)*23,oy=t.y-2+Math.sin(oa)*11;ctx.fillStyle='#facc15';ctx.globalAlpha=.92;ctx.beginPath();ctx.arc(ox,oy,3,0,6.283);ctx.fill();ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(ox,oy,1.3,0,6.283);ctx.fill();}
+    ctx.restore();
   }
   // Pontos de nivel sob a torre: leitura rapida da evolucao em telas pequenas
   if(!t.paragon&&t.tier>0){const n=Math.min(5,t.tier),c=TIER_GLOW[n]||'#fff';ctx.fillStyle=c;for(let i=0;i<n;i++){ctx.fillRect(Math.round(t.x-(n*4-1)/2+i*4),t.y+19,3,3);}}
@@ -3588,15 +3609,18 @@ function drawTower(t){
   if(t.key==='flame'&&t.heat>.05){R(t.x-8,t.y-26,16,3,'#222');R(t.x-8,t.y-26,Math.round(16*t.heat),3,'#ff7a20');}
 }
 function drawProj(p){
+  if(p.x<-VIEW.padX-30||p.x>W+VIEW.padX+30||p.y<-VIEW.padY-60||p.y>H+VIEW.padY+30)return;
   if(p.kind==='shell'){
-    R(p.x-3,p.y-p.hgt-3,6,6,'#222');R(p.x-2,p.y-p.hgt-2,3,3,'#888');
-    ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.ellipse(p.x,p.y,4,2,0,0,6.283);ctx.fill();
+    R(p.x-3,p.y-p.hgt-3,6,6,'#222');R(p.x-2,p.y-p.hgt-2,4,4,'#f97316');R(p.x-1,p.y-p.hgt-1,2,2,'#fef08a');
+    ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(p.x,p.y,4.5,2.2,0,0,6.283);ctx.fill();
     ctx.strokeStyle='rgba(255,80,40,.35)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(p.tx,p.ty,p.splash,0,6.283);ctx.stroke();
   } else if(p.kind==='glob'){
-    ctx.fillStyle='#7fe03a';ctx.beginPath();ctx.arc(p.x,p.y,4,0,6.283);ctx.fill();R(p.x-2,p.y-2,2,2,'#d0ff90');
+    ctx.fillStyle='rgba(132,204,22,.3)';ctx.beginPath();ctx.arc(p.x,p.y,6.5,0,6.283);ctx.fill();
+    ctx.fillStyle='#84cc16';ctx.beginPath();ctx.arc(p.x,p.y,4,0,6.283);ctx.fill();R(p.x-2,p.y-2,2,2,'#ecfccb');
   } else {
-    const l=p.len||6,sp=Math.hypot(p.vx,p.vy)||1;
-    ctx.strokeStyle=p.color;ctx.lineWidth=p.r>=4?4:2;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x-p.vx/sp*l,p.y-p.vy/sp*l);ctx.stroke();
+    const l=p.len||7,sp=Math.hypot(p.vx,p.vy)||1,tx=p.x-p.vx/sp*l,ty=p.y-p.vy/sp*l;
+    ctx.strokeStyle=p.color;ctx.lineWidth=p.r>=4?4.5:2.6;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(tx,ty);ctx.stroke();
+    ctx.strokeStyle='#ffffff';ctx.lineWidth=p.r>=4?1.5:0.9;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x-p.vx/sp*(l*.65),p.y-p.vy/sp*(l*.65));ctx.stroke();
   }
 }
 function drawFX(){
@@ -3618,7 +3642,7 @@ function drawEffects(){
   ctx.globalAlpha=1;
   for(const b of bolts){ctx.strokeStyle='#bff4ff';ctx.lineWidth=3;ctx.globalAlpha=Math.min(1,b.life*8);ctx.beginPath();ctx.moveTo(b.pts[0].x,b.pts[0].y);for(let i=1;i<b.pts.length;i++)ctx.lineTo(b.pts[i].x,b.pts[i].y);ctx.stroke();ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke();}
   ctx.globalAlpha=1;
-  for(const p of parts){ctx.globalAlpha=Math.max(0,Math.min(1,p.life/p.max*1.6));R(p.x,p.y,p.s,p.s,p.c);}
+  for(const p of parts){if(p.x<-VIEW.padX-20||p.x>W+VIEW.padX+20||p.y<-VIEW.padY-20||p.y>H+VIEW.padY+20)continue;ctx.globalAlpha=Math.max(0,Math.min(1,p.life/p.max*1.6));R(p.x,p.y,p.s,p.s,p.c);}
   ctx.globalAlpha=1;
   ctx.textAlign='center';
   for(const p of popups){
@@ -4476,6 +4500,10 @@ function promptDangerHome(onConfirm){
     if(confirm('Certeza que quer voltar ao Home?'))onConfirm();
     return;
   }
+  if($('confirmWaveVal'))$('confirmWaveVal').textContent=String(WM.num||1);
+  if($('confirmLifeVal'))$('confirmLifeVal').textContent=String(Math.max(0,Math.round(G.life||0)));
+  if($('confirmTowersVal'))$('confirmTowersVal').textContent=String(towers.length||0);
+  if($('confirmKillsVal'))$('confirmKillsVal').textContent=String(G.kills||0);
   if(G.mode==='play')G.paused=true;
   m.classList.remove('hidden');
   Snd.play('alarm');
@@ -4484,6 +4512,53 @@ function hideDangerHome(){
   const m=$('homeConfirmModal');
   if(m)m.classList.add('hidden');
   _confirmHomeCallback=null;
+}
+
+let _deferredInstallPrompt=null;
+function isAppInstalled(){
+  try{return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;}catch(_){return false;}
+}
+function refreshInstallUI(){
+  const btn=$('btnHomeInstall'),sub=$('homeInstallSub'),badge=$('installPlatformBadge'),pwaBtn=$('btnInstallPwaNow'),guide=$('installGuideBox');
+  const ua=(typeof navigator!=='undefined'&&navigator.userAgent)||'';
+  const isiOS=/iPad|iPhone|iPod/i.test(ua);
+  const isAndroid=/Android/i.test(ua);
+  const installed=isAppInstalled();
+  if(sub){
+    sub.textContent=installed?'App já instalado neste aparelho':(_deferredInstallPrompt?'Instalação rápida pronta (1 clique)':'App offline (PC, Android e iOS)');
+  }
+  if(btn)btn.classList.toggle('installed',installed);
+  if(badge){
+    badge.textContent=installed?'✓ Já instalado em modo App':isiOS?'iOS / Safari (Tela de Início)':isAndroid?'Android / PWA Offline':'PC / Navegador · Windows (.exe)';
+  }
+  if(pwaBtn){
+    if(installed){pwaBtn.textContent='✓ JÁ INSTALADO';pwaBtn.disabled=true;}
+    else if(_deferredInstallPrompt){pwaBtn.textContent='⬇ INSTALAR AGORA (1 CLIQUE)';pwaBtn.disabled=false;}
+    else{pwaBtn.textContent=isiOS?'📱 COMO INSTALAR NO iOS':'📲 INSTALAR VIA NAVEGADOR';pwaBtn.disabled=false;}
+  }
+  if(guide){
+    if(installed){
+      guide.classList.remove('hidden');
+      guide.innerHTML='<b>Modo Aplicativo ativo!</b> Você já está executando o Quarentena Z instalado e pronto para uso offline.';
+    } else if(_deferredInstallPrompt){
+      guide.classList.add('hidden');
+    } else if(isiOS){
+      guide.classList.remove('hidden');
+      guide.innerHTML='<b>No iPhone / iPad (Safari):</b> toque em <b>Compartilhar (⬆️)</b> na barra inferior e escolha <b>Adicionar à Tela de Início</b>.';
+    } else {
+      guide.classList.remove('hidden');
+      guide.innerHTML='<b>Instalação pelo navegador:</b> abra o menu do navegador (⋮ ou ícone de computador na barra de endereço) e clique em <b>Instalar Quarentena Z</b> / <b>Adicionar à tela inicial</b>.';
+    }
+  }
+}
+function openInstallModal(){
+  refreshInstallUI();
+  const m=$('installModal');
+  if(m){m.classList.remove('hidden');Snd.play('ui');}
+}
+function closeInstallModal(){
+  const m=$('installModal');
+  if(m)m.classList.add('hidden');
 }
 
 function bindEvents(){
@@ -4530,6 +4605,26 @@ function bindEvents(){
   $('btnHomePlay').addEventListener('click',()=>{Snd.init();showScreen('startScreen');renderMapPagination(true);buildMapThumbs();});
   $('btnHomeSettings').addEventListener('click',()=>{Snd.init();$('settingsMap').value=$('mapSelect').value;$('settingsDifficulty').value=$('difficultySelect').value;$('settingsVolume').value=$('vol').value;showScreen('settingsScreen');});
   $('btnHomeAbout').addEventListener('click',()=>{psAdd('about');psSave();showScreen('aboutScreen');});
+  if($('btnHomeInstall'))$('btnHomeInstall').addEventListener('click',()=>{Snd.init();openInstallModal();});
+  if($('btnInstallClose'))$('btnInstallClose').addEventListener('click',()=>{Snd.play('ui');closeInstallModal();});
+  if($('btnInstallLater'))$('btnInstallLater').addEventListener('click',()=>{Snd.play('ui');closeInstallModal();});
+  if($('btnInstallPwaNow'))$('btnInstallPwaNow').addEventListener('click',async()=>{
+    Snd.play('ui');
+    if(_deferredInstallPrompt){
+      try{
+        _deferredInstallPrompt.prompt();
+        const choice=await _deferredInstallPrompt.userChoice;
+        if(choice&&choice.outcome==='accepted'){toast('Quarentena Z instalado com sucesso!','good');closeInstallModal();}
+        _deferredInstallPrompt=null;
+      }catch(_){}
+      refreshInstallUI();
+    } else {
+      refreshInstallUI();
+      toast('Siga as instruções exibidas abaixo para concluir a instalação.','good');
+    }
+  });
+  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();_deferredInstallPrompt=e;refreshInstallUI();});
+  window.addEventListener('appinstalled',()=>{_deferredInstallPrompt=null;refreshInstallUI();toast('App Quarentena Z instalado!','good');});
   $('btnHomeAch').addEventListener('click',()=>{checkAch();renderAch();showScreen('achScreen');});
   const openRankScreen=()=>{Snd.init();renderRank();OnlineAPI.sync();showScreen('rankScreen');};
   $('btnHomeRank').addEventListener('click',openRankScreen);
@@ -4666,7 +4761,9 @@ function bindEvents(){
     syncMapCards($('mapSelect').value);syncDiffPills($('difficultySelect').value);
     $('vol').value=$('settingsVolume').value;Snd.init();Snd.vol=+$('settingsVolume').value/100;Snd.apply();
     if($('settingsPlatform'))applyPlatformMode($('settingsPlatform').value);
-    applyQuality();try{localStorage.setItem('ztd_v5_volume',$('settingsVolume').value);localStorage.setItem('ztd_v5_quality',$('qualitySelect').value);localStorage.setItem('ztd_v5_map',$('settingsMap').value);localStorage.setItem('ztd_v5_difficulty',$('settingsDifficulty').value);}catch(e){}
+    applyQuality();
+    if($('fpsCapSelect'))PERF.fpsCap=+$('fpsCapSelect').value===30?30:60;
+    try{localStorage.setItem('ztd_v5_volume',$('settingsVolume').value);localStorage.setItem('ztd_v5_quality',$('qualitySelect').value);localStorage.setItem('ztd_v5_map',$('settingsMap').value);localStorage.setItem('ztd_v5_difficulty',$('settingsDifficulty').value);if($('fpsCapSelect'))localStorage.setItem('ztd_v5_fpscap',$('fpsCapSelect').value);}catch(e){}
     toast('Configurações salvas!','good');
   });
   if($('btnActivateLicense')){
@@ -4706,6 +4803,8 @@ function bindEvents(){
 
   window.addEventListener('keydown',e=>{
     if(e.key==='Escape'){
+      const im=$('installModal');
+      if(im&&!im.classList.contains('hidden')){closeInstallModal();return;}
       const m=$('homeConfirmModal');
       if(m&&!m.classList.contains('hidden')){hideDangerHome();return;}
       cancelAll();
@@ -4748,9 +4847,11 @@ function bindEvents(){
 /* ===================== 12. LOOP PRINCIPAL ===================== */
 let last=0;
 const STEP=1/60;let ACC=0;
-const PERF={avg:.016,n:0,low:false,show:false};
+const PERF={avg:.016,n:0,low:false,show:false,fpsCap:60,lastRender:0};
 function frame(now){
   requestAnimationFrame(frame);
+  if(PERF.fpsCap===30&&now-PERF.lastRender<31)return;
+  PERF.lastRender=now;
   let dt=(now-last)/1000; last=now; if(!(dt>0))dt=0; if(dt>.1)dt=.1;
   // Se estiver bloqueado em orientação vertical (Portrait) no mobile, pausa o loop de lógica
   if(syncOrientationState()){
@@ -4788,12 +4889,14 @@ function init(){
   loadCareer();
   $('mapSelect').value=career.lastMap; $('difficultySelect').value=career.lastDifficulty;
   document.querySelectorAll('.map-card').forEach(c=>c.classList.toggle('selected',c.dataset.map===career.lastMap));
-  try{$('qualitySelect').value=localStorage.getItem('ztd_v5_quality')||'balanced';$('settingsMap').value=localStorage.getItem('ztd_v5_map')||career.lastMap;$('settingsDifficulty').value=localStorage.getItem('ztd_v5_difficulty')||career.lastDifficulty;const sv=localStorage.getItem('ztd_v5_volume');if(sv!==null){$('vol').value=sv;$('settingsVolume').value=sv;Snd.vol=+sv/100;}Snd.musicMuted=localStorage.getItem('ztd_v19_music_muted')==='1';}catch(e){}
+  try{$('qualitySelect').value=localStorage.getItem('ztd_v5_quality')||'balanced';if($('fpsCapSelect')){$('fpsCapSelect').value=localStorage.getItem('ztd_v5_fpscap')||'60';PERF.fpsCap=+$('fpsCapSelect').value===30?30:60;}$('settingsMap').value=localStorage.getItem('ztd_v5_map')||career.lastMap;$('settingsDifficulty').value=localStorage.getItem('ztd_v5_difficulty')||career.lastDifficulty;const sv=localStorage.getItem('ztd_v5_volume');if(sv!==null){$('vol').value=sv;$('settingsVolume').value=sv;Snd.vol=+sv/100;}Snd.musicMuted=localStorage.getItem('ztd_v19_music_muted')==='1';}catch(e){}
   applyPlatformMode(getPlatformPref());
   activeDifficulty=career.lastDifficulty; selectMap(career.lastMap);
   TOWER_ORDER.forEach(k=>UI.icons[k]=makeIcon(k));
   SecurityGuard.lockDefinitions();
-  buildSidebar(); bindEvents(); fitCanvas(); Snd.syncMusic(); OnlineAPI.sync();
+  buildSidebar(); bindEvents(); fitCanvas(); Snd.syncMusic(); OnlineAPI.sync(); refreshInstallUI();
+  // Registra o Service Worker (PWA offline) fora de inline script para manter CSP script-src 'self'
+  try{if(typeof navigator!=='undefined'&&'serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){navigator.serviceWorker.register('./sw.js').catch(()=>{});}}catch(_){}
   document.querySelectorAll('.map-card').forEach(c=>c.classList.toggle('selected',c.dataset.map===$('mapSelect').value));
   document.querySelectorAll('.diff-pill').forEach(p=>p.classList.toggle('active',p.dataset.diff===$('difficultySelect').value));
   G.life=CFG.baseLife; G.money=CFG.startMoney;

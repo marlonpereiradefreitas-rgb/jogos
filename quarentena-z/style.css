@@ -46,7 +46,7 @@ button.primary{background:linear-gradient(90deg,var(--ui-primary),var(--ui-prima
 button:disabled{opacity:.45;cursor:not-allowed}
 .hidden{display:none !important}
 
-#app{display:flex;flex-direction:column;height:100%;height:100dvh}
+#app{display:flex;flex-direction:column;width:100%;max-width:100vw;height:100%;height:100dvh;overflow:hidden}
 /* Menus occupy the full viewport; gameplay HUD appears only after a mission starts. */
 body.menu-mode #topbar,body.menu-mode #sidebar,body.menu-mode #bottombar{display:none!important}
 body.menu-mode #main{min-height:0}
@@ -127,11 +127,11 @@ body.menu-mode .screen{inset:0;overflow:auto}
 .auto{display:flex;align-items:center;gap:5px;cursor:pointer}
 .auto input{accent-color:var(--gold);width:16px;height:16px}
 #progress{
-  position:relative;flex:1;min-width:150px;height:24px;background:#12160d;border:2px solid var(--line);
+  position:relative;flex:1 1 0;min-width:0;height:24px;background:#12160d;border:2px solid var(--line);
   border-radius:4px;overflow:hidden;display:flex;align-items:center;justify-content:center;
 }
 #progress i{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(#7bd23f,#3f8a22);transition:width .2s}
-#progress span{position:relative;font-size:12px;font-weight:bold;text-shadow:1px 1px 2px #000;white-space:nowrap;padding:0 6px;overflow:hidden;text-overflow:ellipsis}
+#progress span{position:relative;max-width:100%;min-width:0;font-size:12px;font-weight:bold;text-shadow:1px 1px 2px #000;white-space:nowrap;padding:0 6px;overflow:hidden;text-overflow:ellipsis}
 
 /* --- sobreposições no palco --- */
 #toast{
@@ -597,13 +597,13 @@ body.is-mobile .shortcuts-panel {
   letter-spacing: 1.2px;
 }
 
-/* 7. Layout Paisagem (Landscape) Otimizado para Mobile — Mapa Amplo e Zero Achatamento */
+/* 7. Layout Paisagem (Landscape) Otimizado para Mobile — Mapa Amplo e Botões >= 44px */
 body.is-mobile #topbar {
   padding: 2px 8px !important;
   gap: 5px !important;
-  height: 38px !important;
-  min-height: 38px !important;
-  max-height: 42px !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 50px !important;
   flex-wrap: nowrap !important;
   overflow-x: auto !important;
   overflow-y: hidden !important;
@@ -611,23 +611,28 @@ body.is-mobile #topbar {
 
 body.is-mobile #topbar .life-hud,
 body.is-mobile #topbar .hud-mod {
-  zoom: 0.45 !important;
+  zoom: 0.44 !important;
   flex-shrink: 0 !important;
 }
 
+/* Em mobile, pausa/velocidade ja estao na mobile-quick-bar (>=46px); libera espaco para HOME e Config caberem sem cortar */
+body.is-mobile #topbar #btnPause,
+body.is-mobile #topbar .spd,
 body.is-mobile #topbar #vol {
-  width: 50px !important;
+  display: none !important;
 }
 
 body.is-mobile #topbar button,
-body.is-mobile #topbar .spd,
 body.is-mobile #topbar .ingame-nav {
-  padding: 3px 7px !important;
-  font-size: 11px !important;
-  min-height: 28px !important;
-  min-width: 28px !important;
-  height: 28px !important;
+  padding: 4px 10px !important;
+  font-size: 12px !important;
+  min-height: 44px !important;
+  min-width: 44px !important;
+  height: 44px !important;
   flex-shrink: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 body.is-mobile #main {
@@ -636,7 +641,7 @@ body.is-mobile #main {
 }
 
 body.is-mobile #sidebar {
-  width: clamp(196px, 24vw, 232px) !important;
+  width: clamp(192px, 24vw, 228px) !important;
   height: 100% !important;
   min-height: 0 !important;
   border-top: 0 !important;
@@ -693,35 +698,58 @@ body.is-mobile #powerList {
 
 body.is-mobile #powerList .pcard {
   flex: none !important;
-  min-height: 32px !important;
-  padding: 4px 8px !important;
+  min-height: 44px !important;
+  padding: 6px 8px !important;
 }
 
 body.is-mobile #bottombar {
   padding: 2px 8px !important;
   gap: 6px !important;
-  height: 32px !important;
-  min-height: 32px !important;
-  max-height: 36px !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 50px !important;
+  width: 100% !important;
+  max-width: 100vw !important;
   flex-wrap: nowrap !important;
+  overflow: hidden !important;
 }
 
 body.is-mobile #bottombar #progress {
-  height: 20px !important;
-  min-width: 110px !important;
+  height: 24px !important;
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+}
+
+body.is-mobile #bottombar .auto {
+  font-size: 11px !important;
+  flex-shrink: 0 !important;
+  min-height: 44px !important;
 }
 
 body.is-mobile #bottombar button {
-  padding: 3px 9px !important;
-  font-size: 11px !important;
-  min-height: 26px !important;
-  height: 26px !important;
+  padding: 4px 10px !important;
+  font-size: 11.5px !important;
+  min-height: 44px !important;
+  min-width: 44px !important;
+  height: 44px !important;
   flex-shrink: 0 !important;
+}
+
+/* Tooltip em mobile fica ancorado discretamente no topo esquerdo sem tampar o mapa */
+body.is-mobile #tooltip {
+  left: 10px !important;
+  top: 56px !important;
+  right: auto !important;
+  bottom: auto !important;
+  max-width: 240px !important;
+  font-size: 11px !important;
+  padding: 8px 10px !important;
+  pointer-events: none !important;
 }
 
 body.is-mobile .map-screen .map-thumb {
   height: auto !important;
-  min-height: 68px !important;
+  min-height: 60px !important;
   aspect-ratio: 3 / 2;
   flex: 1 1 auto !important;
 }
@@ -729,10 +757,10 @@ body.is-mobile .map-screen .map-thumb {
 @media (max-width: 960px), (max-height: 540px) {
   #topbar {
     padding: 2px 8px !important;
-    gap: 5px !important;
-    height: 38px !important;
-    min-height: 38px !important;
-    max-height: 42px !important;
+    gap: 4px !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    max-height: 50px !important;
     flex-wrap: nowrap !important;
     overflow-x: auto !important;
     overflow-y: hidden !important;
@@ -740,22 +768,42 @@ body.is-mobile .map-screen .map-thumb {
 
   #topbar .life-hud,
   #topbar .hud-mod {
-    zoom: 0.45 !important;
+    zoom: 0.44 !important;
     flex-shrink: 0 !important;
   }
 
   #topbar #vol {
-    width: 50px !important;
+    display: none !important;
+  }
+
+  #topbar .spacer {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
   }
 
   #topbar button,
   #topbar .spd,
   #topbar .ingame-nav {
-    padding: 3px 7px !important;
+    padding: 4px 6px !important;
     font-size: 11px !important;
-    min-height: 28px !important;
-    min-width: 28px !important;
-    height: 28px !important;
+    min-height: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    flex-shrink: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  #topbar #btnPause,
+  #topbar .spd {
+    min-width: 36px !important;
+    padding: 4px 5px !important;
+  }
+
+  #topbar .life-hud,
+  #topbar .hud-mod {
+    zoom: 0.40 !important;
     flex-shrink: 0 !important;
   }
 
@@ -765,7 +813,7 @@ body.is-mobile .map-screen .map-thumb {
   }
 
   #sidebar {
-    width: clamp(192px, 24vw, 224px) !important;
+    width: clamp(190px, 24vw, 224px) !important;
     height: 100% !important;
     min-height: 0 !important;
     border-top: 0 !important;
@@ -822,29 +870,34 @@ body.is-mobile .map-screen .map-thumb {
 
   #powerList .pcard {
     flex: none !important;
-    min-height: 32px !important;
-    padding: 4px 8px !important;
+    min-height: 44px !important;
+    padding: 6px 8px !important;
   }
 
   #bottombar {
     padding: 2px 8px !important;
     gap: 6px !important;
-    height: 32px !important;
-    min-height: 32px !important;
-    max-height: 36px !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    max-height: 50px !important;
+    width: 100% !important;
+    max-width: 100vw !important;
     flex-wrap: nowrap !important;
+    overflow: hidden !important;
   }
 
   #bottombar #progress {
-    height: 20px !important;
-    min-width: 110px !important;
+    height: 24px !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
   }
 
   #bottombar button {
-    padding: 3px 9px !important;
-    font-size: 11px !important;
-    min-height: 26px !important;
-    height: 26px !important;
+    padding: 4px 10px !important;
+    font-size: 11.5px !important;
+    min-height: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
     flex-shrink: 0 !important;
   }
 
@@ -858,45 +911,99 @@ body.is-mobile .map-screen .map-thumb {
     font-size: 11px !important;
   }
 
-  /* Telas de Menu e Seleção de Mapas compactas em Paisagem Mobile */
+  /* Telas de Menu em Paisagem Mobile: 2 colunas sem scroll para todos os botoes caberem acima da dobra */
   .home-shell {
-    padding: 8px 12px !important;
+    padding: 6px 12px !important;
     gap: 6px !important;
+    height: 100% !important;
+    overflow-y: auto !important;
+  }
+
+  .home-topbar {
+    gap: 6px !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+  }
+
+  .home-quick-stats .hq-pill {
+    min-height: 44px !important;
+    padding: 4px 10px !important;
   }
 
   .home-body {
     gap: 10px !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    align-items: stretch !important;
+  }
+
+  .home-left-col {
+    display: grid !important;
+    grid-template-columns: minmax(240px, 1fr) minmax(280px, 1.15fr) !important;
+    grid-template-rows: auto auto !important;
+    column-gap: 14px !important;
+    row-gap: 6px !important;
+    align-items: start !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   .game-logo {
-    margin-bottom: 4px !important;
-  }
-
-  .hero-title {
-    font-size: clamp(24px, 4.5vw, 38px) !important;
-  }
-
-  .home-tagline {
-    font-size: 11px !important;
-    margin: 4px 0 6px !important;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    margin-bottom: 0 !important;
   }
 
   .platform-bar {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
     padding: 5px 8px !important;
-    margin-bottom: 5px !important;
+    margin-bottom: 0 !important;
+    width: 100% !important;
+  }
+
+  .platform-opt {
+    min-height: 44px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
   .home-buttons {
-    gap: 5px !important;
+    grid-column: 2 !important;
+    grid-row: 1 / span 2 !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    align-content: start !important;
+  }
+
+  .home-buttons .continue-menu,
+  .home-buttons .primary-menu {
+    grid-column: 1 / -1 !important;
   }
 
   .home-buttons .menu-button {
     padding: 6px 10px !important;
-    min-height: 36px !important;
+    min-height: 46px !important;
+  }
+
+  .home-buttons .menu-button .mb-sub {
+    display: none !important;
+  }
+
+  .home-right-col,
+  .home-tagline,
+  .home-footer-bar {
+    display: none !important;
+  }
+
+  .hero-title {
+    font-size: clamp(24px, 4.2vw, 34px) !important;
   }
 
   .map-screen {
-    padding: 6px 10px !important;
+    padding: 4px 10px !important;
     gap: 4px !important;
   }
 
@@ -908,13 +1015,13 @@ body.is-mobile .map-screen .map-thumb {
 
   .map-screen .map-thumb {
     height: auto !important;
-    min-height: 56px !important;
+    min-height: 50px !important;
     aspect-ratio: 3 / 2;
     flex: 1 1 auto !important;
   }
 
   .map-bar {
-    padding: 5px 10px !important;
+    padding: 4px 10px !important;
     gap: 6px !important;
   }
 }
@@ -1084,6 +1191,216 @@ body.is-mobile .map-screen .map-thumb {
 @media (max-width: 560px) {
   .confirm-modal-actions {
     flex-direction: column-reverse;
+  }
+}
+
+/* Resumo tático dentro do modal de voltar ao Home + responsividade em paisagem baixa */
+.confirm-run-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.confirm-run-stats > div {
+  padding: 7px 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.confirm-run-stats span {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #9ca3af;
+}
+.confirm-run-stats b {
+  font-size: 15px;
+  font-weight: 900;
+  color: #f9fafb;
+}
+
+/* ===== TELA PERSONALIZADA DE INSTALAÇÃO (PWA / PC / MOBILE) ===== */
+.confirm-modal-card.install-modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 540px;
+  max-height: 92dvh;
+  overflow-y: auto;
+  background: linear-gradient(180deg, #182028 0%, #101419 100%);
+  border: 2px solid #10b981;
+  border-radius: 14px;
+  box-shadow: 0 0 36px rgba(16, 185, 129, 0.35), 0 24px 48px rgba(0, 0, 0, 0.85);
+  animation: confirmPop 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+.install-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.16), rgba(16, 185, 129, 0.03));
+  border-bottom: 1px solid rgba(16, 185, 129, 0.28);
+}
+.install-app-icon {
+  border-radius: 12px;
+  border: 1.5px solid rgba(52, 211, 153, 0.65);
+  background: #0b1218;
+  padding: 4px;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+  flex: none;
+}
+.install-header-text {
+  flex: 1;
+  min-width: 0;
+}
+.install-kicker {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+  color: #34d399;
+}
+.install-modal-title {
+  margin: 2px 0 4px;
+  font-size: 19px;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 0.8px;
+}
+.install-platform-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #a7f3d0;
+  background: rgba(16, 185, 129, 0.16);
+  border: 1px solid rgba(16, 185, 129, 0.42);
+}
+.install-close-btn {
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #e5e7eb;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.install-close-btn:hover {
+  background: rgba(239, 68, 68, 0.28);
+  border-color: #ef4444;
+  color: #ffffff;
+}
+.install-modal-body {
+  padding: 16px 18px;
+}
+.install-lead {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #d1d5db;
+}
+.install-perks-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.install-perk {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.install-perk span {
+  font-size: 18px;
+}
+.install-perk b {
+  display: block;
+  font-size: 11.5px;
+  color: #f9fafb;
+}
+.install-perk small {
+  display: block;
+  font-size: 10px;
+  color: #9ca3af;
+}
+.install-guide-box {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px dashed rgba(52, 211, 153, 0.55);
+  font-size: 12px;
+  line-height: 1.5;
+  color: #d1fae5;
+}
+.install-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 18px 16px;
+  background: rgba(6, 9, 13, 0.65);
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+.install-btn-primary,
+.install-btn-secondary,
+.install-btn-ghost {
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 900;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-decoration: none;
+  letter-spacing: 0.5px;
+}
+.install-btn-primary {
+  flex: 1 1 180px;
+  background: linear-gradient(180deg, #10b981, #059669);
+  border: 1px solid #34d399;
+  color: #ffffff;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+}
+.install-btn-secondary {
+  flex: 1 1 180px;
+  background: #1e293b;
+  border: 1px solid #475569;
+  color: #f1f5f9;
+}
+.install-btn-ghost {
+  flex: 0 1 auto;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #9ca3af;
+}
+.menu-button.install-menu {
+  border-color: rgba(16, 185, 129, 0.45);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.16), rgba(30, 34, 40, 0.92));
+}
+@media (max-height: 500px) {
+  .confirm-modal-card.danger-alert-card,
+  .confirm-modal-card.install-modal-card {
+    max-height: 92dvh;
+    overflow-y: auto;
+  }
+  .confirm-modal-body,
+  .install-modal-body {
+    padding: 10px 14px;
+  }
+  .confirm-modal-actions,
+  .install-modal-actions {
+    padding: 10px 14px;
   }
 }
 

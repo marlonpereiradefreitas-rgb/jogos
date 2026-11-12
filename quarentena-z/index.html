@@ -2,12 +2,12 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' http: https: ws: wss:; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' http: https: ws: wss:; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self';">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#121417">
 <meta name="description" content="Quarentena Z: defenda sua base contra hordas de zumbis neste tower defense. Jogue grátis no navegador.">
-<meta name="application-name" content="Apocalipse">
+<meta name="application-name" content="Quarentena Z">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -15,8 +15,8 @@
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/icon.svg">
 <title>Quarentena Z — Tower Defense de Zumbis</title>
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="theme-v19.css">
+<link rel="stylesheet" href="style.css?v=19.16">
+<link rel="stylesheet" href="theme-v19.css?v=19.16">
 </head>
 <body class="menu-mode">
 <div id="app">
@@ -193,7 +193,7 @@
                   <span class="logo-sub">TOWER DEFENSE DE SOBREVIVÊNCIA</span>
                   <span class="logo-line"></span>
                 </div>
-                <p class="home-tagline">Fortifique o perímetro, comande 18 torres especializadas e resista às hordas implacáveis de infectados.</p>
+                <p class="home-tagline">Fortifique o perímetro, comande 22 torres especializadas e resista às hordas implacáveis de infectados.</p>
               </div>
 
               <!-- Seletor Visual de Plataforma (Automático | PC / Mouse | Mobile / Toque) -->
@@ -258,6 +258,14 @@
                   </span>
                   <span class="mb-arrow">→</span>
                 </button>
+                <button id="btnHomeInstall" class="menu-button install-menu">
+                  <span class="mb-ico">📲</span>
+                  <span class="mb-text">
+                    <span class="mb-title">INSTALAR JOGO</span>
+                    <small id="homeInstallSub" class="mb-sub">App offline (PC, Android e iOS)</small>
+                  </span>
+                  <span class="mb-arrow">→</span>
+                </button>
               </nav>
             </div>
 
@@ -273,7 +281,7 @@
                   <div class="intel-item">
                     <div class="intel-icon ii-cyan">🗼</div>
                     <div>
-                      <b>18 Torres &amp; 3 Linhas de Evolução</b>
+                      <b>22 Torres &amp; 3 Linhas de Evolução</b>
                       <p>Combine dano físico, fogo, gelo, eletricidade, veneno e artilharia pesada.</p>
                     </div>
                   </div>
@@ -471,6 +479,7 @@
             <label>Dificuldade padrão<select id="settingsDifficulty"><option value="easy">Fácil</option><option value="normal">Normal</option><option value="hard">Difícil</option><option value="apocalypse">Apocalipse</option></select></label>
             <label>Volume do áudio<input id="settingsVolume" type="range" min="0" max="100" value="50"></label>
             <label>Qualidade gráfica<select id="qualitySelect"><option value="high">Alta (Clima + Partículas Máx.)</option><option value="balanced" selected>Equilibrada (Recomendado)</option><option value="low">Desempenho (Alto FPS)</option></select></label>
+            <label>Limite de FPS (Economia de bateria)<select id="fpsCapSelect"><option value="60" selected>60 FPS — Fluidez Máxima</option><option value="30">30 FPS — Economia de Bateria</option></select></label>
             <label class="settings-full-row">Plataforma (Modo de Controle e Desempenho)
               <div class="platform-btn-group settings-platform-group" role="group" aria-label="Plataforma nas configurações">
                 <button type="button" class="platform-opt active" data-platform="auto">⚙ Automático</button>
@@ -651,19 +660,55 @@
       <span class="confirm-alert-icon right" aria-hidden="true">🚨</span>
     </div>
     <div class="confirm-modal-body">
-      <div class="confirm-danger-badge">⚠ PERIGO // ABANDONO DE POSTO</div>
-      <p class="confirm-modal-lead">Certeza que quer voltar ao Home?</p>
-      <p class="confirm-modal-desc">Você está prestes a evacuar a zona de combate. Se voltar ao menu inicial agora, a partida em andamento será encerrada e as defesas ativas serão desmobilizadas.</p>
+      <div class="confirm-danger-badge">⚠ PERIGO // EVACUAÇÃO DE PERÍMETRO</div>
+      <p class="confirm-modal-lead">Deseja voltar para a tela inicial (Home)?</p>
+      <div class="confirm-run-stats" aria-label="Resumo da partida atual">
+        <div><span>ONDA</span><b id="confirmWaveVal">1</b></div>
+        <div><span>BASE</span><b id="confirmLifeVal">100</b></div>
+        <div><span>TORRES</span><b id="confirmTowersVal">0</b></div>
+        <div><span>ABATES</span><b id="confirmKillsVal">0</b></div>
+      </div>
+      <p class="confirm-modal-desc">O progresso da onda fica salvo automaticamente para retomar em <b>Continuar Operação</b>, mas o combate atual será pausado e evacuado agora.</p>
     </div>
     <div class="confirm-modal-actions">
       <button type="button" id="btnConfirmHomeCancel" class="confirm-btn-stay">
         <span class="cb-ico">🛡️</span> CONTINUAR NA PARTIDA
       </button>
       <button type="button" id="btnConfirmHomeExit" class="confirm-btn-exit">
-        <span class="cb-ico">⚠️</span> SIM, VOLTAR AO HOME
+        <span class="cb-ico">⌂</span> SIM, VOLTAR AO HOME
       </button>
     </div>
     <div class="confirm-hazard-stripe bottom"></div>
+  </div>
+</div>
+
+<!-- Tela Personalizada de Instalação do Jogo (PWA / Mobile / PC Windows) -->
+<div id="installModal" class="confirm-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="installModalTitle">
+  <div class="confirm-modal-card install-modal-card">
+    <div class="install-modal-header">
+      <img src="assets/icon.svg" alt="Ícone Quarentena Z" class="install-app-icon" width="52" height="52">
+      <div class="install-header-text">
+        <span class="install-kicker">☣ INSTALADOR OFICIAL · QUARENTENA Z</span>
+        <h3 id="installModalTitle" class="install-modal-title">INSTALAR QUARENTENA Z</h3>
+        <small id="installPlatformBadge" class="install-platform-badge">Detectando dispositivo...</small>
+      </div>
+      <button type="button" id="btnInstallClose" class="install-close-btn" aria-label="Fechar tela de instalação">✕</button>
+    </div>
+    <div class="install-modal-body">
+      <p id="installLeadText" class="install-lead">Instale o Quarentena Z diretamente no seu aparelho para jogar em tela cheia, com ícone próprio e suporte offline.</p>
+      <div class="install-perks-grid">
+        <div class="install-perk"><span>⚡</span><div><b>Acesso Instantâneo</b><small>Ícone direto na tela inicial</small></div></div>
+        <div class="install-perk"><span>📡</span><div><b>Funciona Offline</b><small>Cache tático automático</small></div></div>
+        <div class="install-perk"><span>🖥️</span><div><b>Tela Cheia Real</b><small>Sem barras do navegador</small></div></div>
+        <div class="install-perk"><span>💾</span><div><b>Progresso Seguro</b><small>Saves locais protegidos</small></div></div>
+      </div>
+      <div id="installGuideBox" class="install-guide-box hidden"></div>
+    </div>
+    <div class="install-modal-actions">
+      <button type="button" id="btnInstallPwaNow" class="install-btn-primary">⬇ INSTALAR AGORA</button>
+      <a id="btnInstallWinExe" class="install-btn-secondary" href="https://github.com/marlonpereiradefreitas-rgb/jogos/releases/latest" target="_blank" rel="noopener noreferrer">🪟 BAIXAR PARA WINDOWS (.EXE)</a>
+      <button type="button" id="btnInstallLater" class="install-btn-ghost">AGORA NÃO</button>
+    </div>
   </div>
 </div>
 
@@ -686,12 +731,6 @@
   </div>
 </div>
 
-<script src="game.js"></script>
-<script>
-// O jogo também pode ser instalado como aplicativo (PWA) quando hospedado em HTTPS.
-if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(err => console.warn("Modo offline indisponível:", err)));
-}
-</script>
+<script src="game.js?v=19.16"></script>
 </body>
 </html>
