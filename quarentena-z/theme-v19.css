@@ -1103,18 +1103,31 @@ button.big:hover,.box button.big:hover{box-shadow:0 0 22px rgba(16, 185, 129,.6)
   }
 }
 
-@media (max-height: 500px) and (orientation: landscape) {
+@media (max-height: 540px) and (orientation: landscape) {
   .map-screen {
+    display: flex !important;
+    flex-direction: column !important;
     height: 100vh !important;
     height: 100dvh !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
+    overflow: hidden !important;
     padding: max(2px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(2px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left)) !important;
   }
   .map-header {
-    padding: 4px 10px !important;
+    flex: none !important;
+    flex-wrap: nowrap !important;
+    padding: 3px 8px !important;
     min-height: 46px !important;
-    gap: 6px !important;
+    gap: 8px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+  }
+  .map-header-left {
+    gap: 8px !important;
+    flex: none !important;
+  }
+  .map-header .screen-kicker,
+  .map-header .career-record {
+    display: none !important;
   }
   .map-header .btn-back-compact,
   .map-filter,
@@ -1122,17 +1135,23 @@ button.big:hover,.box button.big:hover{box-shadow:0 0 22px rgba(16, 185, 129,.6)
     min-height: 44px !important;
     min-width: 44px !important;
   }
-  .map-title-block h1 {
-    font-size: 16px !important;
+  .map-filter-group {
+    flex: 1 1 auto !important;
+    justify-content: flex-end !important;
+    overflow-x: auto !important;
+    min-width: 0 !important;
   }
-  .map-header .career-record {
-    display: none !important;
+  .map-title-block h1 {
+    font-size: 14px !important;
+    letter-spacing: 1.5px !important;
+    white-space: nowrap !important;
   }
   .map-stage-wrap {
-    padding: 2px 6px !important;
+    padding: 4px 6px !important;
     gap: 6px !important;
-    flex: 1 1 auto !important;
+    flex: 1 1 0 !important;
     min-height: 0 !important;
+    overflow: hidden !important;
   }
   .map-page-arrow {
     flex: 0 0 44px !important;
@@ -1147,73 +1166,109 @@ button.big:hover,.box button.big:hover{box-shadow:0 0 22px rgba(16, 185, 129,.6)
     display: none !important;
   }
   .map-screen .map-cards {
+    height: 100% !important;
+    min-height: 0 !important;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    grid-template-rows: repeat(2, auto) !important;
+    grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
     gap: 6px !important;
     padding: 2px !important;
-    min-height: 0 !important;
-    overflow-y: auto !important;
+    overflow: hidden !important;
   }
   .map-screen .map-card {
     padding: 0 0 4px !important;
-    min-height: 44px !important;
+    height: 100% !important;
+    min-height: 0 !important;
     overflow: hidden !important;
     display: flex !important;
     flex-direction: column !important;
   }
   .map-screen .map-card b {
     font-size: 11px !important;
-    line-height: 1.25 !important;
+    line-height: 1.2 !important;
     margin-top: 3px !important;
     padding: 0 6px !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     display: block !important;
+    flex: none !important;
   }
   .map-screen .map-card small {
     display: none !important;
   }
   .map-screen .map-thumb {
-    min-height: 52px !important;
-    max-height: 76px !important;
-    height: 64px !important;
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    height: auto !important;
     aspect-ratio: auto !important;
-    flex: none !important;
+    background-color: #0b1017 !important;
   }
   .map-thumb-img {
-    object-fit: cover !important;
+    object-fit: contain !important;
+    background-color: #0b1017 !important;
+  }
+  .map-diff-badge {
+    top: 4px !important;
+    right: 4px !important;
+    padding: 2px 6px !important;
+    font-size: 8.5px !important;
   }
   .map-pagination-bar {
+    flex: none !important;
     padding: 2px 8px !important;
     gap: 8px !important;
     font-size: 10px !important;
+    min-height: 46px !important;
   }
   .map-bar {
-    padding: 4px 10px !important;
-    gap: 6px !important;
-    min-height: 48px !important;
-  }
-  .map-bar .start-options {
+    flex: none !important;
+    flex-wrap: nowrap !important;
+    padding: 3px 8px !important;
     gap: 8px !important;
+    min-height: 50px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
   }
-  .map-bar .start-options label {
-    min-width: 130px !important;
-    font-size: 9px !important;
+  /* O grid visual ja seleciona o mapa e .diff-pills seleciona a dificuldade; oculta selects redundantes para caber tudo sem scroll */
+  .map-bar .start-options {
+    display: none !important;
   }
-  .map-bar .start-options select {
-    padding: 6px 8px !important;
-    font-size: 11px !important;
-    min-height: 44px !important;
+  .diff-pills {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 5px !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    overflow-x: auto !important;
   }
   .diff-pill {
     min-height: 44px !important;
     min-width: 44px !important;
     padding: 6px 10px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+  .map-bar .map-nav {
+    flex: none !important;
+    width: auto !important;
+    margin-left: auto !important;
   }
   #btnPlay {
-    padding: 8px 16px !important;
+    width: auto !important;
+    padding: 8px 14px !important;
     font-size: 12px !important;
     min-height: 44px !important;
+    white-space: nowrap !important;
   }
+  .diff-pill {
+    font-size: 10px !important;
+    padding: 4px 8px !important;
+  }
+}
+
+/* Garante que filtros e paginacao sempre ocultem os cards fora da pagina atual em qualquer resolucao */
+.map-screen .map-card.hidden-filter,
+.map-screen .map-card.hidden-page {
+  display: none !important;
 }

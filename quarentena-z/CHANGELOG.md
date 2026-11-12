@@ -71,3 +71,10 @@ Método: DPS base × cadência dividido pelo custo (alvo único) e revisão da a
 | Lança-Chamas / Veneno / Ácido | custo / DoT | 3300–3800 / ×1,0 DoT | **3000–3600** / ×2,0–2,2 DoT | Ascensão não escalava queimadura nem veneno |
 | Atirador / Arqueiro / Escopeta | custo | 3000 / 3100 / 3200 | **2800 / 2900 / 3000** | Tornar ascensões iniciais viáveis antes das ondas finais |
 | Gelo / Elétrica / Estase / Suprimentos | custo / utilidade | 3300–3700 / sem escala | **3000–3500** / aura e renda ×1,4–2,3 | Compensar custo alto de 3× T5 em torres de suporte/controle |
+
+## [v1.0.3] — 2026-11-11
+
+### Correção de Seleção de Mapas no Mobile (CSS `v19.19`)
+- Corrigida regra em `theme-v19.css` onde `.map-screen .map-card { display: flex !important }` dentro da media query paisagem sobrescrevia `.map-card.hidden-page` e exibia todos os 18 mapas esmagados ao mesmo tempo em 6 linhas. Agora `.map-screen .map-card.hidden-filter, .map-screen .map-card.hidden-page { display: none !important }` garante 6 mapas por página com altura proporcional.
+- Alterado `.map-thumb-img` em paisagem mobile para `object-fit: contain !important`, exibindo 100% da área de cada mapa sem cortar bordas.
+- Ajustado `.map-bar` e `#btnPlay { width: auto !important }` em paisagem estreita (`667x375` e `844x390`) para manter seletores de dificuldade e o botão `INICIAR OPERAÇÃO ▶` lado a lado sem empurrar nem cortar a grade de mapas.

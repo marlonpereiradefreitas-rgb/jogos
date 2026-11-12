@@ -747,13 +747,6 @@ body.is-mobile #tooltip {
   pointer-events: none !important;
 }
 
-body.is-mobile .map-screen .map-thumb {
-  height: auto !important;
-  min-height: 60px !important;
-  aspect-ratio: 3 / 2;
-  flex: 1 1 auto !important;
-}
-
 @media (max-width: 960px), (max-height: 540px) {
   #topbar {
     padding: 2px 8px !important;
@@ -1000,29 +993,6 @@ body.is-mobile .map-screen .map-thumb {
 
   .hero-title {
     font-size: clamp(24px, 4.2vw, 34px) !important;
-  }
-
-  .map-screen {
-    padding: 4px 10px !important;
-    gap: 4px !important;
-  }
-
-  .map-cards {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 6px !important;
-    margin: 2px 0 !important;
-  }
-
-  .map-screen .map-thumb {
-    height: auto !important;
-    min-height: 50px !important;
-    aspect-ratio: 3 / 2;
-    flex: 1 1 auto !important;
-  }
-
-  .map-bar {
-    padding: 4px 10px !important;
-    gap: 6px !important;
   }
 }
 
