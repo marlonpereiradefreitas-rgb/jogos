@@ -295,6 +295,32 @@ for (const [k, o] of Object.entries(BALANCE)) {
     if (f === 'cost') TOWERS[k].cost = v; else TOWERS[k].base = Object.assign({}, TOWERS[k].base, {[f]: v});
   }
 }
+// ============================================================
+// ASCENSION_BALANCE v1.0.2 - multiplicadores e custos das Ascensoes
+// Corrige disparidades entre DPS bruto extremo (Antitanque/Railgun)
+// e classes de dano continuo, area, controle e suporte.
+// ============================================================
+const ASCENSION_BALANCE = {
+  default:     {dmg:2.85, rate:1.55, range:1.15, bigMult:1.70, dot:1.85, splash:1.15, aura:1.35, income:2.20},
+  antitank:    {dmg:2.55, rate:1.48, bigMult:1.50, cost:4700},
+  railgun:     {dmg:2.50, rate:1.45, bigMult:1.50, cost:5500},
+  boomerang:   {dmg:2.65, rate:1.50, bigMult:1.60, cost:3600},
+  sniper:      {dmg:2.80, rate:1.52, bigMult:1.75, cost:3500},
+  gunner:      {dmg:2.95, rate:1.60, cost:2800},
+  archer:      {dmg:2.95, rate:1.60, cost:2900},
+  shotgun:     {dmg:2.95, rate:1.60, cost:3000},
+  flame:       {dmg:2.95, rate:1.60, dot:2.10, cost:3000},
+  poison:      {dmg:3.00, rate:1.60, dot:2.20, cost:3100},
+  acid:        {dmg:2.95, rate:1.60, dot:2.00, cost:3600},
+  mortar:      {dmg:2.95, rate:1.60, splash:1.18, dot:1.85, cost:3600},
+  tesla:       {dmg:3.00, rate:1.60, cost:3300},
+  ice:         {dmg:3.10, rate:1.60, cost:3000},
+  cryogen:     {dmg:3.10, rate:1.60, aura:1.40, cost:3400},
+  supplydepot: {income:2.30, aura:1.40, cost:3500},
+  beacon:      {dmg:2.85, rate:1.55, aura:1.35, cost:3500},
+  medstation:  {dmg:2.85, rate:1.55, aura:1.35, cost:3900},
+  nanomed:     {dmg:2.85, rate:1.55, aura:1.35, cost:3800}
+};
 // Quarta melhoria: especialização final específica por função da torre.
 for (const [key, d] of Object.entries(TOWERS)) {
   d.ups = d.ups.slice(); // cada variante recebe sua própria árvore de melhorias
@@ -1705,6 +1731,7 @@ class Tower {
     if(this.key==='sniper')this.s.range=1400;
     if(this._teslaBoost)this.s.dmg*=1.8;
     if(this._supportBoost)this.s.rate*=1.45;
+    if(this.paragon)applyParagonStats(this);
   }
   update(h){
     if(this.abilityCD>0)this.abilityCD=Math.max(0,this.abilityCD-h);
@@ -3820,7 +3847,32 @@ function upgradeTower(t,choice,pathIndex){
   for(let i=0;i<3;i++)t.pathChoices[i]=(i===path);
   t.recalc();FX.ring(t.x,t.y,8,40,.45,'#27c9ff',4);FX.ring(t.x,t.y,4,26,.3,'#ffffff',2);FX.spark(t.x,t.y-10,'#27c9ff',12);Snd.play('up');UI.panelKey='';return true;
 }
-function paragonCost(key){ const d=TOWERS[key]; return Math.ceil((2600 + d.cost*2.35)/100)*100; }
+function paragonCost(key){
+  const ov=ASCENSION_BALANCE[key];
+  if(ov&&ov.cost)return ov.cost;
+  const d=TOWERS[key];
+  return Math.ceil((2200 + d.cost*2.8)/100)*100;
+}
+function applyParagonStats(t){
+  const cfg=Object.assign({},ASCENSION_BALANCE.default,ASCENSION_BALANCE[t.key]||{});
+  const s=t.s;
+  s.dmg*=cfg.dmg;
+  s.rate*=cfg.rate;
+  if(t.key!=='sniper')s.range*=cfg.range; else s.range=1400;
+  s.pierce=Math.max(3,(s.pierce||1)*2);
+  s.armorPen=1;
+  s.bigMult=(s.bigMult||1)*cfg.bigMult;
+  if(s.burnDps)s.burnDps*=cfg.dot;
+  if(s.poisonDps)s.poisonDps*=cfg.dot;
+  if(s.splash)s.splash*=cfg.splash;
+  if(s.income)s.income=Math.round(s.income*cfg.income);
+  if(s.auraDmg)s.auraDmg=Math.min(.60,s.auraDmg*cfg.aura);
+  if(s.auraRate)s.auraRate=Math.min(.60,s.auraRate*cfg.aura);
+  if(s.auraRange)s.auraRange=Math.min(.45,s.auraRange*cfg.aura);
+  if(s.slow)s.slow=Math.min(.85,s.slow*1.25);
+  if(s.vuln)s.vuln=Math.min(.60,s.vuln*cfg.aura);
+  if(s.healBase)s.healBase=Math.round(s.healBase)+1;
+}
 function makeParagon(t){
   const same=towers.filter(q=>q.key===t.key&&Math.max(...q.pathLevels)>=5&&!q.paragon);
   if(Math.max(...t.pathLevels)<5||same.length<3){toast('Precisa de 3 torres iguais com um caminho no nível 5.','bad');return false;}
@@ -3829,8 +3881,8 @@ function makeParagon(t){
   G.money-=cost; t.spent+=cost;
   for(const q of same){if(q===t)continue;const i=towers.indexOf(q);if(i>=0)towers.splice(i,1);}
   t.paragon=true;G.stats.paragons++;psAdd('paragons');t.tier=7;t.def=Object.assign({},t.def,{name:'Ascendida: '+t.def.name});
-  t.s.dmg*=3.2;t.s.rate*=1.7;if(t.key!=='sniper')t.s.range*=1.15;else t.s.range=1400;t.s.pierce=Math.max(3,(t.s.pierce||1)*2);t.s.armorPen=1;t.s.bigMult=(t.s.bigMult||1)*2;
-  t.spent+=same.filter(q=>q!==t).reduce((n,q)=>n+q.spent,0);FX.ring(t.x,t.y,12,95,.9,'#f2c230',6);FX.popup(t.x,t.y-35,'ASCENSÃO!','#f2c230',true);Snd.play('power');UI.panelKey='';toast('Ascensão criado! Poder e alcance aumentados.','good');return true;
+  t.recalc();
+  t.spent+=same.filter(q=>q!==t).reduce((n,q)=>n+q.spent,0);FX.ring(t.x,t.y,12,95,.9,'#f2c230',6);FX.popup(t.x,t.y-35,'ASCENSÃO!','#f2c230',true);Snd.play('power');UI.panelKey='';toast('Ascensão criada! Poder e alcance aumentados.','good');return true;
 }
 function activateTowerAbility(t){
   const a=TOWER_ABILITIES[t.key];if(!a||t.abilityCD>0)return false;if(G.money<a.cost){noMoney();return false;}G.money-=a.cost;t.spent+=a.cost;t.abilityCD=a.cd;

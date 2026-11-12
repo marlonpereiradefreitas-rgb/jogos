@@ -55,3 +55,19 @@ Método: DPS base × cadência dividido pelo custo (alvo único) e revisão da a
 
 ### Licença
 - Licença MIT (`LICENSE`).
+
+## [v1.0.2] — 2026-11-11
+
+### Balanceamento das Ascensões (`ASCENSION_BALANCE` em `game.js`)
+- **Correção de bug crítico em `recalc()`**: habilidades de suporte (`medstation`/`beacon`) que chamam `recalc()` apagavam os bônus de torres Ascendidas. Agora `applyParagonStats(t)` roda dentro de `recalc()`, preservando 100% da Ascensão.
+- **Escala para classes negligenciadas**: dano contínuo (`burnDps`/`poisonDps` × 1,85–2,20), raio de explosão (`splash` × 1,15–1,18), auras de suporte (`auraDmg`/`auraRate`/`auraRange`/`vuln` × 1,35–1,40), renda da Base de Suprimentos (`income` × 2,30) e cura da base (+1/onda).
+
+| Torre / Grupo | Atributo | Antes | Depois | Motivo |
+|---|---|---|---|---|
+| Padrão (demais torres) | dmg / rate / bigMult | ×3,2 / ×1,7 / ×2,0 | ×2,85 / ×1,55 / ×1,70 | Reduz salto extremo mantendo superioridade clara sobre 3 torres T5 |
+| Canhão Antitanque | custo / dmg / rate / bigMult | 4200 / ×3,2 / ×1,7 / ×2,0 | **4700** / ×2,55 / ×1,48 / ×1,50 | Evita que anule todas as demais contra chefes |
+| Canhão Eletromagnético | custo / dmg / rate / bigMult | 4900 / ×3,2 / ×1,7 / ×2,0 | **5500** / ×2,50 / ×1,45 / ×1,50 | Maior DPS/custo do jogo no endgame |
+| Boomerangue | custo / dmg / rate / bigMult | 3400 / ×3,2 / ×1,7 / ×2,0 | **3600** / ×2,65 / ×1,50 / ×1,60 | DPS acima da média em grupo |
+| Lança-Chamas / Veneno / Ácido | custo / DoT | 3300–3800 / ×1,0 DoT | **3000–3600** / ×2,0–2,2 DoT | Ascensão não escalava queimadura nem veneno |
+| Atirador / Arqueiro / Escopeta | custo | 3000 / 3100 / 3200 | **2800 / 2900 / 3000** | Tornar ascensões iniciais viáveis antes das ondas finais |
+| Gelo / Elétrica / Estase / Suprimentos | custo / utilidade | 3300–3700 / sem escala | **3000–3500** / aura e renda ×1,4–2,3 | Compensar custo alto de 3× T5 em torres de suporte/controle |
