@@ -10,7 +10,6 @@ Tower defense estratégico de sobrevivência contra zumbis em HTML5/JS, com vers
 - **Baixar para Windows v1.0.7 (Página da Release Atualizada):** https://github.com/marlonpereiradefreitas-rgb/jogos/releases/tag/v1.0.7
 - **Download Direto Instalador Windows (.exe v1.0.7):** https://github.com/marlonpereiradefreitas-rgb/jogos/releases/download/v1.0.7/Quarentena.Z.Setup.1.0.7.exe
 - **Download Direto Versão Portátil Windows (.exe v1.0.7):** https://github.com/marlonpereiradefreitas-rgb/jogos/releases/download/v1.0.7/Quarentena.Z.1.0.7.exe
-- **Baixar Código-Fonte Atualizado (.zip):** https://github.com/marlonpereiradefreitas-rgb/jogos/archive/refs/heads/main.zip
 - **Android / iOS (Instalar como App):** abra o link acima no Chrome (Android) ou Safari (iOS) e clique em **`📲 INSTALAR JOGO`** no menu inicial (ou "Adicionar à Tela de Início").
 
 ---
