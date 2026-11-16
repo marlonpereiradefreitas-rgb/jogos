@@ -1,7 +1,7 @@
 {
   "name": "quarentena-z",
   "productName": "Quarentena Z",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "author": "Quarentena Z Studio",
   "description": "Quarentena Z - tower defense de zumbis",
   "main": "electron/main.js",

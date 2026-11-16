@@ -5587,7 +5587,9 @@ function applyPlatformMode(pref){
 /* --- ajuste de tamanho e densidade de pixels (DPR controlado + proporção 1:1 sem achatamento) --- */
 function fitCanvas(){
   syncOrientationState();
-  const st=$('stage'),c=$('game'),aw=st.clientWidth,ah=st.clientHeight;
+  const st=$('stage'),c=$('game');
+  if(!st||!c)return;
+  const aw=Math.floor(st.clientWidth),ah=Math.floor(st.clientHeight);
   if(aw<=0||ah<=0)return;
   const dpr=IS_MOBILE?Math.min(window.devicePixelRatio||1,1.5):(window.devicePixelRatio||1);
   CANVAS_DPR=dpr;
@@ -6353,7 +6355,7 @@ function init(){
     if(typeof navigator!=='undefined'&&'serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
       let refreshing=false;
       navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;location.reload();}});
-      navigator.serviceWorker.register('./sw.js?v=19.26').then(reg=>{try{reg.update();}catch(_){}}).catch(()=>{});
+      navigator.serviceWorker.register('./sw.js?v=19.27').then(reg=>{try{reg.update();}catch(_){}}).catch(()=>{});
     }
   }catch(_){}
   document.querySelectorAll('.map-card').forEach(c=>c.classList.toggle('selected',c.dataset.map===$('mapSelect').value));

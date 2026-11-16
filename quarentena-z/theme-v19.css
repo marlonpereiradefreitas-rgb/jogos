@@ -120,7 +120,7 @@ button.primary:hover,.big:hover{box-shadow:0 0 18px rgba(16, 185, 129,.6)}
 #btnFullscreen{margin-top:4px}
 
 /* ===== v19.1: HUD novo, sem bordas no jogo, tela inicial e seleção de mapas limpas ===== */
-#topbar{background:var(--ui-bg-surface);border-bottom:1px solid rgba(255,255,255,.06);box-shadow:none;padding:8px 14px;gap:10px 12px}
+#topbar{background:var(--ui-bg-surface);border-bottom:1px solid rgba(255,255,255,.08);box-shadow:0 2px 12px rgba(0,0,0,.35);padding:4px 12px;gap:8px 12px;height:52px;min-height:52px;max-height:52px;flex-shrink:0;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden}
 .hud-card{display:flex;align-items:center;gap:10px;padding:6px 16px 6px 7px;min-height:48px;border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02));--c:var(--ui-primary);--rgb:39,201,255}
 .hud-ico{width:36px;height:36px;padding:7px;flex:none;border-radius:10px;color:var(--c);background:rgba(var(--rgb),.16)}
 .hud-txt{display:flex;flex-direction:column;gap:2px;line-height:1}
@@ -574,7 +574,7 @@ kbd{
 .ach-info{flex:1}
 .ach-prog{width:100%}
 /* ===== BARRA DE VIDA (moldura hexagonal + barra inclinada) ===== */
-.life-hud{position:relative;width:380px;height:84px;flex:none;zoom:.8;--lc:var(--ui-primary);color:var(--lc)}
+.life-hud{position:relative;width:380px;height:84px;flex:none;zoom:0.56;--lc:var(--ui-primary);color:var(--lc)}
 .life-hud[data-lv=mid]{--lc:var(--ui-primary)}.life-hud[data-lv=low]{--lc:#ef4444}
 .life-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;filter:drop-shadow(0 0 5px var(--lc));transition:filter .2s}
 .lh-body{fill:rgba(18, 20, 23, .94);stroke:var(--lc);stroke-width:1.6}
@@ -612,7 +612,7 @@ button.big:hover,.box button.big:hover{box-shadow:0 0 22px rgba(16, 185, 129,.6)
 
 /* ===== v19.6: MÓDULOS HUD TÁTICOS (MOEDAS, ONDA, ZUMBIS) ===== */
 .hud-mod{
-  position:relative;width:236px;height:84px;flex:none;zoom:.8;
+  position:relative;width:236px;height:84px;flex:none;zoom:0.56;
   --mc:var(--ui-primary);--mrgb:16,185,129;color:var(--mc);
   transition:filter .2s,transform .15s;
 }
@@ -863,16 +863,27 @@ button.big:hover,.box button.big:hover{box-shadow:0 0 22px rgba(16, 185, 129,.6)
   margin:0!important;
   background:#1c2226!important;
   overflow:hidden!important;
-  display:block!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  flex:1 1 0!important;
+  min-height:0!important;
+  min-width:0!important;
+  position:relative!important;
 }
 #game{
   width:100%!important;
   height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
   display:block!important;
   border:none!important;
   border-radius:0!important;
   box-shadow:none!important;
   margin:0!important;
+  position:relative!important;
+  z-index:1!important;
+  touch-action:none!important;
 }
 
 /* ================= TORRES DE SUPORTE NA SIDEBAR ================= */
@@ -1847,5 +1858,177 @@ button.big:hover,.box button.big:hover{box-shadow:0 0 22px rgba(16, 185, 129,.6)
   border-color: #fbbf24;
   background: rgba(251, 191, 36, 0.18);
   transform: translate3d(0, 0, 0) scale(1.06);
+}
+
+/* ==========================================================================
+   v19.27: AJUSTE ULTRA DEFINITIVO DE LAYOUT E ENQUADRAMENTO DO JOGO
+   Garante que a barra de baixo (zumbis, botão iniciar e reiniciar) NUNCA seja
+   cortada pela metade e que a tela do jogo caiba perfeitamente no viewport.
+   ========================================================================== */
+#app {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  max-width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+#topbar {
+  height: 52px !important;
+  min-height: 52px !important;
+  max-height: 52px !important;
+  flex-shrink: 0 !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  box-sizing: border-box !important;
+}
+
+#main {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+#stage {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+}
+
+#sidebar {
+  flex: 0 0 280px !important;
+  width: 280px !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+#bottombar {
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  flex-shrink: 0 !important;
+  flex-wrap: nowrap !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 12px !important;
+  padding-bottom: max(0px, env(safe-area-inset-bottom)) !important;
+  gap: 8px !important;
+  background: linear-gradient(180deg, var(--ui-bg-surface), var(--ui-bg-base)) !important;
+  border-top: 1px solid var(--ui-border) !important;
+  box-sizing: border-box !important;
+  z-index: 15 !important;
+}
+
+#bottombar button,
+#btnNext,
+#btnRestart,
+#btnCancel {
+  height: 34px !important;
+  min-height: 34px !important;
+  max-height: 34px !important;
+  padding: 0 14px !important;
+  font-size: 12.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.5px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  border-radius: 6px !important;
+  box-sizing: border-box !important;
+}
+
+#bottombar .auto {
+  height: 34px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  margin: 0 2px !important;
+}
+
+#bottombar .auto input {
+  accent-color: var(--ui-primary) !important;
+  width: 16px !important;
+  height: 16px !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+}
+
+#bottombar #progress {
+  position: relative !important;
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  max-height: 30px !important;
+  background: rgba(18, 20, 23, 0.94) !important;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: 6px !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+}
+
+#bottombar #progress i {
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: 0;
+  background: linear-gradient(90deg, var(--ui-primary-active), var(--neon)) !important;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.6) !important;
+  transition: width 0.2s ease !important;
+}
+
+#bottombar #progress span {
+  position: relative !important;
+  z-index: 2 !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px #000, 0 0 6px rgba(0,0,0,0.8) !important;
+  white-space: nowrap !important;
+  padding: 0 10px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 30px !important;
+}
+
+.quick-ability-bar {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex-shrink: 0 !important;
 }
 
