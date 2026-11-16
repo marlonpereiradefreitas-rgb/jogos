@@ -64,6 +64,15 @@ body.menu-mode #stage{width:100%;height:100%;background:#080a06}
 body.menu-mode #game{display:none!important}
 body.menu-mode #toast,body.menu-mode #hint,body.menu-mode #pauseOv,body.menu-mode #towerPanel{display:none!important}
 body.menu-mode .screen{inset:0;overflow:auto}
+body:not(.menu-mode) #startScreen,
+body:not(.menu-mode) #homeScreen,
+body:not(.menu-mode) #aboutScreen,
+body:not(.menu-mode) #achScreen,
+body:not(.menu-mode) #rankScreen {
+  display:none!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
 
 
 /* --- topo --- */

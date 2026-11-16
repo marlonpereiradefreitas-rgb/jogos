@@ -1006,7 +1006,7 @@ button.big:hover,.box button.big:hover{box-shadow:0 0 22px rgba(16, 185, 129,.6)
    412x915 e 768x1024 em portrait e landscape, sem alterar o Desktop.
    ========================================================================== */
 @media (max-width: 768px) {
-  .map-screen {
+  .map-screen:not(.hidden) {
     height: 100vh !important;
     height: 100dvh !important;
     overflow-y: auto !important;
@@ -1115,7 +1115,7 @@ button.big:hover,.box button.big:hover{box-shadow:0 0 22px rgba(16, 185, 129,.6)
 }
 
 @media (max-height: 540px) and (orientation: landscape) {
-  .map-screen {
+  .map-screen:not(.hidden) {
     display: flex !important;
     flex-direction: column !important;
     height: 100vh !important;
@@ -2030,5 +2030,32 @@ button.big:hover,.box button.big:hover{box-shadow:0 0 22px rgba(16, 185, 129,.6)
   align-items: center !important;
   gap: 6px !important;
   flex-shrink: 0 !important;
+}
+
+/* ==========================================================================
+   v19.28: GARANTIA DE TRANSIÇÃO E OCULTAÇÃO DE TELAS DE MENU NO MOBILE E PC
+   Impede que a tela de seleção de mapas (#startScreen) continue visível
+   enquanto a partida roda em segundo plano.
+   ========================================================================== */
+.hidden,
+.screen.hidden,
+.map-screen.hidden,
+#startScreen.hidden,
+#homeScreen.hidden,
+#aboutScreen.hidden,
+#achScreen.hidden,
+#rankScreen.hidden,
+#endScreen.hidden,
+body:not(.menu-mode) .screen:not(#endScreen):not(#settingsScreen),
+body:not(.menu-mode) #startScreen,
+body:not(.menu-mode) #homeScreen,
+body:not(.menu-mode) #aboutScreen,
+body:not(.menu-mode) #achScreen,
+body:not(.menu-mode) #rankScreen {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  z-index: -999 !important;
 }
 

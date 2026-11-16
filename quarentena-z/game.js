@@ -3218,6 +3218,36 @@ function updateHomeStats(){
     }
   }
 }
+function setElementHidden(el,hidden){
+  if(!el)return;
+  el.classList.toggle('hidden',!!hidden);
+  if(!el.style)return;
+  if(hidden){
+    if(typeof el.style.setProperty==='function'){
+      el.style.setProperty('display','none','important');
+      el.style.setProperty('visibility','hidden','important');
+      el.style.setProperty('opacity','0','important');
+      el.style.setProperty('pointer-events','none','important');
+    }else{
+      el.style.display='none';
+      el.style.visibility='hidden';
+      el.style.opacity='0';
+      el.style.pointerEvents='none';
+    }
+  }else{
+    if(typeof el.style.removeProperty==='function'){
+      el.style.removeProperty('display');
+      el.style.removeProperty('visibility');
+      el.style.removeProperty('opacity');
+      el.style.removeProperty('pointer-events');
+    }else{
+      el.style.display='';
+      el.style.visibility='';
+      el.style.opacity='';
+      el.style.pointerEvents='';
+    }
+  }
+}
 function refreshContinue(){
   const d=readSave(),b=$('btnHomeContinue');
   if(b){
@@ -3230,9 +3260,9 @@ function refreshContinue(){
   }
   updateHomeStats();
 }
-function loadSave(){const d=readSave();if(!d)return;Snd.init();document.body.classList.remove('menu-mode');
-  document.querySelectorAll('.screen').forEach(el=>el.classList.add('hidden'));
-  activeDifficulty=d.diff;selectMap(d.map);G.auto=d.auto0;$('chkAuto').checked=d.auto0;resetGame(d.seed);G.replay={log:d.log,i:0,target:d.ticks};}
+function loadSave(){const d=readSave();if(!d)return;Snd.init();document.body.classList.remove('menu-mode');document.body.classList.remove('settings-in-game');
+  document.querySelectorAll('.screen').forEach(el=>setElementHidden(el,true));
+  activeDifficulty=d.diff;selectMap(d.map);G.auto=d.auto0;$('chkAuto').checked=d.auto0;resetGame(d.seed);G.replay={log:d.log,i:0,target:d.ticks};fitCanvas();}
 function stepReplay(){const R=G.replay,t0=performance.now();
   while(performance.now()-t0<22){while(R.i<R.log.length&&R.log[R.i].tick<=G.tick)dispatch(R.log[R.i++]);if(G.tick>=R.target)break;update(STEP);if(G.mode!=='play')break;}
   if(G.tick>=R.target||G.mode!=='play'){while(R.i<R.log.length&&R.log[R.i].tick<=G.tick)dispatch(R.log[R.i++]);G.replay=null;G.paused=true;SecurityGuard.syncVault();toast('Partida carregada. Pressione Espaço para continuar.','good');}}
@@ -6014,7 +6044,17 @@ function bindEvents(){
   $('btnHomeContinue').addEventListener('click',loadSave);
   $('btnFullscreen').addEventListener('click',()=>{if(window.steamBridge){window.steamBridge.fullscreen();}else if(document.fullscreenElement)document.exitFullscreen();else if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen();});
   const cv=$('game');
-  const showScreen=id=>{['homeScreen','aboutScreen','settingsScreen','startScreen','achScreen','rankScreen'].forEach(k=>$(k).classList.toggle('hidden',k!==id));document.body.classList.add('menu-mode');document.body.classList.remove('settings-in-game');$('btnSettingsReturnGame').classList.add('hidden');if(id==='homeScreen')refreshContinue();Snd.syncMusic();};
+  const showScreen=id=>{
+    ['homeScreen','aboutScreen','settingsScreen','startScreen','achScreen','rankScreen'].forEach(k=>{
+      const el=$(k);
+      if(el)setElementHidden(el,k!==id);
+    });
+    document.body.classList.add('menu-mode');
+    document.body.classList.remove('settings-in-game');
+    $('btnSettingsReturnGame').classList.add('hidden');
+    if(id==='homeScreen')refreshContinue();
+    Snd.syncMusic();
+  };
   // Desbloqueio imediato do AudioContext no primeiro touchstart, pointerdown ou keydown (iOS e Android)
   const wakeAudio=()=>Snd.unlockMobileAudio();
   window.addEventListener('touchstart',wakeAudio,{once:true,passive:true});
@@ -6189,8 +6229,33 @@ function bindEvents(){
   });
   const syncMapCards=val=>{document.querySelectorAll('.map-card').forEach(c=>c.classList.toggle('selected',c.dataset.map===val));};
   const syncDiffPills=val=>{document.querySelectorAll('.diff-pill').forEach(p=>p.classList.toggle('active',p.dataset.diff===val));};
+  const startGameOperation=()=>{
+    Snd.init();
+    document.body.classList.remove('menu-mode');
+    document.body.classList.remove('settings-in-game');
+    activeDifficulty=$('difficultySelect').value||'normal';
+    career.lastDifficulty=activeDifficulty;
+    selectMap($('mapSelect').value||'four');
+    career.lastMap=activeMap;
+    saveCareer();
+    ['homeScreen','aboutScreen','settingsScreen','startScreen','achScreen','rankScreen'].forEach(k=>{
+      setElementHidden($(k),true);
+    });
+    resetGame();
+    psGameStart();
+    Snd.syncMusic();
+    Snd.play('ui');
+    fitCanvas();
+  };
+
   document.querySelectorAll('.map-card').forEach(card=>card.addEventListener('click',()=>{
-    $('mapSelect').value=card.dataset.map;syncMapCards(card.dataset.map);Snd.play('ui');
+    const wasSelected=card.classList.contains('selected')&&$('mapSelect').value===card.dataset.map;
+    $('mapSelect').value=card.dataset.map;
+    syncMapCards(card.dataset.map);
+    Snd.play('ui');
+    if(IS_MOBILE&&wasSelected){
+      startGameOperation();
+    }
   }));
   $('mapSelect').addEventListener('change',e=>{syncMapCards(e.target.value);renderMapPagination(true);Snd.play('ui');});
   $('difficultySelect').addEventListener('change',e=>{syncDiffPills(e.target.value);Snd.play('ui');});
@@ -6232,7 +6297,7 @@ function bindEvents(){
   cv.addEventListener('pointercancel',()=>{M.in=false;});
   cv.addEventListener('contextmenu',e=>{e.preventDefault();cancelAll();});
 
-  $('btnPlay').addEventListener('click',()=>{Snd.init();document.body.classList.remove('menu-mode');activeDifficulty=$('difficultySelect').value||'normal';career.lastDifficulty=activeDifficulty;selectMap($('mapSelect').value||'four');career.lastMap=activeMap;saveCareer();$('startScreen').classList.add('hidden');resetGame();psGameStart();Snd.syncMusic();Snd.play('ui');});
+  $('btnPlay').addEventListener('click',startGameOperation);
   $('btnAgain').addEventListener('click',()=>{Snd.init();resetGame();psGameStart();});
   $('btnEndExit').addEventListener('click',()=>{document.body.classList.remove('settings-in-game');G.mode='menu';G.paused=false;G.placing=null;select(null);hideEnd();refreshContinue();showScreen('homeScreen');});
   $('btnContinue').addEventListener('click',()=>{hideEnd();G.paused=false;});
