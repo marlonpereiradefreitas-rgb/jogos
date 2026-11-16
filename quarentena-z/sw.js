@@ -1,14 +1,14 @@
 /* Cache offline para o Apocalipse. Atualize CACHE_VERSION ao publicar novas versões. */
-const CACHE_VERSION = 'quarentena-z-v19-23';
+const CACHE_VERSION = 'quarentena-z-v19-24';
 const APP_SHELL = [
   './',
   './index.html',
-  './style.css?v=19.23',
-  './theme-v19.css?v=19.23',
-  './modules/object-pool.js?v=19.23',
-  './modules/btd6-towers.js?v=19.23',
-  './modules/btd6-ui.js?v=19.23',
-  './game.js?v=19.23',
+  './style.css?v=19.24',
+  './theme-v19.css?v=19.24',
+  './modules/object-pool.js?v=19.24',
+  './modules/btd6-towers.js?v=19.24',
+  './modules/btd6-ui.js?v=19.24',
+  './game.js?v=19.24',
   './manifest.webmanifest',
   './assets/icon.svg',
 ];
@@ -25,17 +25,20 @@ self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
-  event.respondWith(caches.match(request).then(cached => {
-    if (cached) return cached;
-    return fetch(request).then(response => {
+  // Estratégia Network-First para sempre carregar as últimas alterações do GitHub Pages quando online, com fallback offline imediato
+  event.respondWith(
+    fetch(request).then(response => {
       if (response && response.ok && response.type === 'basic') {
         const copy = response.clone();
         caches.open(CACHE_VERSION).then(cache => cache.put(request, copy));
       }
       return response;
     }).catch(() => {
-      if (request.mode === 'navigate') return caches.match('./index.html');
-      throw new Error('Recurso indisponível offline');
-    });
-  }));
+      return caches.match(request).then(cached => {
+        if (cached) return cached;
+        if (request.mode === 'navigate') return caches.match('./index.html');
+        throw new Error('Recurso indisponível offline');
+      });
+    })
+  );
 });

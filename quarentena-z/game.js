@@ -4730,7 +4730,68 @@ function makeIcon(key,lvl,spec,pathIdx,tier,paragon){
 }
 function getTowerPortrait(t){
   if(!t)return '';
-  return makeIcon(t.key,t.level,t.spec,t.dominantPath,t.tier,t.paragon);
+  const key=t.key, lv=t.level||2, sp=t.spec!==undefined?t.spec:-1, pi=t.dominantPath, tr=t.tier||0, pg=t.paragon?1:0;
+  const ck='wide|'+key+'|'+lv+'|'+sp+'|'+pi+'|'+tr+'|'+pg;
+  if(PORTRAIT_CACHE[ck])return PORTRAIT_CACHE[ck];
+  const c=document.createElement('canvas');c.width=120;c.height=84;const old=ctx;ctx=c.getContext('2d');
+  const ac=pg?'#fbbf24':(tr>=2&&pi>=0&&PATH_SKIN_ACCENT[pi])?PATH_SKIN_ACCENT[pi]:(TOWER_ACCENT[key]||'#38bdf8');
+  // Fundo tático da moldura do retrato estilo BTD6
+  const bg=ctx.createLinearGradient(0,0,120,84);
+  bg.addColorStop(0,'#090e1a');bg.addColorStop(0.55,'#111c30');bg.addColorStop(1,'#090d16');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,120,84);
+  const gr=ctx.createRadialGradient(46,44,4,46,44,44);
+  gr.addColorStop(0,ac+(tr>=3||pg?'66':'44'));gr.addColorStop(1,ac+'00');
+  ctx.fillStyle=gr;ctx.fillRect(0,0,120,84);
+  // Grade tecnológica sutil de fundo
+  ctx.strokeStyle='rgba(148,163,184,0.1)';ctx.lineWidth=1;
+  for(let gx=16;gx<120;gx+=20){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,84);ctx.stroke();}
+  for(let gy=16;gy<84;gy+=20){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(120,gy);ctx.stroke();}
+  // Halo de evolução da torre
+  if(tr>0||pg){
+    ctx.strokeStyle=ac;ctx.lineWidth=pg?2.6:(tr>=4?2:1.4);
+    ctx.beginPath();ctx.arc(44,46,28,0,6.283);ctx.stroke();
+    if(tr>=3||pg){
+      ctx.save();ctx.setLineDash([4,3]);ctx.strokeStyle=pg?'#fef08a':'#ffffff';ctx.globalAlpha=0.55;
+      ctx.beginPath();ctx.arc(44,46,32,0,6.283);ctx.stroke();ctx.restore();
+    }
+  }
+  const hasCompanion=(key==='dino'||key==='minefactory');
+  drawTowerSprite(key,hasCompanion?38:60,48,-.38,0,lv,sp,0.8,key==='dino'?(tr>=1?0.85:0.35):0,pi,tr);
+  // No Domador Jurássico, desenha o Dinossauro evoluído ao lado da torre dentro do retrato
+  if(key==='dino'){
+    ctx.save();ctx.translate(86,56);
+    const sc=1.08+Math.min(0.28,tr*0.05);
+    ctx.scale(-sc,sc);
+    const colDark=pg?'#991b1b':tr>=4?'#b91c1c':tr>=2?'#c2410c':'#14532d';
+    const colMid=pg?'#dc2626':tr>=4?'#ef4444':tr>=2?'#ea580c':'#16a34a';
+    const colLight=pg?'#f87171':tr>=4?'#fb923c':tr>=2?'#fb923c':'#22c55e';
+    const colCrest=pg?'#fde047':tr>=4?'#38bdf8':tr>=2?'#facc15':'#a3e635';
+    ctx.fillStyle=colDark;ctx.beginPath();ctx.moveTo(-4,-4);ctx.lineTo(-16,-9);ctx.lineTo(-12,-2);ctx.closePath();ctx.fill();
+    R(-4,-1,3.5,6,colDark);R(0,-1,3.8,6.5,colMid);
+    ctx.fillStyle=colMid;ctx.beginPath();ctx.ellipse(0,-6.5,9,5.5,-0.18,0,6.283);ctx.fill();
+    ctx.fillStyle=colLight;ctx.beginPath();ctx.ellipse(1,-5,6,3,-0.15,0,6.283);ctx.fill();
+    if(tr>=2||pg){R(-4,-9.5,7,4,'#1e293b');R(-2.5,-8.5,4,1.8,pg?'#fde047':'#38bdf8');}
+    for(let i=0;i<4;i++)R(-6+i*3,-11.5-i*0.5,2.2,2.2,colCrest);
+    ctx.fillStyle=colMid;ctx.fillRect(3,-16,10,5.2);
+    if(tr>=4||pg){R(3,-17,7,2,'#334155');R(5,-16.2,3,1.2,'#fde047');}
+    ctx.fillStyle='#fef3c7';ctx.fillRect(6,-10.8,1.4,2.2);ctx.fillRect(9,-10.8,1.4,2.2);ctx.fillRect(11.2,-10.8,1.4,2.2);
+    ctx.fillStyle=pg?'#38bdf8':'#fef08a';ctx.fillRect(7.5,-14.5,2.5,1.8);
+    ctx.fillStyle=colDark;ctx.fillRect(3,-9.5,8.5,2.6);
+    ctx.restore();
+  } else if(key==='minefactory'){
+    // Na Usina de Minas, desenha as minas metálicas táticas com luzes vermelho/amarelo ao lado
+    for(const [mx,my,led] of [[84,42,'#ef4444'],[96,56,'#facc15'],[76,58,'#ef4444']]){
+      ctx.save();ctx.translate(mx,my);
+      R(-7,-2,14,4,'#0f172a');R(-2,-5,4,10,'#0f172a');
+      ctx.fillStyle='#1e293b';ctx.strokeStyle='#94a3b8';ctx.lineWidth=1;
+      ctx.beginPath();ctx.ellipse(0,0,7.5,4.8,0,0,6.283);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#475569';ctx.beginPath();ctx.ellipse(0,-1.2,5,3,0,0,6.283);ctx.fill();
+      ctx.fillStyle=led;ctx.beginPath();ctx.arc(0,-1.8,2.2,0,6.283);ctx.fill();
+      ctx.restore();
+    }
+  }
+  ctx=old;
+  return PORTRAIT_CACHE[ck]=c.toDataURL();
 }
 
 /* ===================== 11. INTERFACE E ENTRADA ===================== */
@@ -5007,12 +5068,15 @@ function refreshPanel(){
   }
   p.classList.remove('hidden'); p.classList.toggle('pl',t.x>W/2); p.classList.toggle('collapsed',!!UI.panelCollapsed);
   const colIco=UI.panelCollapsed?(t.x>W/2?'▶':'◀'):(t.x>W/2?'◀':'▶');
-  let h='<div class="tp-head btd6-head">'
-    +'<div class="tp-portrait-wrap tier-'+Math.min(5,t.tier)+(t.paragon?' paragon':'')+'"><img src="'+portraitUrl+'" alt="'+escHtml(d.name)+'"><span class="tp-tier-badge">'+(t.paragon?'ASC':'T'+Math.min(5,t.tier))+'</span></div>'
-    +'<div class="tp-title-col"><div class="nm">'+d.name+'</div><div class="lv">'+(t.paragon?'★ UNIDADE ASCENDIDA':skinTag+' · Nv '+Math.min(5,t.tier)+'/5')+'</div>'
-    +'<div class="tp-kills" title="Contagem exata de zumbis abatidos por esta torre">☠ <b>'+(t.kills||0).toLocaleString('pt-BR')+'</b> abates</div></div>'
-    +'<div class="tp-head-actions"><button class="tp-collapse" data-act="toggleCollapse" title="'+(UI.panelCollapsed?'Expandir Painel':'Recolher Painel Lateral')+'">'+colIco+'</button>'
-    +'<button class="tp-close" data-act="close" title="Fechar (ESC)">✕</button></div></div>';
+  let h='<button type="button" class="tp-drawer-tab" data-act="toggleCollapse" title="'+(UI.panelCollapsed?'Expandir Painel de Inspeção':'Recolher Painel Lateral')+'"><span>'+colIco+'</span></button>';
+  h+='<div class="tp-portrait-showcase tier-'+Math.min(5,t.tier)+(t.paragon?' paragon':'')+'">'
+    +'<div class="tp-portrait-wrap tier-'+Math.min(5,t.tier)+(t.paragon?' paragon':'')+'"><img src="'+portraitUrl+'" alt="'+escHtml(d.name)+'"><span class="tp-tier-badge">'+(t.paragon?'ASCENDIDA':'NÍVEL '+Math.min(5,t.tier)+'/5')+'</span></div>'
+    +'<div class="tp-head btd6-head">'
+    +'<div class="tp-title-col"><div class="nm">'+d.name+'</div><div class="lv">'+(t.paragon?'★ UNIDADE ASCENDIDA':skinTag)+'</div></div>'
+    +'<div class="tp-kills" title="Contagem exata de zumbis abatidos por esta torre">☠ <b>'+(t.kills||0).toLocaleString('pt-BR')+'</b> abates</div>'
+    +'<div class="tp-head-actions"><button type="button" class="tp-collapse" data-act="toggleCollapse" title="'+(UI.panelCollapsed?'Expandir Painel':'Recolher Painel Lateral')+'">'+colIco+'</button>'
+    +'<button type="button" class="tp-close" data-act="close" title="Fechar (ESC)">✕</button></div>'
+    +'</div></div>';
   h+='<div class="tp-body">';
   const dmgTxt=d.kind==='flame'?(s.dmg.toFixed(1)+' (+calor)'):d.kind==='ice'?s.dmg.toFixed(0)+' (+lentidão)':Math.round(s.dmg)+(s.splash?' (área)':'');
   h+='<div class="tp-stats"><span>Dano/ataque</span><span>'+dmgTxt+'</span><span>Cadência</span><span>'+s.rate.toFixed(2)+' /s</span><span>Alcance</span><span>'+Math.round(s.range)+'</span><span>Tipo</span><span>'+d.dtype+'</span></div>';
@@ -6164,8 +6228,14 @@ function init(){
   TOWER_ORDER.forEach(k=>UI.icons[k]=makeIcon(k));
   SecurityGuard.lockDefinitions();
   buildSidebar(); bindEvents(); fitCanvas(); Snd.syncMusic(); OnlineAPI.sync(); refreshInstallUI();
-  // Registra o Service Worker (PWA offline) fora de inline script para manter CSP script-src 'self'
-  try{if(typeof navigator!=='undefined'&&'serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){navigator.serviceWorker.register('./sw.js').catch(()=>{});}}catch(_){}
+  // Registra o Service Worker (PWA offline) fora de inline script para manter CSP script-src 'self' e força atualização imediata
+  try{
+    if(typeof navigator!=='undefined'&&'serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
+      let refreshing=false;
+      navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;location.reload();}});
+      navigator.serviceWorker.register('./sw.js?v=19.24').then(reg=>{try{reg.update();}catch(_){}}).catch(()=>{});
+    }
+  }catch(_){}
   document.querySelectorAll('.map-card').forEach(c=>c.classList.toggle('selected',c.dataset.map===$('mapSelect').value));
   document.querySelectorAll('.diff-pill').forEach(p=>p.classList.toggle('active',p.dataset.diff===$('difficultySelect').value));
   G.life=CFG.baseLife; G.money=CFG.startMoney;

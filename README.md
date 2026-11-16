@@ -6,11 +6,11 @@
 
 Tower defense estratégico de zumbis em HTML5/JS: defenda o último perímetro de Vale Cinzento com **26 torres especializadas** (incluindo Metralhadora Direcional, Domador Jurássico, Usina de Minas com Stun e Portal Tático), **upgrades em 3 linhas com skins dinâmicas**, **Protocolo de Ascensão**, **18 mapas com medalhas**, versão **PWA instalável** para navegador/celular e **instalador Windows**.
 
-## Jogar / Baixar (Versão Atualizada v1.0.4 — Pacote BTD6)
+## Jogar / Baixar (Versão Atualizada v1.0.5 — Redesign BTD6 & Invocações)
 - **Jogar no Navegador (PC e Celular — PWA instalável):** https://marlonpereiradefreitas-rgb.github.io/jogos/
-- **Baixar para Windows v1.0.4 (Página da Release Atualizada):** https://github.com/marlonpereiradefreitas-rgb/jogos/releases/tag/v1.0.4
-- **Download Direto Instalador Windows (.exe v1.0.4):** https://github.com/marlonpereiradefreitas-rgb/jogos/releases/download/v1.0.4/Quarentena.Z.Setup.1.0.4.exe
-- **Download Direto Versão Portátil Windows (.exe v1.0.4):** https://github.com/marlonpereiradefreitas-rgb/jogos/releases/download/v1.0.4/Quarentena.Z.1.0.4.exe
+- **Baixar para Windows v1.0.5 (Página da Release Atualizada):** https://github.com/marlonpereiradefreitas-rgb/jogos/releases/tag/v1.0.5
+- **Download Direto Instalador Windows (.exe v1.0.5):** https://github.com/marlonpereiradefreitas-rgb/jogos/releases/download/v1.0.5/Quarentena.Z.Setup.1.0.5.exe
+- **Download Direto Versão Portátil Windows (.exe v1.0.5):** https://github.com/marlonpereiradefreitas-rgb/jogos/releases/download/v1.0.5/Quarentena.Z.1.0.5.exe
 - **Baixar Código-Fonte Atualizado (.zip):** https://github.com/marlonpereiradefreitas-rgb/jogos/archive/refs/heads/main.zip
 - **Android / iOS:** abra o link do navegador acima e toque em **`📲 INSTALAR JOGO`** no menu inicial (ou *Adicionar à Tela de Início* no iOS).
 
