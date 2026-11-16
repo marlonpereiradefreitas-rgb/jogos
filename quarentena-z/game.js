@@ -468,8 +468,8 @@ const UNIQUE_UPS2={
 for(const k in UNIQUE_UPS2){UNIQUE_UPS2[k].forEach((path,j)=>{TOWER_PATHS[k][j+1]=path.map((e,i)=>mkUp(TOWERS[k],i,e));});}
 const FINAL5={gunner:['Canhão Rotativo',{dmg:'*1.5',rate:'*1.3',pierce:'+1'}],sniper:['Mira Satélite',{dmg:'*1.8',crit:'+.2',critMult:'=4'}],mortar:['Artilharia Pesada',{dmg:'*1.6',splash:'*1.25'}],flame:['Lança-Chamas de Plasma',{dmg:'*1.6',burnDps:'*1.4',range:'*1.15'}],tesla:['Bobina Mestre',{dmg:'*1.5',chain:'+2'}],ice:['Câmara Criogênica',{slow:'=.62',freezeChance:'+.08',dmg:'*1.8'}],poison:['Toxina Suprema',{poisonDps:'*1.6',poisonT:'+2'}],antitank:['Canhão de Cerco',{dmg:'*1.6',pierce:'+2'}],archer:['Arco Lendário',{dmg:'*1.6',rate:'*1.25'}],boomerang:['Lâmina Eterna',{dmg:'*1.5',pierce:'+3'}],engineer:['Núcleo Experimental',{dmg:'*1.6',chain:'+2',range:'*1.15'}]};
 for(const k in FINAL5)TOWER_PATHS[k][0][4]=mkUp(TOWERS[k],4,FINAL5[k]);
-const COMBAT_ORDER = ['gunner','sniper','mortar','flame','tesla','ice','poison','antitank','archer','boomerang','engineer','radar','shotgun','drone','demolition','railgun','medstation','acid','dartgun','dino','minefactory'];
-const SUPPORT_ORDER = ['beacon','supplydepot','cryogen','nanomed','portal'];
+const COMBAT_ORDER = ['gunner','dartgun','dino','minefactory','sniper','mortar','flame','tesla','ice','poison','antitank','archer','boomerang','engineer','radar','shotgun','drone','demolition','railgun','medstation','acid'];
+const SUPPORT_ORDER = ['portal','beacon','supplydepot','cryogen','nanomed'];
 const TOWER_ORDER = [...COMBAT_ORDER, ...SUPPORT_ORDER];
 const TOWER_ABILITIES = {
   mortar:{name:'Barragem Explosiva',cost:200,cd:28,desc:'Dispara uma barragem na área selecionada.'},
@@ -5183,6 +5183,7 @@ function refreshPanel(){
       const stLabel=isBought?'✔ Comprado':isNext?(canBuy?'● Disponível para compra':'✖ Moedas insuficientes'):'🔒 Bloqueado';
       const badgeHtml=isBought?'<span class="btd6-nc-badge ok">✓</span>':isNext?('<span class="btd6-nc-badge cost">'+uCost+'●</span>'):'<span class="btd6-nc-badge lck">🔒</span>';
       const actAttr=isNext?' data-act="up" data-i="0" data-path="'+pi+'"':' data-act="nodeTip"';
+      const customSvgPath='assets/upgrades/path'+pi+'-lv'+(step+1)+'.svg';
       h+='<button type="button" class="btd6-node-circle '+stateCls+'"'+actAttr
         +' data-up-tip="1"'
         +' data-up-name="'+escHtml(uName)+'"'
@@ -5191,6 +5192,7 @@ function refreshPanel(){
         +' data-up-status="'+escHtml(stLabel)+'"'
         +' data-up-tier="Linha '+(pi+1)+' · Nível '+(step+1)+'/5"'
         +' aria-label="'+escHtml(uName)+' ('+uCost+' moedas) - '+escHtml(stLabel)+'">'
+        +'<img class="btd6-nc-img" src="'+customSvgPath+'" alt="" loading="eager">'
         +'<span class="btd6-nc-ico">'+btd6UpgradeNodeSvg(pi,step)+'</span>'
         +badgeHtml
         +'</button>';
@@ -5247,10 +5249,11 @@ function buildSidebar(){
   TOWER_ORDER.forEach((key,i)=>{
     const d=TOWERS[key],el=document.createElement('button');
     const isSup=d.role==='support';
+    const isBtd6New=(key==='dartgun'||key==='dino'||key==='minefactory'||key==='portal');
     const kLabel=(TOWER_KEYS[i]||'').toUpperCase();
-    el.className='tcard compact-tcard'+(isSup?' support-card':''); el.dataset.key=key;
+    el.className='tcard compact-tcard'+(isSup?' support-card':'')+(isBtd6New?' btd6-new-card':''); el.dataset.key=key;
     if(el.setAttribute)el.setAttribute('aria-label',d.name+' ('+d.cost+' moedas)');
-    el.innerHTML='<span class="key">'+kLabel+'</span><img class="ticon" src="'+UI.icons[key]+'" alt=""><span class="tname">'+d.name+'</span><span class="tcost">'+d.cost+' ●</span>';
+    el.innerHTML='<span class="key">'+kLabel+'</span>'+(isBtd6New?'<span class="tbadge-new">NOVO</span>':'')+'<img class="ticon" src="'+UI.icons[key]+'" data-svg="assets/towers/'+key+'.svg" alt=""><span class="tname">'+d.name+'</span><span class="tcost">'+d.cost+' ●</span>';
     if(isSup&&supList)supList.appendChild(el);
     else list.appendChild(el);
     UI.cards[key]=el;
@@ -6350,7 +6353,7 @@ function init(){
     if(typeof navigator!=='undefined'&&'serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
       let refreshing=false;
       navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;location.reload();}});
-      navigator.serviceWorker.register('./sw.js?v=19.25').then(reg=>{try{reg.update();}catch(_){}}).catch(()=>{});
+      navigator.serviceWorker.register('./sw.js?v=19.26').then(reg=>{try{reg.update();}catch(_){}}).catch(()=>{});
     }
   }catch(_){}
   document.querySelectorAll('.map-card').forEach(c=>c.classList.toggle('selected',c.dataset.map===$('mapSelect').value));

@@ -1,14 +1,14 @@
 /* Cache offline para o Apocalipse. Atualize CACHE_VERSION ao publicar novas versões. */
-const CACHE_VERSION = 'quarentena-z-v19-25';
+const CACHE_VERSION = 'quarentena-z-v19-26';
 const APP_SHELL = [
   './',
   './index.html',
-  './style.css?v=19.25',
-  './theme-v19.css?v=19.25',
-  './modules/object-pool.js?v=19.25',
-  './modules/btd6-towers.js?v=19.25',
-  './modules/btd6-ui.js?v=19.25',
-  './game.js?v=19.25',
+  './style.css?v=19.26',
+  './theme-v19.css?v=19.26',
+  './modules/object-pool.js?v=19.26',
+  './modules/btd6-towers.js?v=19.26',
+  './modules/btd6-ui.js?v=19.26',
+  './game.js?v=19.26',
   './manifest.webmanifest',
   './assets/icon.svg',
 ];

@@ -1357,6 +1357,24 @@ button.big:hover,.box button.big:hover{box-shadow:0 0 22px rgba(16, 185, 129,.6)
   border: 1px solid rgba(148, 163, 184, 0.25) !important;
 }
 
+.tcard.compact-tcard .tbadge-new {
+  position: absolute !important;
+  top: 3px !important;
+  right: 4px !important;
+  font-size: 7.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.4px !important;
+  padding: 1px 4px !important;
+  border-radius: 4px !important;
+  background: linear-gradient(90deg, #10b981, #059669) !important;
+  color: #ffffff !important;
+  border: 1px solid #34d399 !important;
+}
+
+.tcard.compact-tcard.btd6-new-card {
+  border-color: rgba(16, 185, 129, 0.45) !important;
+}
+
 .tcard.compact-tcard .ticon {
   width: 36px !important;
   height: 36px !important;
@@ -1627,7 +1645,20 @@ button.big:hover,.box button.big:hover{box-shadow:0 0 22px rgba(16, 185, 129,.6)
   transform: translate3d(0, -2px, 0) scale(1.06);
 }
 
+.btd6-node-circle .btd6-nc-img {
+  position: absolute;
+  inset: 2px;
+  width: calc(100% - 4px) !important;
+  height: calc(100% - 4px) !important;
+  border-radius: 50%;
+  object-fit: cover;
+  pointer-events: none;
+  opacity: 0.35;
+}
+
 .btd6-node-circle .btd6-nc-ico {
+  position: relative;
+  z-index: 2;
   width: 19px;
   height: 19px;
   display: inline-flex;
