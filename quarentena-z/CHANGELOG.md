@@ -1,5 +1,24 @@
 # Changelog
 
+## [v1.0.7] — 2026-11-16
+
+### Enquadramento de Tela e Correção do Rodapé (Sem Cortes)
+- **Correção da Altura da Tela e Enquadramento Geral (`#app`, `#stage`, `#main`)**:
+  - Fixado `#app` com `height: 100vh; height: 100dvh; max-height: 100dvh; overflow: hidden;` eliminando qualquer rolagem indesejada ou esticamento vertical do layout.
+  - `#topbar` ajustado para altura compacta de 52px com `flex-wrap: nowrap; overflow-x: auto; flex-shrink: 0;` e módulos táticos com zoom balanceado (`0.56`), impedindo que o topo dobre de tamanho e empurre a tela do jogo para fora.
+  - `#main` e `#stage` com `flex: 1 1 0; min-height: 0; min-width: 0; overflow: hidden;` e canvas `#game` centralizado com DPR controlado e ajuste estrito via `fitCanvas()`.
+- **Fim do Corte na Barra Inferior (`#bottombar`)**:
+  - `#bottombar` travado com `height: 48px !important; min-height: 48px; max-height: 48px; flex-shrink: 0 !important; flex-wrap: nowrap !important; overflow: hidden;`.
+  - Botões `▶ Iniciar onda`, `Reiniciar` e `Cancelar` com altura padronizada de 34px perfeitamente centralizados verticalmente (7px de margem superior e inferior), garantindo bordas 100% visíveis, sem corte pela metade.
+  - Barra de progresso dos zumbis (`#progress`) com 30px de altura, centralizada, exibindo a contagem e tipos de infectados com nitidez total.
+
+## [v1.0.6] — 2026-11-16
+
+### 223 Imagens Exclusivas, Pré-carregamento e Árvore BTD6 Completa
+- **223 Imagens Gráficas em Alta Resolução (SVG)**: adicionados sprites para todas as 26 torres do jogo em todos os 6 tiers (Base T0, Tiers 1–5 e Paragon) em `quarentena-z/assets/towers/`, e ícones circulares ilustrados para as 3 rotas de upgrade em `quarentena-z/assets/upgrades/`.
+- **Destaque das Novas Torres**: Metralhadora Direcional, Domador Jurássico, Usina de Minas e Portal Tático promovidas para as primeiras posições da loja.
+- **Sistema de Preload Assíncrono (`preloadAllBtd6Assets`)**: imagens pré-carregadas na inicialização para troca instantânea de skins no mapa e nos retratos do painel sem travamentos.
+
 ## [v1.0.5] — 2026-11-16
 
 ### Redesign Visual, Invocações e Painel Dinâmico Estilo BTD6
