@@ -4,10 +4,13 @@
 
 Tower defense estratégico de sobrevivência contra zumbis em HTML5/JS, com versão para **Navegador / PWA** (PC, Android e iOS), **PC Desktop (Windows/Electron)** e **servidor Node.js opcional** para ranking e cloud save protegidos por HMAC-SHA256.
 
-## Jogar / Baixar
+## Jogar / Baixar (Versão Atualizada v1.0.4 — Pacote BTD6)
 
 - **Jogar Agora no Navegador (PC e Celular — PWA instalável):** https://marlonpereiradefreitas-rgb.github.io/jogos/
-- **Baixar para Windows (.exe Instalador e Portátil):** https://github.com/marlonpereiradefreitas-rgb/jogos/releases/latest
+- **Baixar para Windows v1.0.4 (Página da Release Atualizada):** https://github.com/marlonpereiradefreitas-rgb/jogos/releases/tag/v1.0.4
+- **Download Direto Instalador Windows (.exe v1.0.4):** https://github.com/marlonpereiradefreitas-rgb/jogos/releases/download/v1.0.4/Quarentena.Z.Setup.1.0.4.exe
+- **Download Direto Versão Portátil Windows (.exe v1.0.4):** https://github.com/marlonpereiradefreitas-rgb/jogos/releases/download/v1.0.4/Quarentena.Z.1.0.4.exe
+- **Baixar Código-Fonte Atualizado (.zip):** https://github.com/marlonpereiradefreitas-rgb/jogos/archive/refs/heads/main.zip
 - **Android / iOS (Instalar como App):** abra o link acima no Chrome (Android) ou Safari (iOS) e clique em **`📲 INSTALAR JOGO`** no menu inicial (ou "Adicionar à Tela de Início").
 
 ---
@@ -31,9 +34,9 @@ Tower defense estratégico de sobrevivência contra zumbis em HTML5/JS, com vers
 ---
 
 ## Principais Recursos
-- **22 torres únicas** (combate direto, área, controle, suporte tático/econômico/médico), com **3 linhas de evolução**, **5 níveis** e **Protocolo de Ascensão** (una 3 torres idênticas no nível máximo para despertar uma unidade Ascendida com aura e orbes orbitais).
-- **18 mapas táticos** e **4 dificuldades** (Fácil, Normal, Difícil, Apocalipse) + **40 ondas de campanha** e **Modo Infinito**.
-- **21 classes de infectados**, incluindo camuflados, voadores, blindados, curandeiros e chefes a cada 10 ondas.
+- **26 torres únicas** (combate direto, área, controle, suporte tático/econômico/médico, Metralhadora Direcional, Domador Jurássico com Dinossauro, Usina de Minas com Stun e Torre de Portal Tático), com **3 linhas de evolução**, **skins dinâmicas**, **5 níveis** e **Protocolo de Ascensão** (una 3 torres idênticas no nível máximo para despertar uma unidade Ascendida com aura e orbes orbitais).
+- **18 mapas táticos com medalhas** e **4 dificuldades** (Fácil, Normal, Difícil, Apocalipse) + **40 ondas de campanha** e **Modo Infinito**.
+- **22 classes de infectados**, incluindo camuflados, voadores, blindados, curandeiros, o chefe **Predador Veloz (`speedboss`)** e chefes colossais a cada 10 ondas.
 - **Mobile-first em paisagem**: botões táteis `>= 44px`, aviso automático de rotação em modo retrato, barra rápida mobile (`▶ ONDA`, `⚡ 1x`, `❚❚`), Wake Lock para tela acesa, salvamento automático ao minimizar/trocar de app e opção de **Economia de Bateria (30/60 FPS)**.
 - **PWA Offline**: Service Worker com cache do shell (~423 KB sem gzip) e tela personalizada de instalação.
 - **Segurança**: CSP sem `'unsafe-inline'` em scripts (`script-src 'self'`), anti-XSS e servidor Node opcional com assinatura HMAC-SHA256.
