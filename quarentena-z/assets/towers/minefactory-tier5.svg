@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 84" width="120" height="84">
+  <defs>
+    <radialGradient id="bg_minefactory_5" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#facc15" stop-opacity="0.5800000000000001"/>
+      <stop offset="100%" stop-color="#090d16" stop-opacity="0.98"/>
+    </radialGradient>
+  </defs>
+  <rect width="120" height="84" rx="10" fill="url(#bg_minefactory_5)"/>
+  <g stroke="rgba(148,163,184,0.12)" stroke-width="1">
+    <line x1="24" y1="0" x2="24" y2="84"/><line x1="48" y1="0" x2="48" y2="84"/>
+    <line x1="72" y1="0" x2="72" y2="84"/><line x1="96" y1="0" x2="96" y2="84"/>
+    <line x1="0" y1="28" x2="120" y2="28"/><line x1="0" y1="56" x2="120" y2="56"/>
+  </g>
+  <circle cx="60" cy="48" r="33" fill="none" stroke="#facc15" stroke-width="2.5" stroke-opacity="0.55" stroke-dasharray="5 3"/>
+  
+        <!-- Instalação Industrial Militar Compacta -->
+        <rect x="18" y="34" width="46" height="34" rx="5" fill="#1e293b" stroke="#facc15" stroke-width="1.8"/>
+        <rect x="22" y="38" width="38" height="26" rx="3" fill="#0f172a"/>
+        <!-- Calha Ejetora de Minas -->
+        <rect x="58" y="44" width="22" height="14" rx="2" fill="#334155" stroke="#94a3b8" stroke-width="1.2"/>
+        <circle cx="41" cy="51" r="10" fill="#1e293b" stroke="#facc15" stroke-width="1.8"/>
+        <circle cx="41" cy="51" r="4" fill="#ef4444"/>
+        <!-- Minas Metálicas Táticas com LEDs Piscantes -->
+        <g transform="translate(92,42)">
+          <ellipse cx="0" cy="0" rx="11" ry="7" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5"/>
+          <ellipse cx="0" cy="-1.5" rx="7" ry="4.5" fill="#475569"/>
+          <circle cx="0" cy="-2" r="3" fill="#ef4444"/>
+        </g>
+        <g transform="translate(88,62)">
+          <ellipse cx="0" cy="0" rx="11" ry="7" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5"/>
+          <ellipse cx="0" cy="-1.5" rx="7" ry="4.5" fill="#475569"/>
+          <circle cx="0" cy="-2" r="3" fill="#facc15"/>
+        </g>
+  <polygon points="60,6 64,14 72,14 66,19 68,27 60,22 52,27 54,19 48,14 56,14" fill="#fde047" stroke="#090d16" stroke-width="1"/>
+</svg>

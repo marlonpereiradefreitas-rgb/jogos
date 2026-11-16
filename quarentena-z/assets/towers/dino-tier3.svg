@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 84" width="120" height="84">
+  <defs>
+    <radialGradient id="bg_dino_3" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.46"/>
+      <stop offset="100%" stop-color="#090d16" stop-opacity="0.98"/>
+    </radialGradient>
+  </defs>
+  <rect width="120" height="84" rx="10" fill="url(#bg_dino_3)"/>
+  <g stroke="rgba(148,163,184,0.12)" stroke-width="1">
+    <line x1="24" y1="0" x2="24" y2="84"/><line x1="48" y1="0" x2="48" y2="84"/>
+    <line x1="72" y1="0" x2="72" y2="84"/><line x1="96" y1="0" x2="96" y2="84"/>
+    <line x1="0" y1="28" x2="120" y2="28"/><line x1="0" y1="56" x2="120" y2="56"/>
+  </g>
+  <circle cx="60" cy="48" r="31" fill="none" stroke="#10b981" stroke-width="1.9" stroke-opacity="0.55" stroke-dasharray="5 3"/>
+  
+        <!-- Posto de Comando Tático com Antena e Painel Holográfico -->
+        <polygon points="18,68 26,44 54,44 62,68" fill="#0f172a" stroke="#10b981" stroke-width="1.8"/>
+        <rect x="24" y="30" width="20" height="12" rx="2" fill="rgba(16,185,129,0.25)" stroke="#34d399" stroke-width="1.5"/>
+        <line x1="27" y1="34" x2="40" y2="34" stroke="#a7f3d0" stroke-width="1.5"/>
+        <line x1="27" y1="38" x2="36" y2="38" stroke="#38bdf8" stroke-width="1.5"/>
+        <line x1="48" y1="44" x2="48" y2="22" stroke="#64748b" stroke-width="2.5"/>
+        <circle cx="48" cy="20" r="4" fill="#34d399" stroke="#fff" stroke-width="1"/>
+        <!-- LEDs de Invocação -->
+        <rect x="24" y="50" width="6" height="3" fill="#34d399"/><rect x="50" y="50" width="6" height="3" fill="#34d399"/>
+        <rect x="24" y="58" width="6" height="3" fill="#34d399"/><rect x="50" y="58" width="6" height="3" fill="#34d399"/>
+        <!-- Dinossauro Cibernético Invocado (Raptor / Alossauro / Cyber T-Rex) -->
+        <g transform="translate(84,54)">
+          <path d="M4,4 L24,-6 L18,8 Z" fill="#f97316"/>
+          <ellipse cx="0" cy="0" rx="14" ry="9" fill="#f97316" stroke="#0f172a" stroke-width="1.5"/>
+          <ellipse cx="-2" cy="2" rx="9" ry="5" fill="#fdba74"/>
+          <rect x="-7" y="-7" width="12" height="6" rx="2" fill="#1e293b" stroke="#38bdf8" stroke-width="1.2"/>
+          <rect x="-18" y="-16" width="15" height="9" rx="2" fill="#f97316"/>
+          <rect x="-16" y="-7" width="12" height="4" rx="1" fill="#fef3c7"/>
+          <rect x="-13" y="-14" width="4" height="3" fill="#fef08a"/>
+          <rect x="-6" y="7" width="5" height="10" rx="1" fill="#f97316"/>
+          <rect x="3" y="7" width="5" height="10" rx="1" fill="#f97316"/>
+        </g>
+  
+</svg>

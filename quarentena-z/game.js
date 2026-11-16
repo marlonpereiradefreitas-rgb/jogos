@@ -6335,7 +6335,14 @@ function init(){
   try{$('qualitySelect').value=localStorage.getItem('ztd_v5_quality')||'balanced';if($('fpsCapSelect')){$('fpsCapSelect').value=localStorage.getItem('ztd_v5_fpscap')||'60';PERF.fpsCap=+$('fpsCapSelect').value===30?30:60;}$('settingsMap').value=localStorage.getItem('ztd_v5_map')||career.lastMap;$('settingsDifficulty').value=localStorage.getItem('ztd_v5_difficulty')||career.lastDifficulty;const sv=localStorage.getItem('ztd_v5_volume');if(sv!==null){$('vol').value=sv;$('settingsVolume').value=sv;Snd.vol=+sv/100;}Snd.musicMuted=localStorage.getItem('ztd_v19_music_muted')==='1';}catch(e){}
   applyPlatformMode(getPlatformPref());
   activeDifficulty=career.lastDifficulty; selectMap(career.lastMap);
-  TOWER_ORDER.forEach(k=>UI.icons[k]=makeIcon(k));
+  TOWER_ORDER.forEach(k=>{
+    UI.icons[k]=makeIcon(k);
+    // Pré-carrega os retratos de evolução (T0..T5) no cache em memória para troca instantânea de skin (0ms)
+    for(let tr=0;tr<=5;tr++)getTowerPortrait({key:k,level:Math.min(4,tr+1),spec:-1,dominantPath:0,tier:tr,paragon:false});
+  });
+  if(window.QZ_BTD6_UI&&typeof window.QZ_BTD6_UI.preloadAllBtd6Assets==='function'){
+    UI.preloadedAssets=window.QZ_BTD6_UI.preloadAllBtd6Assets(TOWER_ORDER);
+  }
   SecurityGuard.lockDefinitions();
   buildSidebar(); bindEvents(); fitCanvas(); Snd.syncMusic(); OnlineAPI.sync(); refreshInstallUI();
   // Registra o Service Worker (PWA offline) fora de inline script para manter CSP script-src 'self' e força atualização imediata

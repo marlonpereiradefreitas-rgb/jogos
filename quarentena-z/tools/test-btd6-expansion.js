@@ -69,7 +69,14 @@ for (const tw of [tDart, tDino, tMine, tPortal]) {
   assert(tw.tier === 5, 'Torre ' + tw.key + ' deve atingir nível 5');
 }
 
-// Verificar Painel de Inspeção Dinâmico BTD6 (Retrato, Abates, Botão Retrátil e Venda)
+// Verificar Painel de Inspeção Dinâmico BTD6 (Retrato, Abates, Ícones Circulares, Botão Retrátil e Venda)
+const fs = require('fs');
+const path = require('path');
+const assetsBase = path.join(__dirname, '..', 'assets');
+assert(fs.existsSync(path.join(assetsBase, 'towers', 'dino.svg')), 'Imagem exclusiva de torre dino.svg deve existir em assets/towers');
+assert(fs.existsSync(path.join(assetsBase, 'towers', 'dartgun-tier5.svg')), 'Skin evoluída dartgun-tier5.svg deve existir em assets/towers');
+assert(fs.existsSync(path.join(assetsBase, 'upgrades', 'path0-lv1.svg')), 'Ícone circular path0-lv1.svg deve existir em assets/upgrades');
+assert(fs.existsSync(path.join(assetsBase, 'upgrades', 'path2-lv5.svg')), 'Ícone circular path2-lv5.svg deve existir em assets/upgrades');
 Z.select(tDino);
 Z.refreshPanel();
 assert(typeof Z.getTowerPortrait(tDino) === 'string', 'Retrato dinâmico da torre deve ser gerado');

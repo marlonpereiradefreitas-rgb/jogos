@@ -59,8 +59,44 @@
     return html;
   }
 
+  const PRELOADED_IMAGES = {};
+  function preloadImageAsset(src) {
+    if (!src || PRELOADED_IMAGES[src]) return PRELOADED_IMAGES[src] || null;
+    if (typeof Image === 'undefined') return null;
+    try {
+      const img = new Image();
+      img.decoding = 'async';
+      img.src = src;
+      PRELOADED_IMAGES[src] = img;
+      return img;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function preloadAllBtd6Assets(towerKeys) {
+    const keys = Array.isArray(towerKeys) ? towerKeys : [];
+    for (let i = 0; i < keys.length; i++) {
+      const k = keys[i];
+      preloadImageAsset('assets/towers/' + k + '.svg');
+      for (let tr = 0; tr <= 5; tr++) {
+        preloadImageAsset('assets/towers/' + k + '-tier' + tr + '.svg');
+      }
+      preloadImageAsset('assets/towers/' + k + '-paragon.svg');
+    }
+    for (let pi = 0; pi < 3; pi++) {
+      for (let lv = 1; lv <= 5; lv++) {
+        preloadImageAsset('assets/upgrades/path' + pi + '-lv' + lv + '.svg');
+      }
+    }
+    return PRELOADED_IMAGES;
+  }
+
   root.QZ_BTD6_UI = {
     DIFF_MEDALS,
+    PRELOADED_IMAGES,
+    preloadImageAsset,
+    preloadAllBtd6Assets,
     validateFinitePoint,
     clampPointToMap,
     renderPathPipsHtml,

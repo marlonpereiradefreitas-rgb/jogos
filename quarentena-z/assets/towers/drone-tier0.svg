@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 84" width="120" height="84">
+  <defs>
+    <radialGradient id="bg_drone_0" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#7dd3fc" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#090d16" stop-opacity="0.98"/>
+    </radialGradient>
+  </defs>
+  <rect width="120" height="84" rx="10" fill="url(#bg_drone_0)"/>
+  <g stroke="rgba(148,163,184,0.12)" stroke-width="1">
+    <line x1="24" y1="0" x2="24" y2="84"/><line x1="48" y1="0" x2="48" y2="84"/>
+    <line x1="72" y1="0" x2="72" y2="84"/><line x1="96" y1="0" x2="96" y2="84"/>
+    <line x1="0" y1="28" x2="120" y2="28"/><line x1="0" y1="56" x2="120" y2="56"/>
+  </g>
+  
+  
+        <!-- Plataforma Blindada 2.5D + Torreta Evoluída -->
+        <polygon points="32,68 42,46 78,46 88,68" fill="#1e293b" stroke="#7dd3fc" stroke-width="1.8"/>
+        <circle cx="60" cy="48" r="16" fill="#0f172a" stroke="#7dd3fc" stroke-width="2.2"/>
+        <g transform="translate(60,46) rotate(-16)">
+          <rect x="-12" y="-9" width="24" height="18" rx="4" fill="#0369a1" stroke="#7dd3fc" stroke-width="1.5"/>
+          <rect x="8" y="-6" width="24" height="5" rx="2" fill="#475569" stroke="#7dd3fc" stroke-width="1"/>
+          <rect x="8" y="1" width="24" height="5" rx="2" fill="#475569" stroke="#7dd3fc" stroke-width="1"/>
+          
+          
+        </g>
+        <circle cx="60" cy="46" r="5.5" fill="#7dd3fc" stroke="#ffffff" stroke-width="1.2"/>
+  
+</svg>
