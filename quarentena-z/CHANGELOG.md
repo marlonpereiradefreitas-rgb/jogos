@@ -1,5 +1,21 @@
 # Changelog
 
+## [v1.0.5] — 2026-11-16
+
+### Redesign Visual, Invocações e Painel Dinâmico Estilo BTD6
+- **Torre com Invocações (`dino` — Domador Jurássico)**:
+  - **Sprite Tático e Futurista com LEDs**: redesenhado como cápsula bio-neural octogonal de titânio escuro com 4 faixas de LED e anel neural que acendem intensamente (`t.spawnFlash`) ao invocar aliados ou usar habilidades.
+  - **Dinossauro com Animações Fluidas e Evolução de Skin**: animações articuladas de caminhada (`dn.walkT`), ataque de mordida com mandíbula articulada e arco de corte (`dn.biteT`), e rugido sísmico com ondas de choque concêntricas (`dn.roarT`), evoluindo visualmente de **Bio-Raptor** (T0–1) para **Alossauro Blindado** (T2–3) e **Cyber T-Rex Alfa** (T4–5 / Ascendida).
+  - **Rastros de Partículas**: pegadas de lama, nuvens de poeira e rastros de energia/veneno/choque para dinossauros, aliados invocados e zumbis afetados.
+- **Usina de Minas Terrestres (`minefactory`)**:
+  - **Unidade Industrial Militar Compacta**: chassi blindado com faixas de alerta amarelo/preto, dutos de exaustão, tambor automatizado e **rampa/calha ejetora direcional** com pistão hidráulico que lança minas metálicas sobre os ladrilhos da pista (`m.flyT`).
+  - **Minas Terrestres com Luzes Piscantes e Estilhaços**: minas metálicas detalhadas no chão com LEDs de alerta vermelho/amarelo piscantes, placa de pressão de titânio, explosão limpa com estilhaços metálicos (`FX.mineBlast`) e atordoamento (`stunZ`) com faíscas elétricas (`FX.stunSparks`).
+- **Painel de Inspeção Lateral Retrátil Estilo BTD6 (`#towerPanel`)**:
+  - Moldura com retrato dinâmico (`getTowerPortrait`) que muda de skin automaticamente a cada nível/tier comprado (incluindo emblema evoluído do Dinossauro e da Mina Tática).
+  - Botão de recolhimento/expansão lateral (`data-act="toggleCollapse"`) com transição acelerada por hardware (`transform: translate3d`), contador exato de abates (`☠ abates`), estatísticas em tempo real, 3 linhas de evolução com indicadores visuais (`btd6-pips`) e botão de venda.
+- **Balanceamento, Boss de Alta Velocidade (`speedboss`) e Object Pooling**:
+  - Nerf na Torre de Gelo e no Protocolo de Ascensão, economia restrita, hordas fortalecidas nas 40 ondas, chefe mutante veloz (`speedboss`) resistente a lentidão comum e gerenciamento completo via Object Pooling (`_partPool`, `_ringPool`, `_minePool`, `_projPool`, `_allyPool`, `_zombiePool`).
+
 ## [v1.0.1] — 2026-11-11
 
 ### Interface & Experiência do Usuário (UI/UX)

@@ -1348,6 +1348,29 @@ const FX = {
   flame(x,y,ang,range){
     for(let i=0;i<2;i++){const a=ang+rand(-.25,.25),v=rand(range*1.4,range*2.2);this.part(x,y,Math.cos(a)*v,Math.sin(a)*v,rand(.15,.3),['#ffe060','#ff9020','#e04010'][(Math.random()*3)|0],rand(3,5),-30);}
   },
+  mineBlast(x,y,r,stacks){
+    const st=Math.max(1,stacks||1);
+    this.ring(x,y,4,r,.32,'#facc15',4);
+    this.ring(x,y,2,r*.72,.24,'#ef4444',2.5);
+    const shrap=Math.min(28,10+st*3);
+    for(let i=0;i<shrap;i++){
+      const a=(i/shrap)*6.283+rand(-.18,.18),v=rand(55,r*3.4);
+      const col=i%3===0?'#e2e8f0':i%3===1?'#fbbf24':'#ef4444';
+      this.part(x,y,Math.cos(a)*v,Math.sin(a)*v,rand(.22,.48),col,rand(2,3.8),90);
+    }
+    this.stunSparks(x,y,6+st*2);
+  },
+  stunSparks(x,y,n){
+    const cnt=n||5;
+    for(let i=0;i<cnt;i++){
+      const a=rand(0,6.283),v=rand(30,95);
+      this.part(x,y-6,Math.cos(a)*v,Math.sin(a)*v-20,rand(.16,.34),i%2===0?'#fde047':'#38bdf8',rand(1.8,3.2),40);
+    }
+  },
+  footprint(x,y,col,dustCol){
+    this.part(x+rand(-4,4),y+rand(2,6),rand(-8,8),rand(-6,2),rand(.32,.55),col||'#6b533b',rand(2.2,3.4),0);
+    if(dustCol)this.part(x+rand(-5,5),y+rand(0,4),rand(-16,16),rand(-18,-4),rand(.22,.42),dustCol,rand(2,3.2),-12);
+  },
   bolt(pts){
     const out=[];
     for(let i=0;i<pts.length-1;i++){
@@ -1637,7 +1660,7 @@ function explode(x,y,r,dmg,dtype,o){
     if(d<=r+z.r*.6){
       applyDamage(z,dmg*(1-.4*Math.min(1,d/(r+z.r))),dtype,o);
       if(o.burnDps&&!z.dead)ignite(z,o.burnDps,o.burnT||3);
-      if(o.stun&&!z.dead){stunZ(z,o.stun);FX.spark(z.x,z.y-10,'#fde047',3);}
+      if(o.stun&&!z.dead){stunZ(z,o.stun);FX.stunSparks(z.x,z.y,4);}
     }
   }
   FX.blast(x,y,r); Snd.play('boom'); G.shake=Math.max(G.shake,Math.min(6,r/12));
@@ -1742,6 +1765,19 @@ class Zombie {
     this.cur=sp; this.dist+=sp*h;
     if(this.dist>=PATH_LEN){this.reach();return;}
     this.place();
+    // Rastros visuais de partículas (pegadas de lama, poeira e rastros de veneno/energia/choque)
+    if(!D.flying&&sp>8&&Math.random()<h*(D.speedBoss?14:D.big?7:4)){
+      FX.footprint(this.x,this.y,'#5c4732',sp>55?'#94826a':null);
+    }
+    if(this.poisonT>0&&Math.random()<h*7){
+      FX.part(this.x+rand(-6,6),this.y-rand(2,12),rand(-12,12),rand(-24,-6),rand(.25,.48),'#84cc16',rand(2,3.2),-10);
+    }
+    if(this.stunT>0&&Math.random()<h*10){
+      FX.part(this.x+rand(-7,7),this.y-rand(8,22),rand(-35,35),rand(-35,15),rand(.12,.25),Math.random()<.5?'#fde047':'#38bdf8',2.2,20);
+    }
+    if((this.turboT>0||D.speedBoss)&&sp>0&&Math.random()<h*12){
+      FX.part(this.x-this.face*6,this.y-8+rand(-5,5),-this.face*rand(25,55),rand(-10,10),rand(.16,.32),'#38bdf8',2.6,0);
+    }
     this.popT-=h;
     if(this.popT<=0){ if(this.dmgAcc>=8&&popups.length<40)FX.popup(this.x+rand(-6,6),this.y-this.D.size*12-8,Math.round(this.dmgAcc),'#fff'); this.dmgAcc=0; this.popT=.5; }
   }
@@ -1867,7 +1903,12 @@ function spawnTrackAlly(t){
   a.stun=t.s.stun||0.22;
   a.phase=srand()*6.28;
   a.face=-1;
+  a.walkT=0;
+  a.biteT=0;
   allies.push(a);
+  t.spawnFlash=1.0;
+  t.pulse=Math.max(t.pulse||0,0.55);
+  FX.ring(t.x,t.y,4,24,.32,'#10b981',2.5);
   FX.ring(a.x,a.y,4,22,.3,'#4ade80',2.5);
 }
 
@@ -1875,12 +1916,12 @@ class Tower {
   constructor(key,x,y){
     this.key=key; this.def=TOWERS[key]; this.x=x; this.y=y; this.id=++uid;
     this.id=++TID; this.tier=0; this.spec=-1; this.ups=[]; this.pathLevels=[0,0,0]; this.pathChoices=[null,null,null]; this.spent=this.def.cost; this.priority=this.def.prio;
-    this.cd=0; this.angle=-Math.PI/2; this.recoil=0; this.weak=0; this.heat=0; this.pulse=0; this.abilityCD=0; this.abilityT=0; this.paragon=false; this.kills=0;
+    this.cd=0; this.angle=-Math.PI/2; this.recoil=0; this.weak=0; this.heat=0; this.pulse=0; this.spawnFlash=0; this.abilityCD=0; this.abilityT=0; this.paragon=false; this.kills=0;
     const np=nearestPathProg(x,y);
     pathPos(np.d,_pp);
     this.aimX=Math.round(_pp.x);
     this.aimY=Math.round(_pp.y);
-    if(key==='dartgun')this.angle=Math.atan2(this.aimY-y,this.aimX-x);
+    if(key==='dartgun'||key==='minefactory')this.angle=Math.atan2(this.aimY-y,this.aimX-x);
     this.entryDist=np.d;
     this.entryX=Math.round(_pp.x);
     this.entryY=Math.round(_pp.y);
@@ -1890,7 +1931,7 @@ class Tower {
     this.exitY=Math.round(_pp.y);
     if(key==='dino'){
       pathPos(np.d,_pp);
-      this._dino={x:_pp.x,y:_pp.y,homeX:_pp.x,homeY:_pp.y,angle:0,cd:0,lunge:0,roarT:0};
+      this._dino={x:_pp.x,y:_pp.y,homeX:_pp.x,homeY:_pp.y,angle:0,cd:0,lunge:0,biteT:0,roarT:0,walkT:0,moving:false,atkCount:0};
       this.spawnCD=3.0;
     }
     this.recalc();
@@ -1927,6 +1968,7 @@ class Tower {
     if(this._purify&&this.weak>0)this.weak=0;
     if(this.recoil>0)this.recoil=Math.max(0,this.recoil-h*7);
     if(this.pulse>0)this.pulse-=h;
+    if(this.spawnFlash>0)this.spawnFlash=Math.max(0,this.spawnFlash-h*1.8);
     const s=this.s, rate=s.rate*(1+(this._auraRate||0))*(this.weak>0?.5:1), k=this.def.kind;
 
     if(k==='support_eco'){ // Base de Suprimentos: gera moedas durante a onda ativa
@@ -2034,7 +2076,9 @@ class Tower {
     const dn=this._dino;
     if(!dn)return;
     if(dn.lunge>0)dn.lunge=Math.max(0,dn.lunge-h*5);
+    if(dn.biteT>0)dn.biteT=Math.max(0,dn.biteT-h*3.8);
     if(dn.roarT>0)dn.roarT=Math.max(0,dn.roarT-h);
+    dn.moving=false;
     const s=this.s, r=s.range*(1+(this._auraRange||0))*1.18;
     let best=null, bd=r;
     for(const z of zombies){
@@ -2049,6 +2093,12 @@ class Tower {
       if(d>18){
         dn.x+=dx/d*Math.min(d,moveSpd*h);
         dn.y+=dy/d*Math.min(d,moveSpd*h);
+        dn.moving=true;
+        dn.walkT=(dn.walkT||0)+h*14;
+        if(Math.random()<h*11){
+          FX.footprint(dn.x,dn.y,'#57412a','#a8967a');
+          if(this.tier>=2)FX.part(dn.x+rand(-5,5),dn.y-4,rand(-15,15),rand(-22,-6),rand(.18,.35),this.paragon?'#ef4444':'#f97316',2.4,0);
+        }
       }
       dn.cd=(dn.cd||0)-h;
       if(d<=28&&dn.cd<=0){
@@ -2059,8 +2109,9 @@ class Tower {
           if(s.stun)stunZ(best,s.stun);
           if(s.burnDps)ignite(best,s.burnDps,s.burnT||3);
         }
-        // Golpe de cauda em área a partir do nível 3
-        if(this.tier>=3||this.paragon){
+        dn.atkCount=(dn.atkCount||0)+1;
+        // Golpe de cauda e rugido sísmico em área a partir do nível 3 (ou a cada 3 mordidas)
+        if(this.tier>=3||this.paragon||(dn.atkCount%3===0&&this.tier>=1)){
           for(const o of zombies){
             if(o===best||o.dead||o.reached)continue;
             if(dist(o.x,o.y,dn.x,dn.y)<=42){
@@ -2068,10 +2119,13 @@ class Tower {
               if(!o.dead&&s.stun)stunZ(o,s.stun*0.6);
             }
           }
-          FX.ring(dn.x,dn.y,5,38,.25,'#f97316',2.5);
+          dn.roarT=0.55;
+          FX.ring(dn.x,dn.y,5,44,.32,'#f97316',3);
+          FX.ring(dn.x,dn.y,10,30,.24,'#fde047',2);
         }
-        FX.spark(best.x,best.y-8,'#fb923c',4);
+        FX.spark(best.x,best.y-8,'#fb923c',5);
         dn.lunge=1;
+        dn.biteT=1;
         dn.cd=1/Math.max(0.4,rate*1.15);
       }
     } else {
@@ -2081,6 +2135,9 @@ class Tower {
         dn.angle=Math.atan2(dy,dx);
         dn.x+=dx/d*Math.min(d,90*h);
         dn.y+=dy/d*Math.min(d,90*h);
+        dn.moving=true;
+        dn.walkT=(dn.walkT||0)+h*10;
+        if(Math.random()<h*6)FX.footprint(dn.x,dn.y,'#57412a',null);
       }
     }
   }
@@ -2120,11 +2177,13 @@ class Tower {
       tx=_pp.x; ty=_pp.y;
     }
     const maxSt=Math.max(1,Math.round((s.maxStacks||4)*(this.paragon?2:1)));
+    this.angle=Math.atan2(ty-this.y,tx-this.x);
     // Verifica se pode acumular (stack) em uma mina próxima desta mesma usina
     for(const m of mines){
       if(m.armed&&m.owner===this&&m.stacks<maxSt&&dist(m.x,m.y,tx,ty)<22){
         m.stacks++;
         m.life=Math.max(m.life,38);
+        m.sx=this.x; m.sy=this.y; m.flyT=0.18; m.maxFly=0.18;
         FX.ring(m.x,m.y,3,16,.2,'#facc15',2);
         Snd.play('build');
         return;
@@ -2139,13 +2198,14 @@ class Tower {
     }
     const mn=_minePool.length?_minePool.pop():{};
     mn.x=Math.round(tx); mn.y=Math.round(ty);
+    mn.sx=this.x; mn.sy=this.y; mn.flyT=0.22; mn.maxFly=0.22;
     mn.armed=true; mn.owner=this;
     mn.dmg=s.dmg*dMult; mn.splash=s.splash||54;
     mn.stun=s.stun||0.75; mn.armorPen=s.armorPen||0.35;
     mn.burnDps=s.burnDps||0; mn.burnT=s.burnT||0;
     mn.stacks=1; mn.maxStacks=maxSt; mn.life=40;
     mines.push(mn);
-    FX.part(mn.x,mn.y,0,-18,.22,'#fbbf24',3,60);
+    FX.part(this.x+Math.cos(this.angle)*12,this.y+Math.sin(this.angle)*12,Math.cos(this.angle)*40,Math.sin(this.angle)*40-15,.22,'#fbbf24',3,60);
     Snd.play('build');
   }
   muzzle(){ const L=14+this.level*2; return {x:this.x+Math.cos(this.angle)*L,y:this.y-4+Math.sin(this.angle)*L}; }
@@ -2357,6 +2417,7 @@ function updateMinesBombsHazards(h){
   // minas terrestres acumuláveis (com atordoamento / stun)
   for(let i=mines.length-1;i>=0;i--){
     const m=mines[i];
+    if(m.flyT>0)m.flyT=Math.max(0,m.flyT-h);
     if(m.life!==undefined){
       m.life-=h;
       if(m.life<=0){m.armed=false;}
@@ -2371,7 +2432,7 @@ function updateMinesBombsHazards(h){
         const splash=(m.splash||55)*(1+(stacks-1)*0.08);
         const stun=(m.stun||0.75)*(1+(stacks-1)*0.15);
         explode(m.x,m.y,splash,dmg,'expl',{armorPen:m.armorPen||.35,stun,burnDps:m.burnDps||0,burnT:m.burnT||0,owner:m.owner});
-        FX.ring(m.x,m.y,6,splash,.32,'#fde047',3);
+        FX.mineBlast(m.x,m.y,splash,stacks);
         break;
       }
     }
@@ -2389,6 +2450,7 @@ function updateMinesBombsHazards(h){
     const a=allies[i];
     a.life-=h;
     if(a.atkCD>0)a.atkCD-=h;
+    if(a.biteT>0)a.biteT=Math.max(0,a.biteT-h*4);
     if(a.life<=0||a.hp<=0){
       if(_allyPool.length<120)_allyPool.push(a);
       allies[i]=allies[allies.length-1];
@@ -2406,16 +2468,22 @@ function updateMinesBombsHazards(h){
       a.face=target.x>=a.x?1:-1;
       if(a.atkCD<=0){
         applyDamage(target,a.dmg,'phys',{armorPen:.25,owner:a.owner});
-        if(!target.dead&&a.stun)stunZ(target,a.stun);
+        if(!target.dead&&a.stun){stunZ(target,a.stun);FX.stunSparks(target.x,target.y,3);}
         a.hp-=target.D.boss?45:18;
         a.atkCD=0.55;
-        FX.spark(target.x,target.y-6,'#4ade80',3);
+        a.biteT=1.0;
+        FX.spark(target.x,target.y-6,'#4ade80',4);
       }
     } else {
       a.dist=Math.max(10,a.dist-a.speed*h);
       pathPos(a.dist,_pp);
       a.x=_pp.x; a.y=_pp.y;
+      a.walkT=(a.walkT||0)+h*15;
       if(Math.abs(_pp.dx)>.1)a.face=_pp.dx>0?-1:1;
+      if(Math.random()<h*8){
+        FX.footprint(a.x,a.y,'#57412a','#9c8b70');
+        FX.part(a.x-a.face*4,a.y-4,rand(-10,10),rand(-16,-4),rand(.18,.32),'#4ade80',2,0);
+      }
     }
   }
   // portais táticos ativos na pista
@@ -3653,15 +3721,29 @@ function drawTowerSprite(key,x,y,ang,rec,lvl,spec,tm,tw,pathIdx,tier){
   ctx.drawImage(_bc,-26,-20);
   ctx.translate(0,-3);
 
-  // Escudos laterais extras conforme o nível da torre (evolução visual)
-  if(lvl>=2){
+  // Escudos laterais e acessórios tecnológicos conforme o nível/tier da torre (evolução visual de skin)
+  const tr=tier||0;
+  if(lvl>=2||tr>=1){
     poly([[-16,-2],[-12,-6],[-11,4],[-15,6]],'#334155','#0f172a',.8);
     poly([[16,-2],[12,-6],[11,4],[15,6]],'#334155','#0f172a',.8);
     R(-14,-1,1.5,4,ac);R(12.5,-1,1.5,4,ac);
   }
-  if(lvl>=4){
-    ctx.strokeStyle=ac;ctx.lineWidth=1.4;ctx.globalAlpha=.75;
+  if(tr>=2){
+    // Placas de blindagem pesada nos flancos
+    poly([[-18,0],[-14,-5],[-13,5],[-17,8]],'#1e293b',ac,.85);
+    poly([[18,0],[14,-5],[13,5],[17,8]],'#1e293b',ac,.85);
+  }
+  if(tr>=3){
+    // Estabilizadores tecnológicos e condutores de energia do caminho dominante
+    R(-16,-8,4,3,ac);R(12,-8,4,3,ac);
+    circ(-14,6,1.8,ac,'#090d16',.6);circ(14,6,1.8,ac,'#090d16',.6);
+  }
+  if(lvl>=4||tr>=4){
+    ctx.strokeStyle=ac;ctx.lineWidth=1.5;ctx.globalAlpha=.82;
     ctx.beginPath();ctx.arc(0,1,17.5,0,6.283);ctx.stroke();ctx.globalAlpha=1;
+    // Módulos capacitores traseiros de alta potência (Tier 4+)
+    R(-12,-11,4,4,'#0f172a');R(-11,-10,2,2,ac);
+    R(8,-11,4,4,'#0f172a');R(9,-10,2,2,ac);
   }
 
   const rot=(fn)=>{ctx.save();ctx.rotate(ang);fn();ctx.restore();};
@@ -4057,30 +4139,74 @@ function drawTowerSprite(key,x,y,ang,rec,lvl,spec,tm,tw,pathIdx,tier){
       });
       break;}
     case 'dino':{
-      // NOVA TORRE BTD6: Domador Jurássico (Estilo Beast Handler) com totem pré-histórico e lançador
-      circ(0,0,9.5,'#291d12','#f97316',1.2);
-      // Totem ósseo / âmbar jurássico na base
-      poly([[-8,-7],[8,-7],[9,6],[-9,6]],'#451a03','#d97706',1);
+      // TORRE COM INVOCAÇÕES (Domador Jurássico): Cúpula bio-tática futurista com LEDs que acendem ao invocar unidades
+      const ledOn=Math.min(1,(tw||0)*1.6);
+      const ledCol=ledOn>0.2?'#34d399':((tier||0)>=3?ac:'#10b981');
+      // Base octogonal blindada futurista
+      poly([[-11,-7],[11,-7],[13,0],[11,7],[-11,7],[-13,0]],'#0f172a','#334155',1.1);
+      poly([[-9,-5],[9,-5],[10,0],[9,5],[-9,5],[-10,0]],'#1e293b',ledCol,.9);
+      // 4 Faixas de LED táticas nos cantos (acendem intensamente ao invocar)
+      for(const [lx,ly] of [[-8,-4.5],[5,-4.5],[-8,2.5],[5,2.5]]){
+        R(lx,ly,3.5,2,ledOn>0.15?'#a7f3d0':ledCol);
+      }
+      if(ledOn>0.08){
+        ctx.save();
+        ctx.strokeStyle='rgba(52,211,153,'+(0.35+ledOn*0.55)+')';
+        ctx.lineWidth=2.2;
+        ctx.beginPath();ctx.arc(0,0,13+ledOn*3,0,6.283);ctx.stroke();
+        ctx.restore();
+      }
+      // Canhão de pulso neural direcional + emissor sônico
       rot(()=>{
         const L=12+lvl*2;
-        R(1-rc,-2.5,L,5,'#78350f');
-        poly([[L-rc,-4],[L+5-rc,0],[L-rc,4]],'#fef3c7','#f97316',.8);
+        R(-3-rc,-4.2,9,8.4,'#0f172a');
+        R(2-rc,-3.2,L,2.2,'#334155');
+        R(2-rc,1.0,L,2.2,'#334155');
+        // Trilho de LED no cano
+        R(3-rc,-0.8,L-1,1.6,ledOn>0.15?'#fef08a':ledCol);
+        // Ponteira emissora bio-sônica
+        poly([[L+1-rc,-4],[L+5-rc,0],[L+1-rc,4]],ledCol,'#ffffff',.7);
       });
-      // Emblema de âmbar luminoso no topo
-      circ(0,-3,4.5,'#f97316','#fef08a',1);
-      circ(-1,-4,1.5,'#ffffff');
+      // Domo central de controle neural + antena holográfica
+      circ(0,-2,5.5,'#064e3b',ledCol,1.1);
+      circ(0,-2,3.2,ledOn>0.15?'#fef08a':ac);
+      R(-1,-13,2,9,'#64748b');
+      circ(0,-14,2.4+(ledOn*1.4),ledOn>0.15?'#34d399':'#f97316','#ffffff',.9);
       break;}
     case 'minefactory':{
-      // NOVA TORRE BTD6: Usina de Minas Terrestres (Estilo Spike Factory) com chaminé industrial e ejetor
-      poly([[-12,-8],[12,-8],[13,8],[-13,8]],'#1e293b','#fbbf24',1.2);
-      R(-9,-5,18,10,'#0f172a');
-      // Esteira e tambor central gerador de minas com bobina de choque
-      const gr=tm*3.2;
-      ctx.save();ctx.rotate(gr);
-      R(-6,-2,12,4,'#475569');R(-2,-6,4,12,'#475569');
+      // USINA DE MINAS TERRESTRES: Unidade industrial militar compacta com rampa ejetora de minas metálicas
+      // Chassi blindado industrial compacto
+      poly([[-13,-8],[13,-8],[14,8],[-14,8]],'#1e293b','#475569',1.2);
+      R(-11,-6,22,12,'#0f172a');
+      // Faixas de alerta militar (amarelo/preto) nas bordas laterais
+      for(let i=0;i<4;i++){
+        R(-11+i*5.5,-7.5,2.8,1.8,'#facc15');
+        R(-11+i*5.5,5.7,2.8,1.8,'#facc15');
+      }
+      // Dutos duplos de exaustão térmica traseiros
+      circ(-9,-4,2.6,'#334155','#090d16',.8);
+      circ(-9,4,2.6,'#334155','#090d16',.8);
+      // Rampa / Calha Ejetora Direcional que lança minas sobre os ladrilhos da pista
+      rot(()=>{
+        const L=11+lvl*1.5;
+        // Calha metálica com trilhos laterais
+        R(2,-5,L,10,'#1e293b');
+        R(2,-5,L,1.8,'#64748b');
+        R(2,3.2,L,1.8,'#64748b');
+        // Pistão hidráulico ejetor animado pelo recuo (rec)
+        const ej=Math.max(0,(0.8-rec)*6);
+        R(3+ej,-3,4,6,'#f59e0b');
+        // Mina tática visível na boca da calha pronta para ejeção
+        circ(L-1,-0.2,3.4,'#334155','#94a3b8',.8);
+        circ(L-1,-0.2,1.4,((tm*6)|0)%2?'#ef4444':'#facc15');
+      });
+      // Tambor central automatizado de montagem com núcleo de choque
+      ctx.save();ctx.rotate(tm*2.8);
+      R(-6,-1.8,12,3.6,'#475569');R(-1.8,-6,3.6,12,'#475569');
       ctx.restore();
-      circ(0,0,5.2,'#fbbf24','#ffffff',1);
-      circ(0,0,2.2,((tm*5)|0)%2?'#ef4444':'#38bdf8');
+      circ(0,0,5.6,'#1e293b',ac,1.2);
+      const blink=((tm*5)|0)%2;
+      circ(0,0,2.5,blink?'#ef4444':'#facc15','#ffffff',.8);
       break;}
     case 'portal':{
       // NOVA TORRE BTD6: Torre de Portal Tático com anéis dimensionais e núcleo de dobra
@@ -4098,11 +4224,14 @@ function drawTowerSprite(key,x,y,ang,rec,lvl,spec,tm,tw,pathIdx,tier){
       circ(0,-3,wp,'#c084fc','#ffffff',1.1);
       break;}
   }
-  // Insígnia de Skin Nível 5 (Coroa de Maestria dinâmica por caminho)
+  // Insígnia de Skin Nível 5 (Coroa de Maestria dinâmica + nodos orbitais por caminho)
   if((tier||0)>=5){
+    ctx.strokeStyle='#fde047';ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.arc(0,-16,4.5,0,6.283);ctx.stroke();
     ctx.fillStyle=ac;
     ctx.beginPath();ctx.arc(0,-16,3.2,0,6.283);ctx.fill();
     ctx.strokeStyle='#ffffff';ctx.lineWidth=1;ctx.stroke();
+    R(-10,-15,3,3,'#fde047');R(7,-15,3,3,'#fde047');
   }
   ctx.restore();
 }
@@ -4114,36 +4243,128 @@ function drawDinoCompanion(t){
   const dn=t._dino;
   if(!dn)return;
   ctx.save();
-  // Linha de vínculo tático sutil quando a torre está selecionada
+  // Linha de vínculo bio-neural quando a torre está selecionada
   if(G.selected===t){
-    ctx.strokeStyle='rgba(249,115,22,.45)';ctx.lineWidth=1.2;ctx.setLineDash([4,4]);
+    ctx.strokeStyle='rgba(52,211,153,.55)';ctx.lineWidth=1.4;ctx.setLineDash([4,4]);
     ctx.beginPath();ctx.moveTo(t.x,t.y);ctx.lineTo(dn.x,dn.y);ctx.stroke();ctx.setLineDash([]);
   }
   ctx.translate(Math.round(dn.x),Math.round(dn.y));
-  const sc=1+Math.min(0.45,t.tier*0.08)+(t.paragon?0.25:0);
+  const tr=t.paragon?6:(t.tier||0);
+  const sc=1+Math.min(0.48,tr*0.08)+(t.paragon?0.22:0);
   const face=Math.cos(dn.angle)>=0?1:-1;
-  ctx.fillStyle='rgba(0,0,0,.38)';ctx.beginPath();ctx.ellipse(0,6,11*sc,4.5*sc,0,0,6.283);ctx.fill();
+  // Ondas de rugido sísmico quando ativo (dn.roarT > 0)
+  if(dn.roarT>0){
+    const rp=1-dn.roarT/0.6;
+    ctx.save();
+    ctx.strokeStyle='rgba(249,115,22,'+Math.min(0.85,dn.roarT*1.4)+')';
+    ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.ellipse(0,2,14+rp*26,7+rp*13,0,0,6.283);ctx.stroke();
+    ctx.strokeStyle='rgba(253,224,71,'+Math.min(0.75,dn.roarT*1.2)+')';
+    ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.ellipse(0,-4,8+rp*18,4+rp*9,0,0,6.283);ctx.stroke();
+    ctx.restore();
+  }
+  // Sombra no solo
+  ctx.fillStyle='rgba(0,0,0,.42)';ctx.beginPath();ctx.ellipse(0,7,12*sc,4.8*sc,0,0,6.283);ctx.fill();
   ctx.scale(face*sc,sc);
-  const bob=Math.sin(G.simT*9)*1.4;
-  ctx.translate((dn.lunge||0)*4,-bob);
-  // Cauda musculosa do Dinossauro (T-Rex / Raptor)
-  ctx.fillStyle=t.paragon?'#dc2626':t.tier>=3?'#ea580c':'#15803d';
-  ctx.beginPath();ctx.moveTo(-4,-4);ctx.lineTo(-17,-9);ctx.lineTo(-14,-2);ctx.closePath();ctx.fill();
-  // Pernas traseiras fortes
-  R(-4,0,3.5,6,'#14532d');R(1,0,3.5,6,'#166534');
-  // Corpo e placas dorsais
-  ctx.fillStyle=t.paragon?'#ef4444':t.tier>=3?'#f97316':'#22c55e';
-  ctx.beginPath();ctx.ellipse(0,-6,8.5,5.5,-0.2,0,6.283);ctx.fill();
-  // Crista dorsal
-  ctx.fillStyle='#fde047';
-  R(-6,-12,2.5,2,'#fde047');R(-2,-13,2.5,2.2,'#fde047');R(2,-14,2.5,2.2,'#fde047');
-  // Cabeça e mandíbula com presas
-  ctx.fillStyle=t.paragon?'#dc2626':t.tier>=3?'#ea580c':'#16a34a';
-  ctx.fillRect(3,-15,9,6.5);
+  const walkPhase=dn.moving?(dn.walkT||G.simT*10):G.simT*3;
+  const stride=dn.moving?Math.sin(walkPhase)*3.2:0;
+  const bob=dn.moving?Math.abs(Math.cos(walkPhase))*1.8:Math.sin(G.simT*5)*0.8;
+  const bite=dn.biteT||0;
+  const roar=dn.roarT>0?Math.min(1,dn.roarT*2):0;
+  ctx.translate((dn.lunge||0)*5,-bob);
+
+  // Paleta dinâmica por evolução (Tier 0-1: Bio-Raptor, Tier 2-3: Alossauro Blindado, Tier 4-5/Ascendida: Cyber T-Rex Alfa)
+  const colDark=t.paragon?'#991b1b':tr>=4?'#b91c1c':tr>=2?'#c2410c':'#14532d';
+  const colMid=t.paragon?'#dc2626':tr>=4?'#ef4444':tr>=2?'#ea580c':'#16a34a';
+  const colLight=t.paragon?'#f87171':tr>=4?'#fb923c':tr>=2?'#fb923c':'#22c55e';
+  const colCrest=t.paragon?'#fde047':tr>=4?'#38bdf8':tr>=2?'#facc15':'#a3e635';
+
+  // Cauda articulada com balanço fluido
+  const tailWag=Math.sin(walkPhase)*2.2;
+  ctx.fillStyle=colDark;
+  ctx.beginPath();
+  ctx.moveTo(-4,-4);
+  ctx.quadraticCurveTo(-12,-7+tailWag*.5,-19,-9+tailWag);
+  ctx.lineTo(-14,-2+tailWag*.4);
+  ctx.closePath();
+  ctx.fill();
+
+  // Perna traseira esquerda (fundo) com animação de passada
+  ctx.fillStyle=colDark;
+  R(-4-stride*0.7,-1,3.8,6.5,colDark);
+  R(-3.5-stride*0.7,4.5,4.8,2,'#0f172a');
+
+  // Torso musculoso e placas de armadura tática
+  ctx.fillStyle=colMid;
+  ctx.beginPath();ctx.ellipse(0,-6.5,9.5,5.8,-0.18,0,6.283);ctx.fill();
+  ctx.fillStyle=colLight;
+  ctx.beginPath();ctx.ellipse(1,-5,6.5,3.2,-0.15,0,6.283);ctx.fill();
+
+  // Armadura tecnológica de sela / peitoral (evolui com o tier)
+  if(tr>=2||t.paragon){
+    ctx.fillStyle='#1e293b';
+    ctx.beginPath();ctx.moveTo(-5,-10);ctx.lineTo(4,-10);ctx.lineTo(5,-4);ctx.lineTo(-4,-4);ctx.closePath();ctx.fill();
+    R(-3,-8.5,5,2,t.paragon?'#fde047':'#38bdf8');
+  } else {
+    // Coleira bio-neural com LED verde
+    R(1,-10,2.5,5,'#0f172a');
+    R(1.5,-8.5,1.5,2,'#34d399');
+  }
+
+  // Crista dorsal / lâminas de energia
+  for(let i=0;i<4;i++){
+    const sx=-7+i*3.2, sy=-11.5-i*0.6;
+    R(sx,sy,2.4,2.4,colCrest);
+  }
+
+  // Braços curtos com garras
+  R(4,-6+bite*1.5,3.5,2.2,colDark);
+  R(6.8,-5.5+bite*1.5,1.8,1.8,'#fef3c7');
+
+  // Perna direita (frente) com animação de passada oposta
+  R(-1+stride*0.7,-1,4,6.8,colMid);
+  R(-0.5+stride*0.7,4.8,5,2.2,'#1e293b');
+
+  // Cabeça e mandíbula articulada (abre na mordida e no rugido sísmico)
+  const jawAng=Math.max(bite*0.45,roar*0.55);
+  ctx.save();
+  ctx.translate(4,-12-(roar*2.5));
+  ctx.rotate(-jawAng*0.45);
+  // Crânio superior
+  ctx.fillStyle=colMid;
+  ctx.fillRect(0,-4.5,10,5);
+  if(tr>=4||t.paragon){
+    // Capacete blindado Cyber T-Rex
+    R(0,-5.2,7,2,'#334155');
+    R(2,-4.5,3,1.2,'#fde047');
+  }
+  // Presas superiores
   ctx.fillStyle='#fef3c7';
-  ctx.fillRect(6,-9,1.5,2);ctx.fillRect(9,-9,1.5,2);
-  // Olho feroz brilhante
-  ctx.fillStyle='#fef08a';ctx.fillRect(7,-13.5,2.2,1.8);
+  ctx.fillRect(3,0.2,1.4,2.2);ctx.fillRect(5.8,0.2,1.4,2.2);ctx.fillRect(8.2,0.2,1.4,2.4);
+  // Olho feroz / visor LED
+  ctx.fillStyle=t.paragon?'#38bdf8':'#fef08a';
+  ctx.fillRect(4.5,-3.2,2.6,1.8);
+  ctx.restore();
+
+  // Mandíbula inferior articulada
+  ctx.save();
+  ctx.translate(4,-10.5-(roar*1.5));
+  ctx.rotate(jawAng*0.65);
+  ctx.fillStyle=colDark;
+  ctx.fillRect(0,0,9,2.8);
+  ctx.fillStyle='#fef3c7';
+  ctx.fillRect(4,-1.6,1.3,1.8);ctx.fillRect(7,-1.6,1.3,1.8);
+  ctx.restore();
+
+  // Arco de corte / impacto de mordida quando atacando
+  if(bite>0.15){
+    ctx.strokeStyle=t.paragon?'#fde047':'#fb923c';
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.arc(13,-10,6+bite*3,-0.9,0.9);
+    ctx.stroke();
+  }
   ctx.restore();
 }
 
@@ -4203,7 +4424,7 @@ function drawTower(t){
   ctx.strokeStyle=ac;ctx.globalAlpha=t.paragon?.65:.38;ctx.lineWidth=1.4;ctx.beginPath();ctx.ellipse(t.x,t.y+9,17.5,7.5,0,0,6.283);ctx.stroke();ctx.globalAlpha=1;
   const gc=t.paragon?'#ffd24a':TIER_GLOW[Math.min(5,t.tier)];
   if(gc){const gs=glowSprite(gc,t.paragon?34:26,t.paragon?'66':'38');ctx.drawImage(gs,Math.round(t.x-gs.width/2),Math.round(t.y-gs.height/2));}
-  drawTowerSprite(t.key,t.x,t.y,t.angle,t.recoil,t.level,t.spec,G.simT,t.pulse,pIdx,t.tier);
+  drawTowerSprite(t.key,t.x,t.y,t.angle,t.recoil,t.level,t.spec,G.simT,Math.max(t.pulse||0,t.spawnFlash||0),pIdx,t.tier);
   if(t._dino)drawDinoCompanion(t);
   if(t.paragon){
     // Ascensao: anel dourado pulsante + aro tracejado giratorio + 2 orbes orbitais
@@ -4278,23 +4499,60 @@ function drawFX(){
     }
     ctx.restore();
   }
-  // Minas terrestres acumuláveis com indicador de carga e choque
+  // Minas terrestres metálicas táticas com luzes piscantes de alerta (vermelho/amarelo) e animação de ejeção
   for(const m of mines){
     const st=m.stacks||1;
-    R(m.x-6,m.y-3,12,7,'#1e293b');
-    R(m.x-5,m.y-4,10,3,'#475569');
-    R(m.x-2,m.y-6,4,3,((G.simT*4)|0)%2?'#fde047':'#38bdf8');
-    if(st>1){
-      ctx.fillStyle='#fde047';ctx.font='bold 9px monospace';ctx.textAlign='center';
-      ctx.fillText('x'+st,m.x,m.y+10);ctx.textAlign='left';
+    let mx=m.x, my=m.y;
+    if(m.flyT>0&&Number.isFinite(m.sx)&&Number.isFinite(m.sy)){
+      const f=m.flyT/(m.maxFly||0.22);
+      mx=m.x*(1-f)+m.sx*f;
+      my=m.y*(1-f)+m.sy*f-Math.sin(f*Math.PI)*18;
     }
+    ctx.save();
+    ctx.translate(Math.round(mx),Math.round(my));
+    // Sombra no ladrilho da pista
+    ctx.fillStyle='rgba(0,0,0,.42)';
+    ctx.beginPath();ctx.ellipse(0,2,8.5,4.2,0,0,6.283);ctx.fill();
+    // Base metálica octogonal/circular com garras de fixação
+    R(-7,-2,14,4,'#0f172a');
+    R(-2,-5,4,10,'#0f172a');
+    ctx.fillStyle='#1e293b';ctx.strokeStyle='#64748b';ctx.lineWidth=1;
+    ctx.beginPath();ctx.ellipse(0,0,7.2,4.6,0,0,6.283);ctx.fill();ctx.stroke();
+    // Placa de pressão superior de titânio
+    ctx.fillStyle='#475569';
+    ctx.beginPath();ctx.ellipse(0,-1.2,5,3,0,0,6.283);ctx.fill();
+    // Luz de alerta piscante (vermelho / amarelo) + halo luminoso
+    const blink=(((G.simT*6)+m.x*0.1)|0)%2===0;
+    const ledCol=blink?'#ef4444':'#facc15';
+    ctx.fillStyle=blink?'rgba(239,68,68,.35)':'rgba(250,204,21,.35)';
+    ctx.beginPath();ctx.arc(0,-1.8,4.2,0,6.283);ctx.fill();
+    ctx.fillStyle=ledCol;
+    ctx.beginPath();ctx.arc(0,-1.8,2,0,6.283);ctx.fill();
+    if(st>1){
+      ctx.fillStyle='rgba(15,23,42,.88)';ctx.fillRect(-7,4,14,9);
+      ctx.fillStyle='#facc15';ctx.font='bold 8.5px monospace';ctx.textAlign='center';
+      ctx.fillText('x'+st,0,11);ctx.textAlign='left';
+    }
+    ctx.restore();
   }
-  // Aliados invocados na pista
+  // Aliados bio-raptores invocados na pista com animação de caminhada e mordida
   for(const a of allies){
     ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y));
-    ctx.fillStyle='rgba(0,0,0,.32)';ctx.beginPath();ctx.ellipse(0,3,6,2.5,0,0,6.283);ctx.fill();
+    ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(0,3,7,2.8,0,0,6.283);ctx.fill();
+    const st=Math.sin(a.walkT||G.simT*12)*2.2;
     ctx.scale(a.face||1,1);
-    R(-3,-9,6,8,'#16a34a');R(-2,-14,5,5,'#4ade80');R(2,-12,4,2,'#fef08a');
+    // Cauda e pernas ágeis
+    ctx.fillStyle='#14532d';
+    ctx.beginPath();ctx.moveTo(-2,-4);ctx.lineTo(-10,-7+st*.4);ctx.lineTo(-7,-2);ctx.closePath();ctx.fill();
+    R(-2-st*.5,-1,2.5,4,'#14532d');R(1+st*.5,-1,2.5,4,'#166534');
+    // Corpo e dorso blindado
+    ctx.fillStyle='#16a34a';ctx.beginPath();ctx.ellipse(0,-5,5.5,3.5,-0.15,0,6.283);ctx.fill();
+    R(-2,-8,4,1.8,'#0f172a');R(-1,-7.6,2,1,'#34d399');
+    // Cabeça, visor LED e mordida
+    const bt=(a.biteT||0)*2;
+    R(2+bt*.5,-10,5.5,4,'#22c55e');
+    R(4+bt*.5,-9.2,2,1.4,'#fef08a');
+    R(5+bt*.5,-6,2,1.5,'#fef3c7');
     ctx.restore();
   }
   for(const b of bombs){
@@ -4439,14 +4697,34 @@ function makeIcon(key,lvl,spec,pathIdx,tier,paragon){
   if(PORTRAIT_CACHE[ck])return PORTRAIT_CACHE[ck];
   const c=document.createElement('canvas');c.width=c.height=64;const old=ctx;ctx=c.getContext('2d');
   const ac=pg?'#fbbf24':(tr>=2&&pi>=0&&PATH_SKIN_ACCENT[pi])?PATH_SKIN_ACCENT[pi]:(TOWER_ACCENT[key]||'#38bdf8');
-  const gr=ctx.createRadialGradient(32,34,4,32,34,28);
-  gr.addColorStop(0,ac+'55');gr.addColorStop(1,ac+'00');
+  const gr=ctx.createRadialGradient(32,34,4,32,34,29);
+  gr.addColorStop(0,ac+(tr>=3||pg?'77':'55'));gr.addColorStop(1,ac+'00');
   ctx.fillStyle=gr;ctx.fillRect(0,0,64,64);
   if(tr>0||pg){
-    ctx.strokeStyle=ac;ctx.lineWidth=pg?2.5:1.5;
+    ctx.strokeStyle=ac;ctx.lineWidth=pg?2.6:(tr>=4?2:1.4);
     ctx.beginPath();ctx.arc(32,34,27,0,6.283);ctx.stroke();
+    if(tr>=3||pg){
+      ctx.save();ctx.setLineDash([4,3]);ctx.strokeStyle=pg?'#fef08a':'#ffffff';ctx.globalAlpha=0.55;
+      ctx.beginPath();ctx.arc(32,34,29.5,0,6.283);ctx.stroke();ctx.restore();
+    }
   }
-  drawTowerSprite(key,32,37,-.45,0,lv,sp,0.8,0,pi,tr);
+  drawTowerSprite(key,32,38,-.45,0,lv,sp,0.8,key==='dino'?(tr>=1?0.75:0.25):0,pi,tr);
+  // Emblema visual evoluído no retrato para Domador Jurássico (cabeça do Dinossauro evoluída) e Usina de Minas
+  if(key==='dino'){
+    const dCol=pg?'#dc2626':tr>=4?'#ef4444':tr>=2?'#f97316':'#16a34a';
+    const dEye=pg?'#38bdf8':'#fef08a';
+    ctx.fillStyle='#0f172a';ctx.beginPath();ctx.arc(14,14,10,0,6.283);ctx.fill();
+    ctx.strokeStyle=dCol;ctx.lineWidth=1.4;ctx.stroke();
+    ctx.fillStyle=dCol;ctx.fillRect(9,9,10,6);
+    if(tr>=2||pg){ctx.fillStyle='#334155';ctx.fillRect(9,7.5,6,2);}
+    ctx.fillStyle=dEye;ctx.fillRect(14,10.5,2.5,1.8);
+    ctx.fillStyle='#fef3c7';ctx.fillRect(12,15,1.5,2);ctx.fillRect(15.5,15,1.5,2);
+  } else if(key==='minefactory'){
+    ctx.fillStyle='#0f172a';ctx.beginPath();ctx.arc(14,14,9.5,0,6.283);ctx.fill();
+    ctx.strokeStyle='#facc15';ctx.lineWidth=1.3;ctx.stroke();
+    ctx.fillStyle='#475569';ctx.beginPath();ctx.ellipse(14,14.5,5.5,3.5,0,0,6.283);ctx.fill();
+    ctx.fillStyle=tr>=3?'#ef4444':'#facc15';ctx.beginPath();ctx.arc(14,13.5,2.2,0,6.283);ctx.fill();
+  }
   ctx=old;
   return PORTRAIT_CACHE[ck]=c.toDataURL();
 }
@@ -4457,7 +4735,7 @@ function getTowerPortrait(t){
 
 /* ===================== 11. INTERFACE E ENTRADA ===================== */
 const TOWER_KEYS=['1','2','3','4','5','6','7','8','9','0','q','w','e','r','t','y','u','i','o','p','a','s','d','g','h','j'];
-const UI = {cache:{}, panelKey:'', cards:{}, pcards:{}, icons:{}, toastT:0, restartT:0, quickKey:''};
+const UI = {cache:{}, panelKey:'', panelCollapsed:false, cards:{}, pcards:{}, icons:{}, toastT:0, restartT:0, quickKey:''};
 function setText(id,v){ const el=$(id); if(el&&UI.cache[id]!==v){UI.cache[id]=v;el.textContent=v;} }
 function setCls(el,key,cls,on){ if(!el)return; const k=key; if(UI.cache[k]!==on){UI.cache[k]=on;el.classList.toggle(cls,on);} }
 function setHint(t){ const el=$('hint'); if(el&&UI.cache._hint!==t){UI.cache._hint=t;el.textContent=t||'';} }
@@ -4470,7 +4748,7 @@ function noMoney(){ toast('Dinheiro insuficiente!','bad'); Snd.play('err'); $('s
 let lastCoinBump=0;
 function coinBump(){ const n=performance.now(); if(n-lastCoinBump<120)return; lastCoinBump=n; $('coins').animate([{transform:'scale(1.35)',color:'#fff'},{transform:'scale(1)'}],{duration:220}); }
 
-function select(t){ G.selected=t; G.selectedObs=null; UI.panelKey=''; }
+function select(t){ if(t&&G.selected!==t)UI.panelCollapsed=false; G.selected=t; G.selectedObs=null; UI.panelKey=''; }
 function cancelAll(){
   if(G.placing||G.targeting){G.placing=null;G.targeting=null;setHint('');return;}
   if(G.selected||G.selectedObs){G.selected=null;G.selectedObs=null;UI.panelKey='';}
@@ -4647,12 +4925,15 @@ function activateTowerAbility(t){
     Snd.play('power');
   } else if(t.key==='dino'){
     // Habilidade Ativa Investida Jurássica: rugido sísmico + invocação dupla + atordoamento em área
+    t.spawnFlash=1.0;
+    if(t._dino){t._dino.roarT=0.85;t._dino.biteT=0.6;}
     spawnTrackAlly(t);
     spawnTrackAlly(t);
     for(const z of zombies){
       if(!z.dead&&!z.reached&&dist(z.x,z.y,t.x,t.y)<=t.s.range*1.35){
         applyDamage(z,(t.s.dinoDmg||52)*2.6,'phys',{armorPen:.5,owner:t});
         stunZ(z,1.25);
+        FX.stunSparks(z.x,z.y,3);
       }
     }
     FX.ring(t.x,t.y,10,t.s.range*1.35,.65,'#f97316',5);
@@ -4699,12 +4980,12 @@ function extrasText(t){
 }
 function refreshPanel(){
   const p=$('towerPanel'),t=G.selected,ob=G.selectedObs;
-  if(!t&&!ob){ if(UI.panelKey!=='none'){UI.panelKey='none';p.classList.add('hidden');} return; }
+  if(!t&&!ob){ if(UI.panelKey!=='none'){UI.panelKey='none';p.classList.add('hidden');p.classList.remove('collapsed');} return; }
   if(ob&&!t){
     const oKey='obs|'+ob.id+'|'+(G.money>=ob.cost?1:0);
     if(UI.panelKey===oKey)return;
     UI.panelKey=oKey;
-    p.classList.remove('hidden'); p.classList.toggle('pl',ob.x>W/2);
+    p.classList.remove('hidden','collapsed'); p.classList.toggle('pl',ob.x>W/2);
     p.innerHTML='<div class="tp-head"><div class="tp-obs-ico">🚧</div><div><div class="nm">'+escHtml(ob.name)+'</div><div class="lv">OBSTÁCULO DO MAPA</div></div><button class="tp-close" data-act="close" title="Fechar (ESC)">✕</button></div>'
       +'<div class="tp-extra">Libere este ponto estratégico para posicionar novas torres com visão privilegiada da pista.</div>'
       +'<button class="tp-up'+(G.money>=ob.cost?'':' poor')+'" data-act="clearObs" data-id="'+ob.id+'"><b>💥 Demolir e Limpar Terreno</b> — '+ob.cost+' ●<small>Remove permanentemente este obstáculo da zona de operação.</small></button>';
@@ -4712,19 +4993,27 @@ function refreshPanel(){
   }
   const upgrades=nextUpgrade(t);
   const aff=upgrades.map(e=>e.path+':'+e.level+':'+(e.up.choices?e.up.choices.map(c=>G.money>=c.cost?1:0).join(''):(G.money>=e.up.cost?1:0))).join('|')||'-';
-  const key=t.id+'|'+t.tier+'|'+t.priority+'|'+aff+'|'+Math.floor(t.spent*CFG.sellRatio)+'|'+Math.ceil(t.abilityCD)+'|'+t.paragon+'|'+(t.kills||0)+'|'+G.targeting+'|'+towers.filter(q=>q.key===t.key&&Math.max(...q.pathLevels)>=5).length;
+  const key=t.id+'|'+t.tier+'|'+t.priority+'|'+aff+'|'+Math.floor(t.spent*CFG.sellRatio)+'|'+Math.ceil(t.abilityCD)+'|'+t.paragon+'|'+(t.kills||0)+'|'+G.targeting+'|'+UI.panelCollapsed+'|'+towers.filter(q=>q.key===t.key&&Math.max(...q.pathLevels)>=5).length;
   if(key===UI.panelKey)return;
   UI.panelKey=key;
   const s=t.s,d=t.def;
   const portraitUrl=getTowerPortrait(t);
   const domP=t.dominantPath;
-  const skinTag=t.paragon?'ASCENDIDA':domP===0?'SKIN: CALIBRE':domP===1?'SKIN: CADÊNCIA':domP===2?'SKIN: TECNOLOGIA':'SKIN: PADRÃO';
-  p.classList.remove('hidden'); p.classList.toggle('pl',t.x>W/2);
+  let skinTag=t.paragon?'ASCENDIDA':domP===0?'SKIN: CALIBRE':domP===1?'SKIN: CADÊNCIA':domP===2?'SKIN: TECNOLOGIA':'SKIN: PADRÃO';
+  if(!t.paragon&&t.key==='dino'){
+    skinTag=t.tier>=4?'SKIN: CYBER T-REX ALFA':t.tier>=2?'SKIN: ALOSSAURO BLINDADO':'SKIN: BIO-RAPTOR';
+  } else if(!t.paragon&&t.key==='minefactory'){
+    skinTag=t.tier>=4?'SKIN: USINA DE PLASMA':t.tier>=2?'SKIN: FUNDIDORA DE CHOQUE':'SKIN: USINA TÁTICA';
+  }
+  p.classList.remove('hidden'); p.classList.toggle('pl',t.x>W/2); p.classList.toggle('collapsed',!!UI.panelCollapsed);
+  const colIco=UI.panelCollapsed?(t.x>W/2?'▶':'◀'):(t.x>W/2?'◀':'▶');
   let h='<div class="tp-head btd6-head">'
     +'<div class="tp-portrait-wrap tier-'+Math.min(5,t.tier)+(t.paragon?' paragon':'')+'"><img src="'+portraitUrl+'" alt="'+escHtml(d.name)+'"><span class="tp-tier-badge">'+(t.paragon?'ASC':'T'+Math.min(5,t.tier))+'</span></div>'
     +'<div class="tp-title-col"><div class="nm">'+d.name+'</div><div class="lv">'+(t.paragon?'★ UNIDADE ASCENDIDA':skinTag+' · Nv '+Math.min(5,t.tier)+'/5')+'</div>'
-    +'<div class="tp-kills" title="Contagem de zumbis abatidos por esta torre">☠ <b>'+(t.kills||0).toLocaleString('pt-BR')+'</b> abates</div></div>'
-    +'<button class="tp-close" data-act="close" title="Fechar (ESC)">✕</button></div>';
+    +'<div class="tp-kills" title="Contagem exata de zumbis abatidos por esta torre">☠ <b>'+(t.kills||0).toLocaleString('pt-BR')+'</b> abates</div></div>'
+    +'<div class="tp-head-actions"><button class="tp-collapse" data-act="toggleCollapse" title="'+(UI.panelCollapsed?'Expandir Painel':'Recolher Painel Lateral')+'">'+colIco+'</button>'
+    +'<button class="tp-close" data-act="close" title="Fechar (ESC)">✕</button></div></div>';
+  h+='<div class="tp-body">';
   const dmgTxt=d.kind==='flame'?(s.dmg.toFixed(1)+' (+calor)'):d.kind==='ice'?s.dmg.toFixed(0)+' (+lentidão)':Math.round(s.dmg)+(s.splash?' (área)':'');
   h+='<div class="tp-stats"><span>Dano/ataque</span><span>'+dmgTxt+'</span><span>Cadência</span><span>'+s.rate.toFixed(2)+' /s</span><span>Alcance</span><span>'+Math.round(s.range)+'</span><span>Tipo</span><span>'+d.dtype+'</span></div>';
   h+='<div class="tp-extra">'+(extrasText(t)||'&nbsp;')+'</div>';
@@ -4776,7 +5065,7 @@ function refreshPanel(){
   if(Math.max(...t.pathLevels)>=5&&!t.paragon&&sameMax>=2)h+='<button class="tp-up" data-act="paragon"><b>◆ Criar Ascensão</b> — '+paragonCost(t.key)+' ●<small>Consome esta torre e mais 2 torres '+d.name+' no nível 5.</small></button>';
   const ab=TOWER_ABILITIES[t.key]; if(ab&&!t.paragon)h+='<button class="tp-up" data-act="ability" '+(t.abilityCD>0?'disabled':'')+'><b>⚡ '+ab.name+'</b> — '+ab.cost+' ●<small>'+(t.abilityCD>0?'Recarga '+Math.ceil(t.abilityCD)+'s':ab.desc)+'</small></button>';
   if(t.paragon)h+='<div class="tp-max">◆ ASCENSÃO — Poder máximo desbloqueado</div>';
-  h+='<button class="tp-sell" data-act="sell">Vender por '+Math.floor(t.spent*CFG.sellRatio)+' ●</button>';
+  h+='<button class="tp-sell" data-act="sell">Vender por '+Math.floor(t.spent*CFG.sellRatio)+' ●</button></div>';
   p.innerHTML=h;
 }
 
@@ -4844,6 +5133,7 @@ function buildSidebar(){
     const b=e.target.closest('[data-act]'); if(!b)return;
     const a=b.dataset.act;
     if(a==='close'){select(null);return;}
+    if(a==='toggleCollapse'){UI.panelCollapsed=!UI.panelCollapsed;UI.panelKey='';Snd.play('ui');refreshPanel();return;}
     if(a==='clearObs'){dispatch({type:'clearObs',id:Number(b.dataset.id)});return;}
     const t=G.selected; if(!t)return;
     if(a==='prio'){dispatch({type:'prio',id:t.id,k:b.dataset.k});UI.panelKey='';Snd.play('ui');}
@@ -5884,7 +6174,7 @@ function init(){
 }
 
 // Pequena API para depuração/testes automatizados
-window.ZTD={G,CFG,MAPS,TOWERS,ZOMBIES,WM,Powers,powerState,towers,zombies,projs,mines,bombs,hazards,allies,obstacles,portals,buildWave,placeTower,upgradeTower,sellTower,setTowerAim,setPortalExit,clearObstacle,stunZ,renderMapMedals,update,resetGame,validSpot,applyDamage,pathPos,PATH_LEN,endGame:()=>endGame(),POWERS,dispatch,CMDLOG,stateHash,seedRng,srand,rngState:()=>_s,achievements:()=>ACH,ps:()=>PS,psSave,renderAch,checkAch,saveGame,readSave,loadRank,renderRank,getPlayerName,setPlayerName,recordRankEntry,clearRanks,deleteRankEntry,OnlineAPI,SecurityGuard,detectDevice,applyPlatformMode,isMobile:()=>IS_MOBILE};
+window.ZTD={G,UI,CFG,MAPS,TOWERS,ZOMBIES,WM,Powers,powerState,towers,zombies,projs,mines,bombs,hazards,allies,obstacles,portals,buildWave,placeTower,upgradeTower,sellTower,setTowerAim,setPortalExit,clearObstacle,stunZ,getTowerPortrait,select,refreshPanel,renderMapMedals,update,resetGame,validSpot,applyDamage,pathPos,PATH_LEN,endGame:()=>endGame(),POWERS,dispatch,CMDLOG,stateHash,seedRng,srand,rngState:()=>_s,achievements:()=>ACH,ps:()=>PS,psSave,renderAch,checkAch,saveGame,readSave,loadRank,renderRank,getPlayerName,setPlayerName,recordRankEntry,clearRanks,deleteRankEntry,OnlineAPI,SecurityGuard,detectDevice,applyPlatformMode,isMobile:()=>IS_MOBILE};
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

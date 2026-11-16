@@ -56,13 +56,24 @@ assert(tDart.aimX === 450 && tDart.aimY === 300, 'Coordenadas de mira travadas c
 // Definir saída do Portal Tático
 assert(Z.dispatch({ type: 'portal_exit', id: tPortal.id, x: 120, y: 150 }) === true, 'Deve definir saída do portal na pista');
 
-// Evoluir as novas torres e verificar atualização de nível
+// Evoluir as novas torres e verificar atualização dinâmica de nível e retrato/skin
 for (const tw of [tDart, tDino, tMine, tPortal]) {
+  Z.select(tw);
+  Z.refreshPanel();
   for (let lv = 0; lv < 5; lv++) {
+    const prevTier = tw.tier;
     assert(Z.dispatch({ type: 'up', id: tw.id, i: 0, path: 0 }) === true, 'Upgrade nível ' + (lv + 1) + ' da torre ' + tw.key);
+    assert(tw.tier === prevTier + 1, 'Tier deve avançar a cada upgrade');
+    Z.refreshPanel();
   }
   assert(tw.tier === 5, 'Torre ' + tw.key + ' deve atingir nível 5');
 }
+
+// Verificar Painel de Inspeção Dinâmico BTD6 (Retrato, Abates, Botão Retrátil e Venda)
+Z.select(tDino);
+Z.refreshPanel();
+assert(typeof Z.getTowerPortrait(tDino) === 'string', 'Retrato dinâmico da torre deve ser gerado');
+assert(tDino._dino && typeof tDino._dino.roarT === 'number', 'Dinossauro deve possuir estados de caminhada, mordida e rugido sísmico');
 
 // Iniciar onda e simular combate com Dinossauro, Aliados, Minas com Stun e Portal Tático
 Z.dispatch({ type: 'wave' });

@@ -1336,7 +1336,7 @@ button.big:hover,.box button.big:hover{box-shadow:0 0 22px rgba(16, 185, 129,.6)
 }
 
 .tcard.compact-tcard:hover {
-  transform: translateY(-1px);
+  transform: translate3d(0, -1px, 0);
   border-color: var(--btd6-cyan) !important;
 }
 
@@ -1386,13 +1386,53 @@ button.big:hover,.box button.big:hover{box-shadow:0 0 22px rgba(16, 185, 129,.6)
   display: none !important;
 }
 
-/* Painel de Inspeção da Torre (Estilo BTD6: Retrato Dinâmico, Abates, Alvo e 3 Linhas) */
+/* Painel de Inspeção da Torre Lateral Retrátil (Estilo BTD6: Retrato Dinâmico, Abates, Alvo e 3 Linhas) */
 #towerPanel {
   background: var(--btd6-surface) !important;
   border: 1px solid var(--btd6-border) !important;
   border-radius: 12px !important;
   max-height: calc(100% - 16px) !important;
   overflow-y: auto !important;
+  transform: translate3d(0, 0, 0);
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.16s ease !important;
+  will-change: transform, opacity;
+}
+
+#towerPanel.collapsed .tp-body {
+  display: none !important;
+}
+
+#towerPanel.collapsed {
+  max-width: 245px !important;
+  overflow: hidden !important;
+}
+
+.tp-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.tp-collapse {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  background: rgba(15, 23, 42, 0.85);
+  color: #38bdf8;
+  font-size: 11px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+
+.tp-collapse:hover {
+  transform: translate3d(0, -1px, 0);
+  border-color: var(--btd6-gold);
+  color: var(--btd6-gold);
 }
 
 .tp-head.btd6-head {
@@ -1578,7 +1618,7 @@ button.big:hover,.box button.big:hover{box-shadow:0 0 22px rgba(16, 185, 129,.6)
 }
 
 .qab-btn:hover {
-  transform: translateY(-1px);
+  transform: translate3d(0, -1px, 0);
   border-color: #fbbf24;
 }
 
@@ -1650,6 +1690,6 @@ button.big:hover,.box button.big:hover{box-shadow:0 0 22px rgba(16, 185, 129,.6)
   opacity: 1;
   border-color: #fbbf24;
   background: rgba(251, 191, 36, 0.18);
-  transform: scale(1.06);
+  transform: translate3d(0, 0, 0) scale(1.06);
 }
 
