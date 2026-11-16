@@ -1,7 +1,7 @@
 {
   "name": "quarentena-z",
   "productName": "Quarentena Z",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "author": "Quarentena Z Studio",
   "description": "Quarentena Z - tower defense de zumbis",
   "main": "electron/main.js",
@@ -37,6 +37,7 @@
       "sw.js",
       "steam_appid.txt",
       "assets/**",
+      "modules/**",
       "package.json"
     ],
     "asarUnpack": [

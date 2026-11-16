@@ -72,48 +72,49 @@ const CFG = {
   pathClear: 36,        // distância mínima do centro do caminho para construir
   powerCD: 180,         // recarga dos poderes em SEGUNDOS REAIS
   prepTime: 6,          // intervalo entre ondas no modo automático (s de jogo)
-  waveBonusBase: 48,    // bônus por onda concluída = base + porOnda * nº da onda
-  waveBonusPer: 8,
+  waveBonusBase: 36,    // economia restrita: bônus base reduzido (era 48)
+  waveBonusPer: 6,      // economia restrita: bônus por onda reduzido (era 8)
   victoryWave: 40,      // onda que dispara a tela de vitória (depois é modo infinito)
   maxParts: 900         // limite de partículas
 };
 
-/* ---- Zumbis: todos os atributos ficam aqui ---- */
+/* ---- Zumbis: todos os atributos ficam aqui (Hordas fortalecidas + Boss de Alta Velocidade) ---- */
 const ZOMBIES = {
-  common:   {name:'Zumbi Comum',   hp:46,  speed:38, reward:7,  armor:0,   leak:1,  r:9,  size:1,   anim:7,  skin:'#7fa05a', cloth:'#5b4a3b', pants:'#3b3f4a'},
-  runner:   {name:'Corredor',      hp:30,  speed:90, reward:8,  armor:0,   leak:1,  r:8,  size:.9,  anim:14, skin:'#a6b86a', cloth:'#8a3b32', pants:'#2f3440'},
-  camo:     {name:'Zumbi Camuflado',hp:68,speed:45,reward:16,armor:0,leak:2,r:9,size:1,anim:8,skin:'#65736a',cloth:'#424c48',pants:'#303a36',camo:true},
-  flyer:    {name:'Zumbi Voador',hp:58,speed:72,reward:19,armor:0,leak:2,r:9,size:1,anim:12,skin:'#8999a0',cloth:'#42474e',pants:'#30343a',flying:true},
-  armored:  {name:'Zumbi Blindado',hp:200, speed:31, reward:17, armor:.55, leak:3,  r:10, size:1.1, anim:6,  skin:'#6f8f55', cloth:'#555a60', pants:'#3a3d44'},
-  toxic:    {name:'Zumbi Tóxico',  hp:120, speed:40, reward:14, armor:0,   leak:2,  r:10, size:1.05,anim:7,  skin:'#8fd24a', cloth:'#3f6a2a', pants:'#2e4a22', cloud:{r:68, life:5.5}},
-  giant:    {name:'Gigante',       hp:1200,speed:23, reward:75, armor:.30, leak:15, r:17, size:2,   anim:4,  skin:'#6c8a5a', cloth:'#4a3a35', pants:'#2b2b33', big:true},
-  healer:   {name:'Curandeiro',    hp:105, speed:35, reward:20, armor:0,   leak:2,  r:9,  size:1,   anim:7,  skin:'#9ac7a0', cloth:'#e8e8e0', pants:'#4a6a7a', heal:10, healR:90},
-  explosive:{name:'Zumbi Explosivo',hp:80, speed:46, reward:14, armor:0,   leak:2,  r:10, size:1.05,anim:8,  skin:'#b0874a', cloth:'#7a2a22', pants:'#3a3030', blast:{r:58, dmg:75}},
-  brute:    {name:'Brutamontes',hp:500,speed:26,reward:40,armor:.25,leak:8,r:15,size:1.6,anim:4,skin:'#697d4d',cloth:'#4a4540',pants:'#292e35',big:true},
-  splitter: {name:'Zumbi Fragmentador',hp:170,speed:48,reward:22,armor:0,leak:3,r:11,size:1.15,anim:8,skin:'#9b775b',cloth:'#4e3434',pants:'#302a31',split:true},
-  screamer: {name:'Gritador',hp:135,speed:36,reward:28,armor:0,leak:3,r:10,size:1.05,anim:7,skin:'#c4b7a0',cloth:'#5a3d46',pants:'#292e35',screamer:true},
-  shielded: {name:'Zumbi com Escudo',hp:310,speed:29,reward:30,armor:.72,leak:5,r:12,size:1.2,anim:5,skin:'#75835b',cloth:'#59636a',pants:'#30343a',shield:true},
-  digger:   {name:'Escavador',hp:115,speed:50,reward:21,armor:.15,leak:3,r:10,size:1.05,anim:8,skin:'#806c50',cloth:'#544437',pants:'#292b2d',digger:true},
-  parasite: {name:'Zumbi Parasita',hp:88,speed:55,reward:22,armor:0,leak:2,r:9,size:1,anim:10,skin:'#a0b66a',cloth:'#4e5c31',pants:'#303a25',parasite:true},
-  regen:    {name:'Mutante Regenerativo',hp:285,speed:26,reward:34,armor:.18,leak:5,r:12,size:1.25,anim:5,skin:'#6da65a',cloth:'#43573a',pants:'#263525',regen:20},
-  jumper:   {name:'Saltador',hp:150,speed:43,reward:26,armor:0,leak:3,r:10,size:1.05,anim:11,skin:'#c2a16e',cloth:'#68483a',pants:'#342d31',jumper:true},
-  commander:{name:'Comandante Zumbi',hp:400,speed:25,reward:56,armor:.25,leak:7,r:14,size:1.4,anim:5,skin:'#b1a66c',cloth:'#443d4a',pants:'#2d2b30',commander:true},
-  colossus: {name:'Colosso Blindado',hp:3200,speed:16,reward:170,armor:.68,leak:22,r:22,size:2.5,anim:3,skin:'#687b58',cloth:'#454c4b',pants:'#292e31',big:true},
-  nemesis:  {name:'DEVASTADOR',hp:15000,speed:18,reward:1300,armor:.55,leak:65,r:30,size:3.5,anim:2,skin:'#86516f',cloth:'#42283c',pants:'#211923',boss:true,big:true,nemesis:true},
-  boss:     {name:'ABOMINAÇÃO',    hp:6800,speed:21, reward:560,armor:.45, leak:40, r:26, size:3.2, anim:3,  skin:'#7a4a6a', cloth:'#4a2a3a', pants:'#241a24', boss:true, big:true}
+  common:   {name:'Zumbi Comum',   hp:52,  speed:40, reward:6,  armor:.04, leak:1,  r:9,  size:1,   anim:7,  skin:'#7fa05a', cloth:'#5b4a3b', pants:'#3b3f4a'},
+  runner:   {name:'Corredor',      hp:35,  speed:95, reward:7,  armor:.02, leak:1,  r:8,  size:.9,  anim:14, skin:'#a6b86a', cloth:'#8a3b32', pants:'#2f3440'},
+  camo:     {name:'Zumbi Camuflado',hp:76,speed:48,reward:14,armor:.08,leak:2,r:9,size:1,anim:8,skin:'#65736a',cloth:'#424c48',pants:'#303a36',camo:true},
+  flyer:    {name:'Zumbi Voador',hp:65,speed:76,reward:16,armor:.06,leak:2,r:9,size:1,anim:12,skin:'#8999a0',cloth:'#42474e',pants:'#30343a',flying:true},
+  armored:  {name:'Zumbi Blindado',hp:225, speed:33, reward:15, armor:.58, leak:3,  r:10, size:1.1, anim:6,  skin:'#6f8f55', cloth:'#555a60', pants:'#3a3d44'},
+  toxic:    {name:'Zumbi Tóxico',  hp:135, speed:42, reward:12, armor:.06, leak:2,  r:10, size:1.05,anim:7,  skin:'#8fd24a', cloth:'#3f6a2a', pants:'#2e4a22', cloud:{r:68, life:5.5}},
+  giant:    {name:'Gigante',       hp:1350,speed:24, reward:64, armor:.34, leak:15, r:17, size:2,   anim:4,  skin:'#6c8a5a', cloth:'#4a3a35', pants:'#2b2b33', big:true},
+  healer:   {name:'Curandeiro',    hp:118, speed:37, reward:17, armor:.05, leak:2,  r:9,  size:1,   anim:7,  skin:'#9ac7a0', cloth:'#e8e8e0', pants:'#4a6a7a', heal:12, healR:92},
+  explosive:{name:'Zumbi Explosivo',hp:92, speed:49, reward:12, armor:.05, leak:2,  r:10, size:1.05,anim:8,  skin:'#b0874a', cloth:'#7a2a22', pants:'#3a3030', blast:{r:58, dmg:75}},
+  brute:    {name:'Brutamontes',hp:560,speed:28,reward:34,armor:.28,leak:8,r:15,size:1.6,anim:4,skin:'#697d4d',cloth:'#4a4540',pants:'#292e35',big:true},
+  splitter: {name:'Zumbi Fragmentador',hp:190,speed:50,reward:19,armor:.08,leak:3,r:11,size:1.15,anim:8,skin:'#9b775b',cloth:'#4e3434',pants:'#302a31',split:true},
+  screamer: {name:'Gritador',hp:152,speed:38,reward:24,armor:.08,leak:3,r:10,size:1.05,anim:7,skin:'#c4b7a0',cloth:'#5a3d46',pants:'#292e35',screamer:true},
+  shielded: {name:'Zumbi com Escudo',hp:350,speed:31,reward:25,armor:.74,leak:5,r:12,size:1.2,anim:5,skin:'#75835b',cloth:'#59636a',pants:'#30343a',shield:true},
+  digger:   {name:'Escavador',hp:130,speed:53,reward:18,armor:.18,leak:3,r:10,size:1.05,anim:8,skin:'#806c50',cloth:'#544437',pants:'#292b2d',digger:true},
+  parasite: {name:'Zumbi Parasita',hp:98,speed:58,reward:19,armor:.06,leak:2,r:9,size:1,anim:10,skin:'#a0b66a',cloth:'#4e5c31',pants:'#303a25',parasite:true},
+  regen:    {name:'Mutante Regenerativo',hp:320,speed:28,reward:29,armor:.22,leak:5,r:12,size:1.25,anim:5,skin:'#6da65a',cloth:'#43573a',pants:'#263525',regen:22},
+  jumper:   {name:'Saltador',hp:170,speed:46,reward:22,armor:.08,leak:3,r:10,size:1.05,anim:11,skin:'#c2a16e',cloth:'#68483a',pants:'#342d31',jumper:true},
+  commander:{name:'Comandante Zumbi',hp:450,speed:27,reward:48,armor:.28,leak:7,r:14,size:1.4,anim:5,skin:'#b1a66c',cloth:'#443d4a',pants:'#2d2b30',commander:true},
+  colossus: {name:'Colosso Blindado',hp:3600,speed:17,reward:145,armor:.70,leak:22,r:22,size:2.5,anim:3,skin:'#687b58',cloth:'#454c4b',pants:'#292e31',big:true},
+  speedboss:{name:'PREDADOR VELOZ',hp:4400,speed:74,reward:420,armor:.34,leak:35,r:22,size:2.5,anim:13,skin:'#38bdf8',cloth:'#0f172a',pants:'#1e293b',boss:true,big:true,speedBoss:true,slowResist:0.85},
+  nemesis:  {name:'DEVASTADOR',hp:16500,speed:19,reward:1100,armor:.58,leak:65,r:30,size:3.5,anim:2,skin:'#86516f',cloth:'#42283c',pants:'#211923',boss:true,big:true,nemesis:true},
+  boss:     {name:'ABOMINAÇÃO',    hp:7500,speed:22, reward:480,armor:.48, leak:40, r:26, size:3.2, anim:3,  skin:'#7a4a6a', cloth:'#4a2a3a', pants:'#241a24', boss:true, big:true}
 };
 
 /* ---- Ondas ---- */
 const WAVECFG = {
   // onda em que cada tipo passa a aparecer
-  unlock:   {common:1, runner:2, camo:5, flyer:7, armored:4, toxic:6, explosive:8, healer:9, giant:12, brute:10, splitter:11, screamer:13, shielded:15, digger:8, parasite:10, regen:14, jumper:12, commander:18, colossus:25, nemesis:40},
+  unlock:   {common:1, runner:2, camo:5, flyer:7, armored:4, toxic:6, explosive:8, healer:9, giant:12, brute:10, splitter:11, screamer:13, shielded:15, digger:8, parasite:10, regen:14, jumper:12, commander:18, speedboss:15, colossus:25, nemesis:40},
   // "custo de ameaça" usado para dividir o orçamento da onda
-  threat:   {common:10, runner:12, camo:24, flyer:26, armored:28, toxic:23, explosive:21, healer:32, giant:145, brute:90, splitter:40, screamer:36, shielded:54, digger:33, parasite:30, regen:70, jumper:45, commander:105, colossus:300, nemesis:850},
+  threat:   {common:10, runner:12, camo:24, flyer:26, armored:28, toxic:23, explosive:21, healer:32, giant:145, brute:90, splitter:40, screamer:36, shielded:54, digger:33, parasite:30, regen:70, jumper:45, commander:105, speedboss:420, colossus:300, nemesis:850},
   // intervalo base (s) entre zumbis do mesmo grupo
-  interval: {common:.85, runner:.46, camo:1.0, flyer:.8, armored:1.1, toxic:1.05, explosive:.95, healer:1.85, giant:3.2, brute:2.2, splitter:1.2, screamer:1.95, shielded:1.65, digger:1.15, parasite:.85, regen:2.0, jumper:1.0, commander:2.5, colossus:4.2, nemesis:5.5}
+  interval: {common:.85, runner:.46, camo:1.0, flyer:.8, armored:1.1, toxic:1.05, explosive:.95, healer:1.85, giant:3.2, brute:2.2, splitter:1.2, screamer:1.95, shielded:1.65, digger:1.15, parasite:.85, regen:2.0, jumper:1.0, commander:2.5, speedboss:4.0, colossus:4.2, nemesis:5.5}
 };
-const hpMult  = w => 1 + 0.068 * (w - 1) + (w > 15 ? 0.035 * (w - 15) : 0) + (w > 28 ? 0.045 * (w - 28) : 0);
-const spdMult = w => 1 + Math.min(0.55, 0.012 * (w - 1));
+const hpMult  = w => 1 + 0.078 * (w - 1) + (w > 15 ? 0.042 * (w - 15) : 0) + (w > 28 ? 0.055 * (w - 28) : 0);
+const spdMult = w => 1 + Math.min(0.65, 0.014 * (w - 1));
 
 /* ---- Torres ----
    base: atributos iniciais balanceados por função e custo.
@@ -185,15 +186,15 @@ const TOWERS = {
     ]
   },
   ice: {
-    name:'Torre de Gelo', cost:280, kind:'ice', dtype:'Gelo', prio:'first',
+    name:'Torre de Gelo', cost:310, kind:'ice', dtype:'Gelo', prio:'first',
     short:'Pulso criogênico que desacelera todos os inimigos ao redor.',
-    base:{dmg:4, rate:.95, range:116, slow:.36, slowT:1.7, freezeChance:0, freezeT:0},
+    base:{dmg:4, rate:.90, range:114, slow:.28, slowT:1.35, freezeChance:0, freezeT:0},
     ups:[
-      {name:'Cristais Amplos', cost:200, desc:'+10% alcance, +2 dano', apply:s=>{s.range*=1.1; s.dmg+=2;}},
-      {name:'Geada Profunda', cost:290, desc:'Lentidão 50% por 2,5s', apply:s=>{s.slow=.50; s.slowT=2.5;}},
+      {name:'Cristais Amplos', cost:250, desc:'+10% alcance, +2 dano', apply:s=>{s.range*=1.1; s.dmg+=2;}},
+      {name:'Geada Profunda', cost:360, desc:'Lentidão 38% por 1,9s', apply:s=>{s.slow=.38; s.slowT=1.9;}},
       {choices:[
-        {name:'Congelamento', cost:530, desc:'26% de chance de congelar por 1,2s', apply:s=>{s.freezeChance=.26; s.freezeT=1.2;}},
-        {name:'Era Glacial', cost:530, desc:'Alcance +15%, lentidão 62%, +8 dano', apply:s=>{s.range*=1.15; s.slow=.62; s.dmg+=8; s.rate*=1.25;}}
+        {name:'Congelamento', cost:650, desc:'20% de chance de congelar por 0,85s', apply:s=>{s.freezeChance=.20; s.freezeT=.85;}},
+        {name:'Vento Polar', cost:650, desc:'Alcance +12%, lentidão 48%, +6 dano', apply:s=>{s.range*=1.12; s.slow=.48; s.dmg+=6; s.rate*=1.18;}}
       ]}
     ]
   },
@@ -276,6 +277,11 @@ TOWERS.beacon = Object.assign({}, TOWERS.radar, {name:'Farol de Comando',cost:40
 TOWERS.supplydepot = Object.assign({}, TOWERS.engineer, {name:'Base de Suprimentos',cost:450,kind:'support_eco',dtype:'Suporte Logístico',prio:'first',role:'support',short:'Gera +18 moedas por ciclo na onda e acelera torres próximas em +12%.',base:{dmg:0,rate:.15,range:135,income:18,auraRate:.12},ups:TOWERS.engineer.ups});
 TOWERS.cryogen = Object.assign({}, TOWERS.ice, {name:'Torre de Estase',cost:480,kind:'support_debuff',dtype:'Suporte Criogênico',prio:'first',role:'support',detectCamo:true,canAir:true,short:'Desacelera em área e aplica Vulnerabilidade (+20% dano recebido).',base:{dmg:8,rate:.88,range:135,slow:.35,slowT:2.2,vuln:.20,freezeChance:.08,freezeT:.8},ups:TOWERS.ice.ups});
 TOWERS.nanomed = Object.assign({}, TOWERS.engineer, {name:'Estação Nano-Médica',cost:560,kind:'tesla',dtype:'Suporte Médico',prio:'first',role:'support',detectCamo:true,canAir:true,short:'Purifica torres, concede +15% cadência e repara +1 vida da base/onda.',base:{dmg:14,rate:1.25,range:155,chain:3,chainR:58,slow:.18,slowT:1.1,auraRate:.15,auraDmg:.08,purify:1,healBase:1},ups:TOWERS.engineer.ups});
+// Novas Torres e Habilidades Estilo Bloons TD 6:
+TOWERS.dartgun = Object.assign({}, TOWERS.gunner, {name:'Metralhadora Direcional',cost:340,kind:'dartgun',dtype:'Direcional',prio:'first',detectCamo:true,canAir:true,short:'Mira travada em um ponto fixo do mapa, disparando apenas nessa linha até você mudá-la.',base:{dmg:13,rate:5.6,range:280,pspeed:780,pierce:2,armorPen:.12,spread:.05},ups:TOWERS.gunner.ups});
+TOWERS.dino = Object.assign({}, TOWERS.antitank, {name:'Domador Jurássico',cost:520,kind:'summoner',dtype:'Invocação',prio:'strong',short:'Comanda um Dinossauro em combate direto e invoca aliados na pista contra a horda.',base:{dmg:34,rate:.92,range:155,pspeed:540,pierce:2,dinoDmg:52,allyHp:180,stun:.25,armorPen:.25},ups:TOWERS.antitank.ups});
+TOWERS.minefactory = Object.assign({}, TOWERS.mortar, {name:'Usina de Minas',cost:430,kind:'minefactory',dtype:'Explosivo/Stun',prio:'first',detectCamo:true,short:'Lança minas terrestres acumuláveis na pista que explodem e atordoam hordas e chefes.',base:{dmg:92,rate:.62,range:150,splash:54,stun:.75,maxStacks:4,armorPen:.35},ups:TOWERS.mortar.ups});
+TOWERS.portal = Object.assign({}, TOWERS.engineer, {name:'Torre de Portal Tático',cost:580,kind:'portal',dtype:'Dimensional',prio:'first',role:'support',detectCamo:true,canAir:true,short:'Dispara pulsos dimensionais. Habilidade abre portal que recua os zumbis na pista.',base:{dmg:26,rate:1.45,range:165,pspeed:820,pierce:2,warpBack:190,slow:.24,slowT:1.4,auraRange:.08},ups:TOWERS.engineer.ups});
 // ============================================================
 // BALANCE v1.0.0 - ajustes centralizados (antes -> depois em CHANGELOG.md)
 // Edite SOMENTE aqui para rebalancear torres. Formato: torre:{campo:valor}
@@ -296,30 +302,34 @@ for (const [k, o] of Object.entries(BALANCE)) {
   }
 }
 // ============================================================
-// ASCENSION_BALANCE v1.0.2 - multiplicadores e custos das Ascensoes
-// Corrige disparidades entre DPS bruto extremo (Antitanque/Railgun)
-// e classes de dano continuo, area, controle e suporte.
+// ASCENSION_BALANCE v1.0.4 - Nerf no Protocolo de Ascensão:
+// Custo em moedas aumentado e multiplicador de dano base reduzido
+// para exigir planejamento econômico e manter equilíbrio estratégico.
 // ============================================================
 const ASCENSION_BALANCE = {
-  default:     {dmg:2.85, rate:1.55, range:1.15, bigMult:1.70, dot:1.85, splash:1.15, aura:1.35, income:2.20},
-  antitank:    {dmg:2.55, rate:1.48, bigMult:1.50, cost:4700},
-  railgun:     {dmg:2.50, rate:1.45, bigMult:1.50, cost:5500},
-  boomerang:   {dmg:2.65, rate:1.50, bigMult:1.60, cost:3600},
-  sniper:      {dmg:2.80, rate:1.52, bigMult:1.75, cost:3500},
-  gunner:      {dmg:2.95, rate:1.60, cost:2800},
-  archer:      {dmg:2.95, rate:1.60, cost:2900},
-  shotgun:     {dmg:2.95, rate:1.60, cost:3000},
-  flame:       {dmg:2.95, rate:1.60, dot:2.10, cost:3000},
-  poison:      {dmg:3.00, rate:1.60, dot:2.20, cost:3100},
-  acid:        {dmg:2.95, rate:1.60, dot:2.00, cost:3600},
-  mortar:      {dmg:2.95, rate:1.60, splash:1.18, dot:1.85, cost:3600},
-  tesla:       {dmg:3.00, rate:1.60, cost:3300},
-  ice:         {dmg:3.10, rate:1.60, cost:3000},
-  cryogen:     {dmg:3.10, rate:1.60, aura:1.40, cost:3400},
-  supplydepot: {income:2.30, aura:1.40, cost:3500},
-  beacon:      {dmg:2.85, rate:1.55, aura:1.35, cost:3500},
-  medstation:  {dmg:2.85, rate:1.55, aura:1.35, cost:3900},
-  nanomed:     {dmg:2.85, rate:1.55, aura:1.35, cost:3800}
+  default:     {dmg:2.25, rate:1.42, range:1.14, bigMult:1.48, dot:1.55, splash:1.14, aura:1.28, income:1.95},
+  antitank:    {dmg:2.05, rate:1.36, bigMult:1.35, cost:5800},
+  railgun:     {dmg:2.00, rate:1.34, bigMult:1.35, cost:6800},
+  boomerang:   {dmg:2.18, rate:1.40, bigMult:1.42, cost:4400},
+  sniper:      {dmg:2.25, rate:1.40, bigMult:1.50, cost:4300},
+  gunner:      {dmg:2.35, rate:1.45, cost:3500},
+  archer:      {dmg:2.35, rate:1.45, cost:3600},
+  shotgun:     {dmg:2.35, rate:1.45, cost:3800},
+  flame:       {dmg:2.35, rate:1.45, dot:1.68, cost:3800},
+  poison:      {dmg:2.38, rate:1.45, dot:1.72, cost:3900},
+  acid:        {dmg:2.35, rate:1.45, dot:1.65, cost:4500},
+  mortar:      {dmg:2.35, rate:1.45, splash:1.15, dot:1.55, cost:4500},
+  tesla:       {dmg:2.38, rate:1.45, cost:4100},
+  ice:         {dmg:2.30, rate:1.40, cost:3900},
+  cryogen:     {dmg:2.30, rate:1.40, aura:1.30, cost:4200},
+  supplydepot: {income:1.95, aura:1.30, cost:4400},
+  beacon:      {dmg:2.25, rate:1.42, aura:1.28, cost:4300},
+  medstation:  {dmg:2.25, rate:1.42, aura:1.28, cost:4700},
+  nanomed:     {dmg:2.25, rate:1.42, aura:1.28, cost:4600},
+  dartgun:     {dmg:2.30, rate:1.44, cost:4200},
+  dino:        {dmg:2.25, rate:1.40, bigMult:1.45, cost:4700},
+  minefactory: {dmg:2.28, rate:1.40, splash:1.16, cost:4400},
+  portal:      {dmg:2.25, rate:1.42, aura:1.28, cost:4900}
 };
 // Quarta melhoria: especialização final específica por função da torre.
 for (const [key, d] of Object.entries(TOWERS)) {
@@ -331,7 +341,7 @@ for (const [key, d] of Object.entries(TOWERS)) {
       mortar:{name:'Carga de Demolição',cost:780,desc:'+18% dano e raio de explosão',apply:s=>{s.dmg*=1.18;s.splash=(s.splash||50)*1.18;}},
       flame:{name:'Combustão Pressurizada',cost:580,desc:'+20% alcance e +20% dano de queimadura',apply:s=>{s.range*=1.2;s.burnDps=(s.burnDps||8)*1.2;}},
       tesla:{name:'Condutor de Alta Tensão',cost:760,desc:'+1 salto e +15% alcance',apply:s=>{s.chain=(s.chain||2)+1;s.range*=1.15;}},
-      ice:{name:'Núcleo Criogênico',cost:620,desc:'+10% alcance e lentidão mais duradoura',apply:s=>{s.range*=1.1;s.slowT=(s.slowT||1.5)+.5;}},
+      ice:{name:'Núcleo Criogênico',cost:760,desc:'+8% alcance e +0,3s de lentidão',apply:s=>{s.range*=1.08;s.slowT=(s.slowT||1.35)+.3;}},
       poison:{name:'Catalisador Mutagênico',cost:690,desc:'+25% veneno e +1s de duração',apply:s=>{s.poisonDps=(s.poisonDps||8)*1.25;s.poisonT=(s.poisonT||4)+1;}},
       antitank:{name:'Projétil de Cerâmica',cost:1050,desc:'+18% dano contra alvos pesados',apply:s=>{s.dmg*=1.18;s.bigMult=(s.bigMult||1.3)*1.12;}},
       archer:{name:'Ponta de Aço',cost:480,desc:'+20% dano e +1 perfuração',apply:s=>{s.dmg*=1.2;s.pierce=(s.pierce||1)+1;}},
@@ -374,12 +384,13 @@ for (const [key,d] of Object.entries(TOWERS)) {
   path0.push(makeBranchUpgrade(d,key,0,5));
   TOWER_PATHS[key]=[path0,[1,2,3,4,5].map(l=>makeBranchUpgrade(d,key,1,l)),[1,2,3,4,5].map(l=>makeBranchUpgrade(d,key,2,l))];
 }
-const UP_LABEL={dmg:'dano',rate:'cadência',range:'alcance',pierce:'perfuração',splash:'raio de explosão',armorPen:'penetração de armadura',bigMult:'dano contra pesados',crit:'chance de crítico',critMult:'multiplicador de crítico',pspeed:'velocidade do projétil',burnDps:'dano de queimadura',burnT:'duração da queimadura',chain:'saltos',chainR:'alcance do salto',slow:'lentidão',slowT:'duração da lentidão',stun:'atordoamento (s)',poisonDps:'veneno por segundo',poisonT:'duração do veneno',spreadR:'raio de contágio',auraDmg:'bônus de dano na aura',auraRate:'bônus de cadência na aura',auraRange:'bônus de alcance na aura',income:'moedas por ciclo',vuln:'vulnerabilidade nos zumbis',healBase:'reparo da base por onda'};
+const UP_LABEL={dmg:'dano',rate:'cadência',range:'alcance',pierce:'perfuração',splash:'raio de explosão',armorPen:'penetração de armadura',bigMult:'dano contra pesados',crit:'chance de crítico',critMult:'multiplicador de crítico',pspeed:'velocidade do projétil',burnDps:'dano de queimadura',burnT:'duração da queimadura',chain:'saltos',chainR:'alcance do salto',slow:'lentidão',slowT:'duração da lentidão',stun:'atordoamento (s)',poisonDps:'veneno por segundo',poisonT:'duração do veneno',spreadR:'raio de contágio',auraDmg:'bônus de dano na aura',auraRate:'bônus de cadência na aura',auraRange:'bônus de alcance na aura',income:'moedas por ciclo',vuln:'vulnerabilidade nos zumbis',healBase:'reparo da base por onda',dinoDmg:'dano do dinossauro',allyHp:'vida dos aliados',maxStacks:'acúmulo de minas',warpBack:'recuo dimensional'};
 function mkUp(d,i,e){ // e = [nome, {campo:'*1.2' | '+1' | '=900'}]
   const sp=e[1],parts=[];
   for(const f in sp){const op=sp[f][0],v=+sp[f].slice(1),L=UP_LABEL[f]||f;
     parts.push(op==='*'?(v>=1?'+':'-')+Math.round(Math.abs(v-1)*100)+'% '+L:op==='+'?'+'+v+' '+L:(f==='range'&&v>=700?'alcance global':L+' = '+v));}
-  return {name:e[0],cost:Math.round(d.cost*[.5,.8,1.2,1.8,2.6][i]/10)*10,desc:parts.join(', '),
+  const costMult=d===TOWERS.ice?1.22:1;
+  return {name:e[0],cost:Math.round(d.cost*costMult*[.5,.8,1.2,1.8,2.6][i]/10)*10,desc:parts.join(', '),
     apply:st=>{for(const f in sp){const op=sp[f][0],v=+sp[f].slice(1);st[f]=op==='*'?(st[f]||0)*v:op==='+'?(st[f]||0)+v:v;}}};
 }
 const UNIQUE_UPS={
@@ -415,7 +426,19 @@ const UNIQUE_UPS={
   [['Pulso Acelerado',{rate:'*1.2'}],['Bobina de Fase',{rate:'*1.2',dmg:'*1.25'}],['Descarga Dupla',{rate:'*1.25',vuln:'+.06'}],['Ciclo Contínuo',{rate:'*1.28',slowT:'+.6'}],['Tempestade de Estase',{rate:'*1.5',dmg:'*1.6',vuln:'+.12'}]]],
  nanomed:[[['Enxame Reparador',{auraRate:'+.05',healBase:'+1'}],['Nano-Injetores',{auraRate:'+.07',auraDmg:'+.05'}],['Matriz Regenerativa',{healBase:'+1',auraRate:'+.08'}],['Protocolo Vital',{healBase:'+2',auraDmg:'+.10'}],['Arca da Salvação',{healBase:'+3',auraRate:'=.40',auraDmg:'=.30'}]],
   [['Feixe Bio-Elétrico',{dmg:'*1.3',chain:'+1'}],['Descarga Purificadora',{dmg:'*1.35',chainR:'*1.2'}],['Arco Cirúrgico',{chain:'+2',dmg:'*1.35'}],['Sobrecarga Celular',{dmg:'*1.5',slow:'=.38'}],['Julgamento Bio-Médico',{dmg:'*2.1',chain:'+3',range:'*1.18'}]],
-  [['Domo de Proteção',{range:'*1.16'}],['Sensores Médicos',{range:'*1.16',auraRange:'+.08'}],['Rede Nano-Tática',{range:'*1.18',auraRate:'+.07'}],['Escudo de Perímetro',{range:'*1.2',healBase:'+1'}],['Santuário Global',{range:'=280',auraRange:'=.25',healBase:'+2'}]]]
+  [['Domo de Proteção',{range:'*1.16'}],['Sensores Médicos',{range:'*1.16',auraRange:'+.08'}],['Rede Nano-Tática',{range:'*1.18',auraRate:'+.07'}],['Escudo de Perímetro',{range:'*1.2',healBase:'+1'}],['Santuário Global',{range:'=280',auraRange:'=.25',healBase:'+2'}]]],
+ dartgun:[[['Cano Giroscópico',{dmg:'*1.25',range:'*1.15'}],['Calibre Perfurante',{pierce:'+2',armorPen:'+.2'}],['Raios de Plasma',{dmg:'*1.45',pspeed:'*1.25'}],['Acelerador Linear',{dmg:'*1.55',pierce:'+3'}],['Canhão da Perdição',{dmg:'*2.2',pierce:'+5',armorPen:'=.95'}]],
+  [['Rotores Triplos',{rate:'*1.25'}],['Gatilho Ciclônico',{rate:'*1.28'}],['Dardos de Tálio',{rate:'*1.3',crit:'+.12',critMult:'=2.2'}],['Barragem de Mísseis',{splash:'=32',dmg:'*1.3'}],['Tempestade Direcional',{rate:'*1.65',splash:'=48',dmg:'*1.45'}]],
+  [['Trava Balística',{range:'*1.2',armorPen:'+.15'}],['Rolamentos de Titânio',{pspeed:'*1.35',dmg:'*1.2'}],['Escudo de Chumbo',{bigMult:'=1.45',pierce:'+2'}],['Bateria Autônoma',{rate:'*1.35',range:'*1.2'}],['Zona de Exclusão',{dmg:'*1.8',bigMult:'=1.85',range:'=520'}]]],
+ dino:[[['Garras de Velociraptor',{dinoDmg:'*1.3',dmg:'*1.2'}],['Presas de Alossauro',{dinoDmg:'*1.35',armorPen:'+.25'}],['Couraça Jurássica',{allyHp:'*1.4',dinoDmg:'*1.35'}],['Fúria do Tirano',{dinoDmg:'*1.5',stun:'+.25'}],['Rei T-Rex Alfa',{dinoDmg:'*2.2',dmg:'*1.8',stun:'=.85'}]],
+  [['Ninho de Patrulha',{rate:'*1.22',allyHp:'*1.25'}],['Bando Coordenado',{rate:'*1.25',pierce:'+1'}],['Instinto de Caça',{rate:'*1.3',crit:'+.15',critMult:'=2.4'}],['Investida Pré-Histórica',{rate:'*1.35',dinoDmg:'*1.3'}],['Manada Implacável',{rate:'*1.7',allyHp:'*2',dmg:'*1.5'}]],
+  [['Rugido Sísmico',{range:'*1.18',stun:'+.15'}],['Veneno Dilofossauro',{burnDps:'=18',burnT:'=4'}],['Pele Escamosa',{range:'*1.2',bigMult:'=1.4'}],['Vínculo Primitivo',{range:'*1.22',dinoDmg:'*1.4'}],['Avatar Mesozoico',{range:'*1.35',bigMult:'=1.9',dmg:'*1.75'}]]],
+ minefactory:[[['Pilha Reforçada',{maxStacks:'+2',dmg:'*1.2'}],['Explosivo Plástico',{dmg:'*1.3',splash:'*1.15'}],['Minas de Fragmentação',{dmg:'*1.35',armorPen:'+.25'}],['Cargas Termobáricas',{dmg:'*1.5',burnDps:'=28',burnT:'=4'}],['Superminas Cataclísmicas',{dmg:'*2.3',splash:'*1.4',maxStacks:'+4'}]],
+  [['Esteira Industrial',{rate:'*1.25'}],['Injetor Pneumático',{rate:'*1.28',range:'*1.12'}],['Produção em Massa',{rate:'*1.32',maxStacks:'+1'}],['Tapete de Minas',{rate:'*1.4',dmg:'*1.25'}],['Fábrica Hipercibernética',{rate:'*1.85',dmg:'*1.4'}]],
+  [['Bobina de Choque',{stun:'+.35'}],['Pulso Eletromagnético',{stun:'+.45',armorPen:'+.2'}],['Sensores de Longa Vida',{range:'*1.25',stun:'+.35'}],['Campo Paralisante',{stun:'+.6',splash:'*1.2'}],['Fortaleza de Estase',{stun:'=2.6',dmg:'*1.7',range:'*1.3'}]]],
+ portal:[[['Fenda Instável',{dmg:'*1.3',warpBack:'+45'}],['Vórtice Gravitacional',{dmg:'*1.35',pierce:'+2'}],['Horizonte Quântico',{dmg:'*1.45',warpBack:'+65'}],['Ruptura do Espaço',{dmg:'*1.6',armorPen:'=.75'}],['Singularidade Dimensional',{dmg:'*2.3',warpBack:'+140',pierce:'+4'}]],
+  [['Recarga de Fase',{rate:'*1.25'}],['Condutor de Dobra',{rate:'*1.28',pspeed:'*1.25'}],['Fluxo Taquiônico',{rate:'*1.32',auraRate:'+.10'}],['Portais Gêmeos',{rate:'*1.38',warpBack:'+55'}],['Malha de Teleporte',{rate:'*1.75',auraRate:'=.28',dmg:'*1.45'}]],
+  [['Âncora Espacial',{range:'*1.18',slow:'+.10'}],['Distorção Temporal',{slow:'=.42',slowT:'=2.4'}],['Eco Astral',{range:'*1.22',auraDmg:'+.12'}],['Prisão do Vazio',{stun:'=.35',range:'*1.2'}],['Labirinto Infinito',{range:'=285',auraDmg:'=.26',slow:'=.58'}]]]
 };
 for(const k in UNIQUE_UPS)TOWER_PATHS[k]=UNIQUE_UPS[k].map(path=>path.map((e,i)=>mkUp(TOWERS[k],i,e)));
 const UNIQUE_UPS2={
@@ -429,8 +452,8 @@ const UNIQUE_UPS2={
   [['Gasolina Aditivada',{burnDps:'*1.4'}],['Napalm em Gel',{burnT:'+2'}],['Termite',{burnDps:'*1.5',dmg:'*1.3'}],['Magma',{burnDps:'*1.6',burnT:'+2'}],['Sol Líquido',{burnDps:'*2',ramp:'*1.5',dmg:'*1.5'}]]],
  tesla:[[['Campo Estático',{slow:'=.45'}],['Choque Leve',{stun:'=.12'}],['Paralisia',{stun:'=.22',slowT:'=2'}],['Gaiola de Faraday',{stun:'=.3',slow:'=.6',chain:'+1'}],['Congelamento Elétrico',{stun:'=.45',slowT:'=3'}]],
   [['Cabos Longos',{chainR:'*1.3'}],['Condutores Duplos',{chain:'+1'}],['Rede Elétrica',{chain:'+2',chainR:'*1.2'}],['Supercondutor',{chain:'+2',range:'*1.2'}],['Tempestade Infinita',{chain:'+4',chainR:'*1.4',dmg:'*1.3'}]]],
- ice:[[['Gelo Denso',{slow:'=.55'}],['Neve Compactada',{slowT:'=3',range:'*1.1'}],['Ar Ártico',{slow:'=.7',range:'*1.15'}],['Zero Absoluto',{slow:'=.85',slowT:'=4'}],['Era Glacial',{slow:'=.9',range:'*1.3',dmg:'*3'}]],
-  [['Cristais',{freezeChance:'=.12',freezeT:'=1'}],['Flocos Cortantes',{dmg:'*2',freezeChance:'=.2'}],['Tempestade de Gelo',{freezeChance:'=.3',freezeT:'=1.6',rate:'*1.2'}],['Nitrogênio Líquido',{freezeChance:'=.45',freezeT:'=2'}],['Estilhaço Total',{freezeChance:'=.6',freezeT:'=2.5',dmg:'*3'}]]],
+ ice:[[['Gelo Denso',{slow:'=.42'}],['Neve Compactada',{slowT:'=2.1',range:'*1.08'}],['Ar Ártico',{slow:'=.50',range:'*1.12'}],['Zero Absoluto',{slow:'=.60',slowT:'=2.6'}],['Era Glacial',{slow:'=.68',range:'*1.22',dmg:'*2.4'}]],
+  [['Cristais',{freezeChance:'=.10',freezeT:'=.65'}],['Flocos Cortantes',{dmg:'*1.8',freezeChance:'=.15'}],['Tempestade de Gelo',{freezeChance:'=.22',freezeT:'=1.05',rate:'*1.15'}],['Nitrogênio Líquido',{freezeChance:'=.32',freezeT:'=1.35'}],['Estilhaço Total',{freezeChance:'=.42',freezeT:'=1.65',dmg:'*2.4'}]]],
  poison:[[['Veneno Forte',{poisonDps:'*1.3'}],['Neurotoxina',{poisonDps:'*1.3',poisonT:'+1'}],['Cianeto',{poisonDps:'*1.4'}],['Peste Negra',{poisonDps:'*1.5',poisonT:'+2'}],['Veneno Letal',{poisonDps:'*2.2',armorPen:'=.5'}]],
   [['Esporos Tóxicos',{spreadR:'=35'}],['Nuvem Tóxica',{spreadR:'=55',poisonT:'+1'}],['Surto Infeccioso',{spreadR:'=80'}],['Epidemia Global',{spreadR:'=110',rate:'*1.2'}],['Peste Zumbi',{spreadR:'=150',poisonT:'+3',poisonDps:'*1.4'}]]],
  antitank:[[['Ferrolho Hidráulico',{rate:'*1.25'}],['Autoloader',{rate:'*1.3'}],['Magazine Duplo',{rate:'*1.3'}],['Cano Resfriado',{rate:'*1.35'}],['Metralha Antitanque',{rate:'*1.7'}]],
@@ -443,10 +466,10 @@ const UNIQUE_UPS2={
   [['Antena de Campo',{range:'*1.15'}],['Repetidor',{range:'*1.2',chainR:'*1.2'}],['Torre de Transmissão',{range:'*1.25',chain:'+1'}],['Estação Orbital',{range:'*1.3',chainR:'*1.3'}],['Rede Global',{range:'*1.5',chain:'+3',rate:'*1.2'}]]]
 };
 for(const k in UNIQUE_UPS2){UNIQUE_UPS2[k].forEach((path,j)=>{TOWER_PATHS[k][j+1]=path.map((e,i)=>mkUp(TOWERS[k],i,e));});}
-const FINAL5={gunner:['Canhão Rotativo',{dmg:'*1.5',rate:'*1.3',pierce:'+1'}],sniper:['Mira Satélite',{dmg:'*1.8',crit:'+.2',critMult:'=4'}],mortar:['Artilharia Pesada',{dmg:'*1.6',splash:'*1.25'}],flame:['Lança-Chamas de Plasma',{dmg:'*1.6',burnDps:'*1.4',range:'*1.15'}],tesla:['Bobina Mestre',{dmg:'*1.5',chain:'+2'}],ice:['Câmara Criogênica',{slow:'=.8',freezeChance:'+.1',dmg:'*2'}],poison:['Toxina Suprema',{poisonDps:'*1.6',poisonT:'+2'}],antitank:['Canhão de Cerco',{dmg:'*1.6',pierce:'+2'}],archer:['Arco Lendário',{dmg:'*1.6',rate:'*1.25'}],boomerang:['Lâmina Eterna',{dmg:'*1.5',pierce:'+3'}],engineer:['Núcleo Experimental',{dmg:'*1.6',chain:'+2',range:'*1.15'}]};
+const FINAL5={gunner:['Canhão Rotativo',{dmg:'*1.5',rate:'*1.3',pierce:'+1'}],sniper:['Mira Satélite',{dmg:'*1.8',crit:'+.2',critMult:'=4'}],mortar:['Artilharia Pesada',{dmg:'*1.6',splash:'*1.25'}],flame:['Lança-Chamas de Plasma',{dmg:'*1.6',burnDps:'*1.4',range:'*1.15'}],tesla:['Bobina Mestre',{dmg:'*1.5',chain:'+2'}],ice:['Câmara Criogênica',{slow:'=.62',freezeChance:'+.08',dmg:'*1.8'}],poison:['Toxina Suprema',{poisonDps:'*1.6',poisonT:'+2'}],antitank:['Canhão de Cerco',{dmg:'*1.6',pierce:'+2'}],archer:['Arco Lendário',{dmg:'*1.6',rate:'*1.25'}],boomerang:['Lâmina Eterna',{dmg:'*1.5',pierce:'+3'}],engineer:['Núcleo Experimental',{dmg:'*1.6',chain:'+2',range:'*1.15'}]};
 for(const k in FINAL5)TOWER_PATHS[k][0][4]=mkUp(TOWERS[k],4,FINAL5[k]);
-const COMBAT_ORDER = ['gunner','sniper','mortar','flame','tesla','ice','poison','antitank','archer','boomerang','engineer','radar','shotgun','drone','demolition','railgun','medstation','acid'];
-const SUPPORT_ORDER = ['beacon','supplydepot','cryogen','nanomed'];
+const COMBAT_ORDER = ['gunner','sniper','mortar','flame','tesla','ice','poison','antitank','archer','boomerang','engineer','radar','shotgun','drone','demolition','railgun','medstation','acid','dartgun','dino','minefactory'];
+const SUPPORT_ORDER = ['beacon','supplydepot','cryogen','nanomed','portal'];
 const TOWER_ORDER = [...COMBAT_ORDER, ...SUPPORT_ORDER];
 const TOWER_ABILITIES = {
   mortar:{name:'Barragem Explosiva',cost:200,cd:28,desc:'Dispara uma barragem na área selecionada.'},
@@ -457,7 +480,9 @@ const TOWER_ABILITIES = {
   beacon:{name:'Ordem de Fogo Total',cost:180,cd:32,desc:'+40% dano e cadência para as torres no alcance por 7s.'},
   supplydepot:{name:'Entrega Aérea',cost:120,cd:40,desc:'Lança um pacote imediato de +280 moedas.'},
   cryogen:{name:'Colapso Temporal',cost:190,cd:34,desc:'Congela os zumbis no alcance por 2,2s e amplifica o dano.'},
-  nanomed:{name:'Escudo Nano-Regenerativo',cost:220,cd:38,desc:'Restaura +10 de vida da base e purifica todas as torres.'}
+  nanomed:{name:'Escudo Nano-Regenerativo',cost:220,cd:38,desc:'Restaura +10 de vida da base e purifica todas as torres.'},
+  portal:{name:'Portal Tático',cost:150,cd:24,desc:'Abre portal de entrada no alcance e recua zumbis até o portal de saída na pista.'},
+  dino:{name:'Investida Jurássica',cost:165,cd:28,desc:'O Dinossauro solta um rugido sísmico que atordoa e devora inimigos próximos.'}
 };
 const PRIO_LABEL = {first:'Primeiro', last:'Último', strong:'Forte', close:'Próximo'};
 const LVL_COL = ['#9aa0a6','#e0b84a','#e0802a','#d84040'];
@@ -697,9 +722,22 @@ function buildBackground(){
     g.strokeStyle='rgba(250,204,21,.12)';g.lineWidth=1.5;
     for(let r=60;r<=320;r+=52){g.beginPath();g.arc(450,320,r,0,6.283);g.stroke();}
   } else if(activeMap==='metro'){
-    for(let y=32;y<H;y+=64){rr(0,y,W,1,'#293548');}
-    for(let x=48;x<W;x+=96){rr(x,0,1,H,'#222d3d');}
-    for(let i=0;i<10;i++){const x=36+i*94;rr(x,12,42,4,'rgba(56,189,248,.65)');rr(x,H-16,42,3,'rgba(56,189,248,.45)');}
+    // Ladrilhos táticos de estação subterrânea, canaletas de drenagem e iluminação neon de plataforma
+    for(let y=32;y<H;y+=64){rr(0,y,W,1,'#293548');rr(0,y+1,W,1,'rgba(0,0,0,.45)');}
+    for(let x=48;x<W;x+=96){rr(x,0,1,H,'#222d3d');rr(x+1,0,1,H,'rgba(0,0,0,.4)');}
+    for(let i=0;i<10;i++){
+      const x=36+i*94;
+      rr(x,10,46,6,'#0f172a');rr(x+2,12,42,3,'rgba(56,189,248,.75)');
+      rr(x,H-18,46,6,'#0f172a');rr(x+2,H-16,42,3,'rgba(56,189,248,.55)');
+    }
+    // Faixas amarelas de segurança de embarque nas plataformas subterrâneas
+    for(const [px,py,pw,ph] of [[175,55,120,34],[380,545,115,32],[565,95,125,34]]){
+      if(distToPath(px+pw/2,py+ph/2)>44){
+        rr(px,py,pw,ph,'#1e293b');
+        g.strokeStyle='#38bdf8';g.lineWidth=1;g.strokeRect(px,py,pw,ph);
+        for(let sx=px+4;sx<px+pw-6;sx+=10)rr(sx,py+ph-5,6,3,'#facc15');
+      }
+    }
   } else if(activeMap==='cruzamento'){
     // Canteiros verdes de rodovia expressa e faixas de drenagem
     for(let x=64;x<W;x+=128)rr(x,0,1,H,'rgba(148,163,184,.08)');
@@ -1172,6 +1210,15 @@ function buildBackground(){
         rr(kx-14,ky+6,28,4,'#0f172a');
       }
     }
+  } else if(activeMap==='metro'){
+    // Pilares estruturais subterrâneos, painéis eletrônicos de linha e cabines de controle
+    for(const [mx,my] of [[235,295],[435,295],[625,335]]){
+      if(distToPath(mx,my)>46){
+        rr(mx-16,my-14,34,28,'rgba(0,0,0,.5)');
+        rr(mx-18,my-16,34,26,'#1e293b');rr(mx-14,my-12,26,18,'#0f172a');
+        rr(mx-11,my-9,20,4,'#38bdf8');rr(mx-11,my-2,14,3,'#2be3a1');
+      }
+    }
   }
 
   // 6. Zona de Invasão (Entrada dos Zumbis à esquerda)
@@ -1236,6 +1283,21 @@ function buildBackground(){
   g.globalCompositeOperation='source-over';
 
   BG=c;
+  syncBgCanvas();
+}
+function syncBgCanvas(){
+  try{
+    const bgCv=$('bgCanvas');
+    if(!bgCv||!BG)return;
+    const bgCtx=bgCv.getContext('2d');
+    if(!bgCtx)return;
+    bgCtx.setTransform(1,0,0,1,0,0);
+    bgCtx.clearRect(0,0,bgCv.width,bgCv.height);
+    const s=(VIEW&&VIEW.scale?VIEW.scale:1)*(CANVAS_DPR||1);
+    bgCtx.setTransform(s,0,0,s,(VIEW&&VIEW.ox?VIEW.ox:0)*(CANVAS_DPR||1),(VIEW&&VIEW.oy?VIEW.oy:0)*(CANVAS_DPR||1));
+    bgCtx.imageSmoothingEnabled=false;
+    bgCtx.drawImage(BG,0,0);
+  }catch(_){}
 }
 
 /* ===================== 4. ESTADO E ENTIDADES ===================== */
@@ -1244,18 +1306,18 @@ const G = {
   paused:false, speed:1, auto:false,
   money:0, life:0, kills:0, earned:0, time:0, simT:0, anim:0,
   shake:0, flash:0, flashCol:'#f00',
-  placing:null, targeting:null, selected:null, won:false
+  placing:null, targeting:null, selected:null, selectedObs:null, won:false
 };
-const towers=[], zombies=[], projs=[], parts=[], popups=[], rings=[], bolts=[], hazards=[], mines=[], bombs=[], areas=[];
+const towers=[], zombies=[], projs=[], parts=[], popups=[], rings=[], bolts=[], hazards=[], mines=[], bombs=[], areas=[], allies=[], obstacles=[], portals=[];
 let uid=0;
 const M = {x:0,y:0,in:false};
 const powerState = {};
 POWER_ORDER.forEach(k=>powerState[k]={owned:false,cd:0});
 powerState.supply.uses=0;powerState.supply.nextAt=0;
 
-/* ===================== 5. EFEITOS (FX) E SONS (Snd) ===================== */
+/* ===================== 5. EFEITOS (FX), OBJECT POOLING E SONS (Snd) ===================== */
 let _partRingIdx = 0;
-const _partPool = [], _ringPool = [];
+const _partPool = [], _ringPool = [], _projPool = [], _minePool = [], _allyPool = [], _zombiePool = [];
 const FX = {
   part(x,y,vx,vy,life,col,size,g){
     const maxP=CFG.maxParts||450;
@@ -1527,24 +1589,43 @@ const Snd = {
 /* ===================== 6. DANO, STATUS E EXPLOSÕES ===================== */
 // dtype: 'phys' | 'expl' | 'fire' | 'elec' | 'ice' | 'poison'  (só phys/expl sofrem redução de armadura)
 function applyDamage(z,amount,dtype,o){
-  if(z.dead||z.reached||amount<=0)return 0;
+  if(!z||z.dead||z.reached||!(amount>0))return 0;
   let d=amount;
   if(dtype==='phys'||dtype==='expl'){
     let a=z.armor*(1-((o&&o.armorPen)||0)); if(dtype==='expl')a*=.5;
-    d*=(1-a);
+    d*=(1-clamp(a,0,.92));
   }
   if(o&&o.bigMult&&z.D.big)d*=o.bigMult;
   if(z.vulnT>0&&z.vulnAmt>0)d*=(1+z.vulnAmt);
-  z.hp-=d; z.dmgAcc+=d; z.flash=.07;
+  if(o&&o.owner)z._lastAttacker=o.owner;
+  z.hp-=d; z.dmgAcc+=d; z.flash=.09; z.flashType=dtype||'phys';
   if(o&&o.crit){FX.popup(z.x,z.y-18,Math.round(d)+'!','#ffd23a',true);}
-  if(z.hp<=0)killZombie(z);
+  if(z.hp<=0)killZombie(z,o&&o.owner);
   return d;
 }
 function slowZ(z,amt,dur){
-  if(z.D.boss)amt*=.5; else if(z.D.big)amt*=.75;
+  if(!z||z.dead||z.reached)return;
+  if(z.D.speedBoss||z.D.slowResist){
+    const res=z.D.slowResist||0.85;
+    amt*=(1-res);
+    dur*=0.35;
+  } else if(z.D.boss)amt*=.5;
+  else if(z.D.big)amt*=.75;
   if(z.slowT<=0||amt>=z.slowAmt){z.slowAmt=amt;z.slowT=Math.max(dur,z.slowT);}else z.slowT=Math.max(z.slowT,dur*.5);
 }
-function freezeZ(z,dur){ if(z.D.boss)dur*=.3; else if(z.D.big)dur*=.6; z.freezeT=Math.max(z.freezeT,dur); }
+function freezeZ(z,dur){
+  if(!z||z.dead||z.reached)return;
+  if(z.D.speedBoss)dur*=.18;
+  else if(z.D.boss)dur*=.3;
+  else if(z.D.big)dur*=.6;
+  z.freezeT=Math.max(z.freezeT,dur);
+}
+function stunZ(z,dur){
+  if(!z||z.dead||z.reached||!(dur>0))return;
+  const eff=z.D.speedBoss?dur*0.85:(z.D.boss?dur*0.55:(z.D.big?dur*0.75:dur));
+  z.stunT=Math.max(z.stunT||0,eff);
+  if(z.D.speedBoss)z.turboT=0;
+}
 function ignite(z,dps,dur){ if(z.burnT<=0||dps>=z.burnDps)z.burnDps=dps; z.burnT=Math.max(z.burnT,dur); }
 function poisonZ(z,dps,dur){ if(z.poisonT<=0||dps>=z.poisonDps)z.poisonDps=dps; z.poisonT=Math.max(z.poisonT,dur); }
 
@@ -1556,14 +1637,17 @@ function explode(x,y,r,dmg,dtype,o){
     if(d<=r+z.r*.6){
       applyDamage(z,dmg*(1-.4*Math.min(1,d/(r+z.r))),dtype,o);
       if(o.burnDps&&!z.dead)ignite(z,o.burnDps,o.burnT||3);
+      if(o.stun&&!z.dead){stunZ(z,o.stun);FX.spark(z.x,z.y-10,'#fde047',3);}
     }
   }
   FX.blast(x,y,r); Snd.play('boom'); G.shake=Math.max(G.shake,Math.min(6,r/12));
 }
 
-function killZombie(z){
+function killZombie(z,killerTower){
   if(z.dead)return;                       // garante recompensa uma única vez
   z.dead=true; G.kills++; WM.done++; if(z.D.boss)G.stats.bosses++; psAdd('kills'); if(z.D.boss)psAdd('bosses');
+  const atk=killerTower||z._lastAttacker;
+  if(atk&&typeof atk.kills==='number')atk.kills++;
   G.money+=z.reward; G.earned+=z.reward;
   FX.popup(z.x,z.y-14,'+'+z.reward,'#f2c230'); coinBump();
   FX.blood(z.x,z.y,z.D.boss?24:8,z.type==='toxic'?'#5fa020':'#8a1a14');
@@ -1571,7 +1655,7 @@ function killZombie(z){
   const D=z.D;
   if(D.cloud)hazards.push({kind:'zt',x:z.x,y:z.y,r:D.cloud.r,life:D.cloud.life,max:D.cloud.life});
   if(D.blast)explode(z.x,z.y,D.blast.r,D.blast.dmg,'expl');
-  if(D.split&&WM.num>=11){for(let i=0;i<2;i++){const child=new Zombie('runner',WM.num);child.dist=Math.max(0,z.dist-8+i*14);child.place();child.hp*=.7;child.max=child.hp;child.reward=4;WM.total++;zombies.push(child);}}
+  if(D.split&&WM.num>=11){for(let i=0;i<2;i++){const child=acquireZombie('runner',WM.num);child.dist=Math.max(0,z.dist-8+i*14);child.place();child.hp*=.7;child.max=child.hp;child.reward=3;WM.total++;zombies.push(child);}}
   if(D.boss){
     FX.blast(z.x,z.y,100);
     FX.ring(z.x,z.y,70,'#ef4444');
@@ -1586,22 +1670,32 @@ function killZombie(z){
   }
 }
 
-/* ===================== 7. CLASSES: ZUMBI, PROJÉTIL, TORRE ===================== */
+/* ===================== 7. CLASSES: ZUMBI, PROJÉTIL, TORRE (COM OBJECT POOLING) ===================== */
 const _pp={x:0,y:0,dx:1,dy:0};
 
 class Zombie {
   constructor(type,wave){
-    const D=ZOMBIES[type]; this.type=type; this.D=D; this.id=++uid;
+    this.init(type,wave);
+  }
+  init(type,wave){
+    const D=ZOMBIES[type]||ZOMBIES.common; this.type=type; this.D=D; this.id=++uid;
     const diff=difficultySettings();
-    let hp=D.hp*hpMult(wave)*diff.hp; if(D.boss)hp=D.hp*(1+.4*(wave/10-1))*diff.hp;
+    const w=Math.max(1,wave||1);
+    let hp=D.hp*hpMult(w)*diff.hp;
+    if(D.boss)hp=D.hp*(1+.44*Math.max(0,w/10-1))*diff.hp;
     this.hp=hp; this.max=hp;
-    this.speed=D.speed*spdMult(wave)*diff.speed; this.armor=D.armor||0;
-    this.reward=Math.round(D.reward*(1+.012*(wave-1))*diff.reward);
+    this.speed=D.speed*spdMult(w)*diff.speed;
+    // Resistência progressiva das classes de infectados ao longo das 40 ondas
+    this.armor=Math.min(0.84,(D.armor||0)+Math.min(0.14,Math.max(0,(w-1)*0.0035)));
+    // Economia restrita: recompensa por zumbi abatido reduzida para exigir planejamento financeiro
+    this.reward=Math.max(1,Math.round(D.reward*0.82*(1+.01*(w-1))*diff.reward));
     this.dist=0; this.x=-40; this.y=90; this.off=D.size>=2?srand()*6-3:srand()*18-9;   // posição lateral afeta a simulação: usa RNG com semente
-    this.slowT=0;this.slowAmt=0;this.freezeT=0;this.burnT=0;this.burnDps=0;this.poisonT=0;this.poisonDps=0;
-    this.flash=0;this.dmgAcc=0;this.popT=rand(0,.4);this.phase=rand(0,6.28);this.face=1;this.cur=0;
-    this.dead=false;this.reached=false;this.r=D.r;this.roar=8;this.screamT=6;
+    this.slowT=0;this.slowAmt=0;this.freezeT=0;this.stunT=0;this.burnT=0;this.burnDps=0;this.poisonT=0;this.poisonDps=0;
+    this.vulnT=0;this.vulnAmt=0;this.turboT=0;this.turboCD=4.5;
+    this.flash=0;this.flashType='phys';this.dmgAcc=0;this.popT=rand(0,.4);this.phase=rand(0,6.28);this.face=1;this.cur=0;
+    this.dead=false;this.reached=false;this.r=D.r;this.roar=8;this.screamT=6;this.jumpCD=5;this.digCD=6;this._lastAttacker=null;
     this.place();
+    return this;
   }
   place(){
     pathPos(this.dist,_pp);
@@ -1614,6 +1708,8 @@ class Zombie {
     if(this.slowT>0){this.slowT-=h;if(this.slowT<=0)this.slowAmt=0;}
     if(this.vulnT>0){this.vulnT-=h;if(this.vulnT<=0)this.vulnAmt=0;}
     if(this.freezeT>0)this.freezeT-=h;
+    if(this.stunT>0)this.stunT-=h;
+    if(this.turboT>0)this.turboT-=h;
     if(this.burnT>0){this.burnT-=h;applyDamage(this,this.burnDps*h,'fire');if(this.dead)return;}
     if(this.poisonT>0){this.poisonT-=h;applyDamage(this,this.poisonDps*h,'poison');if(this.dead)return;}
     if(D.heal){ // curandeiro cura zumbis próximos
@@ -1622,17 +1718,27 @@ class Zombie {
         if(Math.abs(o.x-this.x)<D.healR&&Math.abs(o.y-this.y)<D.healR&&dist(o.x,o.y,this.x,this.y)<=D.healR)o.hp=Math.min(o.max,o.hp+amt); }
       if(Math.random()<h*4)FX.part(this.x+rand(-14,14),this.y-4,0,-25,.6,'#7fe08a',2,0);
     }
-    if(D.regen&&!this.dead)this.hp=Math.min(this.max,this.hp+D.regen*h);
+    if(D.regen&&!this.dead&&this.stunT<=0)this.hp=Math.min(this.max,this.hp+D.regen*h);
     if(D.parasite&&srand()<h*.7){for(const z of zombies){if(z!==this&&!z.dead&&!z.reached&&dist(z.x,z.y,this.x,this.y)<70){z.speed=Math.max(z.speed,z.D.speed*1.18);break;}}}
     if(D.commander&&srand()<h*.35){for(const z of zombies){if(z!==this&&!z.dead&&!z.reached&&dist(z.x,z.y,this.x,this.y)<105)z.speed=Math.max(z.speed,z.D.speed*1.12);}}
-    if(D.jumper){this.jumpCD=(this.jumpCD||5)-h;if(this.jumpCD<=0&&this.dist<PATH_LEN-30){this.dist=Math.min(PATH_LEN-20,this.dist+65);this.jumpCD=7;FX.ring(this.x,this.y,5,38,.35,'#d8c48a',3);}}
-    if(D.digger){this.digCD=(this.digCD||6)-h;if(this.digCD<=0&&this.dist<PATH_LEN-25){this.dist=Math.min(PATH_LEN-15,this.dist+42);this.digCD=8;this.off=rand(-4,4);FX.part(this.x,this.y,rand(-12,12),-20,.25,'#9b8a68',2,0);}}
-    if(D.screamer){this.screamT-=h;if(this.screamT<=0){this.screamT=8;for(const t of towers)if(dist(t.x,t.y,this.x,this.y)<125)t.weak=Math.max(t.weak,1.8);FX.ring(this.x,this.y,8,125,.55,'#d9a6ff',3);}}
-    if(D.boss){ // rugido: enfraquece torres próximas
+    if(D.jumper&&this.stunT<=0){this.jumpCD=(this.jumpCD||5)-h;if(this.jumpCD<=0&&this.dist<PATH_LEN-30){this.dist=Math.min(PATH_LEN-20,this.dist+65);this.jumpCD=7;FX.ring(this.x,this.y,5,38,.35,'#d8c48a',3);}}
+    if(D.digger&&this.stunT<=0){this.digCD=(this.digCD||6)-h;if(this.digCD<=0&&this.dist<PATH_LEN-25){this.dist=Math.min(PATH_LEN-15,this.dist+42);this.digCD=8;this.off=rand(-4,4);FX.part(this.x,this.y,rand(-12,12),-20,.25,'#9b8a68',2,0);}}
+    if(D.screamer&&this.stunT<=0){this.screamT-=h;if(this.screamT<=0){this.screamT=8;for(const t of towers)if(dist(t.x,t.y,this.x,this.y)<125)t.weak=Math.max(t.weak,1.8);FX.ring(this.x,this.y,8,125,.55,'#d9a6ff',3);}}
+    if(D.speedBoss&&this.stunT<=0){
+      this.turboCD=(this.turboCD||4.5)-h;
+      if(this.turboCD<=0){
+        this.turboCD=5.5;
+        this.turboT=1.7;
+        FX.ring(this.x,this.y,6,54,.35,'#38bdf8',3);
+        FX.popup(this.x,this.y-26,'⚡ TURBO MUTANTE!','#38bdf8',true);
+      }
+    }
+    if(D.boss&&this.stunT<=0){ // rugido: enfraquece torres próximas
       this.roar-=h;
       if(this.roar<=0){this.roar=10;for(const t of towers)if(dist(t.x,t.y,this.x,this.y)<150)t.weak=Math.max(t.weak,2.5);FX.ring(this.x,this.y,10,150,.6,'#c04080',4);G.shake=Math.max(G.shake,5);}
     }
-    const sp=this.freezeT>0?0:this.speed*(1-this.slowAmt);
+    const paralyzed=(this.freezeT>0||this.stunT>0);
+    const sp=paralyzed?0:this.speed*(this.turboT>0?1.35:1)*(1-this.slowAmt);
     this.cur=sp; this.dist+=sp*h;
     if(this.dist>=PATH_LEN){this.reach();return;}
     this.place();
@@ -1648,14 +1754,30 @@ class Zombie {
     if(G.life<=0)endGame(false);
   }
 }
+function acquireZombie(type,wave){
+  return _zombiePool.length?_zombiePool.pop().init(type,wave):new Zombie(type,wave);
+}
+function releaseZombie(z){
+  if(z&&_zombiePool.length<400)_zombiePool.push(z);
+}
 
 class Proj {
-  constructor(o){ Object.assign(this,{kind:'bullet',pierce:1,hit:[],r:3,life:2,dtype:'phys',color:'#ffe080',armorPen:0,bigMult:0,splash:0,crit:false},o); }
+  constructor(o){ this.hit=[]; this.init(o); }
+  init(o){
+    this.kind='bullet'; this.pierce=1; this.r=3; this.life=2; this.dtype='phys';
+    this.color='#ffe080'; this.armorPen=0; this.bigMult=0; this.splash=0;
+    this.crit=false; this.burnDps=0; this.burnT=0; this.poisonDps=0; this.poisonT=0;
+    this.spreadR=0; this.stun=0; this.slow=0; this.slowT=0; this.warpMini=0;
+    this.owner=null; this.len=6; this.alive=true;
+    if(this.hit)this.hit.length=0; else this.hit=[];
+    if(o)Object.assign(this,o);
+    return this;
+  }
   update(h){
     if(this.kind==='shell'){ // projétil de morteiro: trajetória parabólica até a posição prevista
       this.t+=h; const k=Math.min(1,this.t/this.T);
       this.x=this.sx+(this.tx-this.sx)*k; this.y=this.sy+(this.ty-this.sy)*k; this.hgt=Math.sin(Math.PI*k)*70;
-      if(k>=1){explode(this.tx,this.ty,this.splash,this.dmg,'expl',{armorPen:this.armorPen,burnDps:this.burnDps,burnT:this.burnT});return false;}
+      if(k>=1){explode(this.tx,this.ty,this.splash,this.dmg,'expl',{armorPen:this.armorPen,burnDps:this.burnDps,burnT:this.burnT,stun:this.stun,owner:this.owner});return false;}
       return true;
     }
     const px=this.x,py=this.y; this.x+=this.vx*h; this.y+=this.vy*h; this.life-=h;
@@ -1672,7 +1794,7 @@ class Proj {
   }
   onHit(z){
     if(this.kind==='glob'){ // veneno
-      applyDamage(z,this.dmg,'poison');
+      applyDamage(z,this.dmg,'poison',{owner:this.owner});
       if(!z.dead&&this.armorPen>0)z.armor=Math.max(0,z.armor-this.armorPen*.12);
       if(!z.dead){
         poisonZ(z,this.poisonDps,this.poisonT);
@@ -1682,10 +1804,26 @@ class Proj {
       }
       FX.spark(z.x,z.y-6,'#7fe03a',5); return;
     }
-    applyDamage(z,this.dmg,this.dtype,{armorPen:this.armorPen,bigMult:this.bigMult,crit:this.crit});
-    FX.spark(z.x,z.y-6,'#ffd060',3);
-    if(this.splash>0)explode(z.x,z.y,this.splash,this.dmg*.5,'expl');
+    applyDamage(z,this.dmg,this.dtype,{armorPen:this.armorPen,bigMult:this.bigMult,crit:this.crit,owner:this.owner});
+    if(!z.dead){
+      if(this.stun>0)stunZ(z,this.stun);
+      if(this.slow>0)slowZ(z,this.slow,this.slowT||1.4);
+      if(this.burnDps>0)ignite(z,this.burnDps,this.burnT||3);
+      if(this.warpMini>0&&!z.D.boss&&srand()<0.20){
+        z.dist=Math.max(0,z.dist-this.warpMini);
+        z.place();
+        FX.ring(z.x,z.y,3,18,.22,'#c084fc',2);
+      }
+    }
+    FX.spark(z.x,z.y-6,this.color||'#ffd060',3);
+    if(this.splash>0)explode(z.x,z.y,this.splash,this.dmg*.5,'expl',{owner:this.owner,stun:this.stun});
   }
+}
+function acquireProj(o){
+  return _projPool.length?_projPool.pop().init(o):new Proj(o);
+}
+function releaseProj(p){
+  if(p&&_projPool.length<600)_projPool.push(p);
 }
 
 // Seleção de alvo: first | last | strong | close
@@ -1712,14 +1850,58 @@ function predict(z,speed,sx,sy){
   return {x,y,t:tt};
 }
 
+function spawnTrackAlly(t){
+  const np=nearestPathProg(t.x,t.y);
+  pathPos(np.d,_pp);
+  const a=_allyPool.length?_allyPool.pop():{};
+  a.owner=t;
+  a.dist=np.d;
+  a.x=_pp.x;
+  a.y=_pp.y;
+  a.hp=Math.round((t.s.allyHp||180)*(1+t.tier*0.18));
+  a.maxHp=a.hp;
+  a.dmg=Math.round((t.s.dmg||34)*(1+(t._auraDmg||0))*0.85);
+  a.speed=72+t.tier*5;
+  a.atkCD=0;
+  a.life=16+t.tier*1.5;
+  a.stun=t.s.stun||0.22;
+  a.phase=srand()*6.28;
+  a.face=-1;
+  allies.push(a);
+  FX.ring(a.x,a.y,4,22,.3,'#4ade80',2.5);
+}
+
 class Tower {
   constructor(key,x,y){
     this.key=key; this.def=TOWERS[key]; this.x=x; this.y=y; this.id=++uid;
     this.id=++TID; this.tier=0; this.spec=-1; this.ups=[]; this.pathLevels=[0,0,0]; this.pathChoices=[null,null,null]; this.spent=this.def.cost; this.priority=this.def.prio;
-    this.cd=0; this.angle=-Math.PI/2; this.recoil=0; this.weak=0; this.heat=0; this.pulse=0; this.abilityCD=0; this.abilityT=0; this.paragon=false;
+    this.cd=0; this.angle=-Math.PI/2; this.recoil=0; this.weak=0; this.heat=0; this.pulse=0; this.abilityCD=0; this.abilityT=0; this.paragon=false; this.kills=0;
+    const np=nearestPathProg(x,y);
+    pathPos(np.d,_pp);
+    this.aimX=Math.round(_pp.x);
+    this.aimY=Math.round(_pp.y);
+    if(key==='dartgun')this.angle=Math.atan2(this.aimY-y,this.aimX-x);
+    this.entryDist=np.d;
+    this.entryX=Math.round(_pp.x);
+    this.entryY=Math.round(_pp.y);
+    this.exitDist=Math.max(12,np.d-210);
+    pathPos(this.exitDist,_pp);
+    this.exitX=Math.round(_pp.x);
+    this.exitY=Math.round(_pp.y);
+    if(key==='dino'){
+      pathPos(np.d,_pp);
+      this._dino={x:_pp.x,y:_pp.y,homeX:_pp.x,homeY:_pp.y,angle:0,cd:0,lunge:0,roarT:0};
+      this.spawnCD=3.0;
+    }
     this.recalc();
   }
   get level(){return Math.min(4,this.tier+1);}
+  get dominantPath(){
+    const lv=this.pathLevels||[0,0,0];
+    const mx=Math.max(lv[0],lv[1],lv[2]);
+    if(mx<=0)return -1;
+    return lv[0]>=lv[1]&&lv[0]>=lv[2]?0:(lv[1]>=lv[0]&&lv[1]>=lv[2]?1:2);
+  }
   recalc(){
     this.s=Object.assign({},this.def.base);
     for(const u of this.ups)u.apply(this.s);
@@ -1770,7 +1952,7 @@ class Tower {
           for(const z of zombies){
             if(z.dead||z.reached)continue;
             const dx=z.x-this.x,dy=z.y-this.y; if(dx*dx+dy*dy>r2)continue;
-            applyDamage(z,s.dmg*(1+(this._auraDmg||0)),'ice');
+            applyDamage(z,s.dmg*(1+(this._auraDmg||0)),'ice',{owner:this});
             if(!z.dead){
               slowZ(z,s.slow||.42,s.slowT||2.4);
               z.vulnT=Math.max(z.vulnT||0,3.5); z.vulnAmt=Math.max(z.vulnAmt||0,s.vuln||.28);
@@ -1783,6 +1965,47 @@ class Tower {
         } else this.cd=0;
       }
       return;
+    }
+    if(k==='dartgun'){ // Torre Direcional (Estilo Dartling Gunner): mira travada no ponto (aimX, aimY)
+      this.angle=Math.atan2(this.aimY-this.y,this.aimX-this.x);
+      if(WM.state==='active'||zombies.length>0){
+        this.cd-=h;
+        if(this.cd<=0){
+          this.fireDartgun();
+          this.cd+=1/Math.max(0.2,rate);
+          if(this.cd<0)this.cd=0;
+          this.recoil=0.85;
+        }
+      } else if(this.cd>0){
+        this.cd=Math.max(0,this.cd-h);
+      }
+      return;
+    }
+    if(k==='minefactory'){ // Usina de Minas Terrestres (Estilo Spike Factory) com Stun
+      if(WM.state==='active'||zombies.length>0){
+        this.cd-=h;
+        if(this.cd<=0){
+          this.throwLandmine();
+          this.cd=1/Math.max(0.1,rate);
+          this.recoil=0.8;
+          this.pulse=0.3;
+        }
+      }
+      return;
+    }
+    if(k==='summoner'){ // Torre com Invocações e Dinossauro
+      this.updateDino(h,rate);
+      if(WM.state==='active'||zombies.length>0){
+        this.spawnCD=(this.spawnCD||3.5)-h;
+        if(this.spawnCD<=0){
+          let myAllies=0;
+          for(let i=0;i<allies.length;i++)if(allies[i].owner===this)myAllies++;
+          if(myAllies<(this.paragon?5:3)){
+            spawnTrackAlly(this);
+          }
+          this.spawnCD=Math.max(2.2,5.6-this.tier*0.45);
+        }
+      }
     }
     if(k==='ice'){ // pulso em área
       this.cd-=h;
@@ -1807,23 +2030,144 @@ class Tower {
     this.cd-=h;
     if(this.cd<=0){ this.fire(tg); this.cd+=1/rate; if(this.cd<0)this.cd=0; this.recoil=1; }
   }
+  updateDino(h,rate){
+    const dn=this._dino;
+    if(!dn)return;
+    if(dn.lunge>0)dn.lunge=Math.max(0,dn.lunge-h*5);
+    if(dn.roarT>0)dn.roarT=Math.max(0,dn.roarT-h);
+    const s=this.s, r=s.range*(1+(this._auraRange||0))*1.18;
+    let best=null, bd=r;
+    for(const z of zombies){
+      if(z.dead||z.reached||z.D.flying)continue;
+      const d=dist(z.x,z.y,this.x,this.y);
+      if(d<=bd){bd=d;best=z;}
+    }
+    if(best){
+      const dx=best.x-dn.x, dy=best.y-dn.y, d=Math.hypot(dx,dy)||1;
+      dn.angle=Math.atan2(dy,dx);
+      const moveSpd=135+this.tier*14;
+      if(d>18){
+        dn.x+=dx/d*Math.min(d,moveSpd*h);
+        dn.y+=dy/d*Math.min(d,moveSpd*h);
+      }
+      dn.cd=(dn.cd||0)-h;
+      if(d<=28&&dn.cd<=0){
+        const dMult=1+(this._auraDmg||0);
+        const biteDmg=(s.dinoDmg||52)*dMult*(this.paragon?2.1:1);
+        applyDamage(best,biteDmg,'phys',{armorPen:s.armorPen||.3,bigMult:s.bigMult||1.25,owner:this});
+        if(!best.dead){
+          if(s.stun)stunZ(best,s.stun);
+          if(s.burnDps)ignite(best,s.burnDps,s.burnT||3);
+        }
+        // Golpe de cauda em área a partir do nível 3
+        if(this.tier>=3||this.paragon){
+          for(const o of zombies){
+            if(o===best||o.dead||o.reached)continue;
+            if(dist(o.x,o.y,dn.x,dn.y)<=42){
+              applyDamage(o,biteDmg*0.55,'phys',{armorPen:s.armorPen||.3,owner:this});
+              if(!o.dead&&s.stun)stunZ(o,s.stun*0.6);
+            }
+          }
+          FX.ring(dn.x,dn.y,5,38,.25,'#f97316',2.5);
+        }
+        FX.spark(best.x,best.y-8,'#fb923c',4);
+        dn.lunge=1;
+        dn.cd=1/Math.max(0.4,rate*1.15);
+      }
+    } else {
+      // Retorna suavemente para o ponto de guarda próximo à pista
+      const dx=dn.homeX-dn.x, dy=dn.homeY-dn.y, d=Math.hypot(dx,dy);
+      if(d>4){
+        dn.angle=Math.atan2(dy,dx);
+        dn.x+=dx/d*Math.min(d,90*h);
+        dn.y+=dy/d*Math.min(d,90*h);
+      }
+    }
+  }
+  fireDartgun(){
+    const s=this.s, m=this.muzzle(), dMult=1+(this._auraDmg||0);
+    const sp=s.pspeed||780;
+    const spread=(s.spread||0.05)*(this.paragon?0.5:1);
+    const a=this.angle+(srand()-0.5)*spread*2;
+    let dmg=s.dmg*dMult, crit=false;
+    if(s.crit&&srand()<s.crit){dmg*=s.critMult||2.2;crit=true;}
+    projs.push(acquireProj({
+      x:m.x,y:m.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,dmg,dtype:'phys',
+      pierce:s.pierce||2,armorPen:s.armorPen||.12,bigMult:s.bigMult||0,
+      splash:s.splash||0,crit,r:this.tier>=4?4:3,life:(Math.max(W,H)+120)/sp,
+      color:this.paragon?'#fde047':this.dominantPath===0?'#38bdf8':this.dominantPath===1?'#f97316':'#4ade80',
+      len:this.tier>=3?14:10,owner:this
+    }));
+    FX.part(m.x,m.y,Math.cos(a)*35,Math.sin(a)*35,.09,'#bae6fd',2.5,0);
+    Snd.play('shoot');
+  }
+  throwLandmine(){
+    const s=this.s, dMult=1+(this._auraDmg||0), r=s.range*(1+(this._auraRange||0));
+    // Encontra pontos da pista dentro do alcance da Usina de Minas
+    const candidates=[];
+    for(let d=12;d<PATH_LEN-12;d+=22){
+      pathPos(d,_pp);
+      if(dist(_pp.x,_pp.y,this.x,this.y)<=r)candidates.push({d,x:_pp.x,y:_pp.y});
+    }
+    let tx,ty;
+    if(candidates.length>0){
+      const pick=candidates[(srand()*candidates.length)|0];
+      tx=pick.x+(srand()-.5)*12;
+      ty=pick.y+(srand()-.5)*12;
+    } else {
+      const np=nearestPathProg(this.x,this.y);
+      pathPos(np.d,_pp);
+      tx=_pp.x; ty=_pp.y;
+    }
+    const maxSt=Math.max(1,Math.round((s.maxStacks||4)*(this.paragon?2:1)));
+    // Verifica se pode acumular (stack) em uma mina próxima desta mesma usina
+    for(const m of mines){
+      if(m.armed&&m.owner===this&&m.stacks<maxSt&&dist(m.x,m.y,tx,ty)<22){
+        m.stacks++;
+        m.life=Math.max(m.life,38);
+        FX.ring(m.x,m.y,3,16,.2,'#facc15',2);
+        Snd.play('build');
+        return;
+      }
+    }
+    // Limita total de pilhas ativas por usina para performance
+    let myCount=0;
+    for(let i=0;i<mines.length;i++)if(mines[i].owner===this)myCount++;
+    if(myCount>=18){
+      const oldest=mines.find(m=>m.owner===this&&m.armed);
+      if(oldest){oldest.stacks=Math.min(maxSt,oldest.stacks+1);oldest.life=38;return;}
+    }
+    const mn=_minePool.length?_minePool.pop():{};
+    mn.x=Math.round(tx); mn.y=Math.round(ty);
+    mn.armed=true; mn.owner=this;
+    mn.dmg=s.dmg*dMult; mn.splash=s.splash||54;
+    mn.stun=s.stun||0.75; mn.armorPen=s.armorPen||0.35;
+    mn.burnDps=s.burnDps||0; mn.burnT=s.burnT||0;
+    mn.stacks=1; mn.maxStacks=maxSt; mn.life=40;
+    mines.push(mn);
+    FX.part(mn.x,mn.y,0,-18,.22,'#fbbf24',3,60);
+    Snd.play('build');
+  }
   muzzle(){ const L=14+this.level*2; return {x:this.x+Math.cos(this.angle)*L,y:this.y-4+Math.sin(this.angle)*L}; }
   fire(tg){
     const s=this.s,k=this.def.kind,m=this.muzzle(),dMult=1+(this._auraDmg||0);
-    if(k==='bullet'){
-      const sp=s.pspeed; const t=dist(tg.x,tg.y,m.x,m.y)/sp;
+    if(k==='bullet'||k==='summoner'||k==='portal'){
+      const sp=s.pspeed||680; const t=dist(tg.x,tg.y,m.x,m.y)/sp;
       pathPos(Math.min(PATH_LEN,tg.dist+tg.cur*t),_pp);
       const px=_pp.x-_pp.dy*tg.off, py=_pp.y+_pp.dx*tg.off;
       const a=Math.atan2(py-m.y,px-m.x); this.angle=a;
       let dmg=s.dmg*dMult,crit=false; if(s.crit&&srand()<s.crit){dmg*=s.critMult;crit=true;}
-      const heavy=this.key==='antitank',sn=this.key==='sniper';
-      projs.push(new Proj({x:m.x,y:m.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,dmg,dtype:'phys',pierce:s.pierce,armorPen:s.armorPen||0,bigMult:s.bigMult||0,
-        splash:s.splash||0,crit,r:heavy?5:sn?3:2.5,life:(s.range+80)/sp,color:heavy?'#ff9040':sn?'#fff':this.key==='beacon'?'#38bdf8':(this.level>=3?'#ffb040':'#ffe080'),len:sn?16:heavy?14:6}));
-      FX.part(m.x,m.y,Math.cos(a)*30,Math.sin(a)*30,.1,'#ffe8a0',3,0);
-      Snd.play(heavy?'boom':sn?'snipe':'shoot');
+      const heavy=this.key==='antitank',sn=this.key==='sniper',isPortal=k==='portal';
+      projs.push(acquireProj({x:m.x,y:m.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,dmg,dtype:'phys',pierce:s.pierce||1,armorPen:s.armorPen||0,bigMult:s.bigMult||0,
+        splash:s.splash||0,crit,stun:s.stun||0,slow:isPortal?(s.slow||.24):0,slowT:isPortal?(s.slowT||1.4):0,warpMini:isPortal?26:0,
+        r:heavy?5:sn?3:isPortal?4:2.5,life:(s.range+80)/sp,
+        color:isPortal?'#c084fc':heavy?'#ff9040':sn?'#fff':this.key==='beacon'?'#38bdf8':(this.level>=3?'#ffb040':'#ffe080'),
+        len:sn?16:heavy?14:isPortal?12:6,owner:this}));
+      FX.part(m.x,m.y,Math.cos(a)*30,Math.sin(a)*30,.1,isPortal?'#e879f9':'#ffe8a0',3,0);
+      Snd.play(heavy?'boom':sn?'snipe':isPortal?'zap':'shoot');
     } else if(k==='mortar'){
       const p=predict(tg,s.pspeed,this.x,this.y-6);
-      projs.push(new Proj({kind:'shell',x:this.x,y:this.y-6,sx:this.x,sy:this.y-6,tx:p.x,ty:p.y,t:0,T:Math.max(.3,p.t),hgt:0,dmg:s.dmg*dMult,splash:s.splash,armorPen:s.armorPen||0,burnDps:s.burnDps||0,burnT:s.burnT||0}));
+      projs.push(acquireProj({kind:'shell',x:this.x,y:this.y-6,sx:this.x,sy:this.y-6,tx:p.x,ty:p.y,t:0,T:Math.max(.3,p.t),hgt:0,dmg:s.dmg*dMult,splash:s.splash,armorPen:s.armorPen||0,burnDps:s.burnDps||0,burnT:s.burnT||0,owner:this}));
       FX.part(this.x,this.y-12,0,-30,.5,'#666',4,-10); Snd.play('boom');
     } else if(k==='tesla'){
       this.fireTesla(tg);
@@ -1831,8 +2175,8 @@ class Tower {
       const sp=s.pspeed,t=dist(tg.x,tg.y,m.x,m.y)/sp;
       pathPos(Math.min(PATH_LEN,tg.dist+tg.cur*t),_pp);
       const px=_pp.x-_pp.dy*tg.off,py=_pp.y+_pp.dx*tg.off,a=Math.atan2(py-m.y,px-m.x);
-      projs.push(new Proj({kind:'glob',x:m.x,y:m.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,dmg:s.dmg*dMult,r:4,life:(s.range+60)/sp,color:'#7fe03a',
-        poisonDps:s.poisonDps,poisonT:s.poisonT,spreadR:s.spreadR,armorPen:s.armorPen||0}));
+      projs.push(acquireProj({kind:'glob',x:m.x,y:m.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,dmg:s.dmg*dMult,r:4,life:(s.range+60)/sp,color:'#7fe03a',
+        poisonDps:s.poisonDps,poisonT:s.poisonT,spreadR:s.spreadR,armorPen:s.armorPen||0,owner:this}));
       Snd.play('poison');
     }
   }
@@ -1843,14 +2187,14 @@ class Tower {
       for(const z of zombies){ if(z.dead||z.reached||hit.includes(z))continue; const d=dist(z.x,z.y,cur.x,cur.y); if(d<bd){bd=d;best=z;} }
       if(!best)break; hit.push(best); pts.push({x:best.x,y:best.y-8}); cur=best;
     }
-    hit.forEach((z,i)=>{ applyDamage(z,s.dmg*dMult*(1-.07*i),'elec'); if(!z.dead){slowZ(z,s.slow,s.slowT); if(s.stun)freezeZ(z,s.stun);} });
+    hit.forEach((z,i)=>{ applyDamage(z,s.dmg*dMult*(1-.07*i),'elec',{owner:this}); if(!z.dead){slowZ(z,s.slow,s.slowT); if(s.stun)stunZ(z,s.stun);} });
     FX.bolt(pts); this.pulse=.2; Snd.play('zap');
   }
   icePulse(){
     const s=this.s,r2=s.range*s.range;
     for(const z of zombies){
       if(z.dead||z.reached||(z.D.camo&&!this.def.detectCamo)||(z.D.flying&&!this.def.canAir))continue; const dx=z.x-this.x,dy=z.y-this.y; if(dx*dx+dy*dy>r2)continue;
-      applyDamage(z,s.dmg,'ice');
+      applyDamage(z,s.dmg,'ice',{owner:this});
       if(!z.dead){ slowZ(z,s.slow,s.slowT); if(s.freezeChance&&srand()<s.freezeChance)freezeZ(z,s.freezeT); FX.spark(z.x,z.y-8,'#bfe8ff',2); }
     }
     FX.ring(this.x,this.y,8,s.range,.45,'#9fdcff',3); this.pulse=.3; Snd.play('ice');
@@ -1862,7 +2206,7 @@ class Tower {
       const dx=z.x-this.x,dy=z.y-this.y,d=Math.hypot(dx,dy);
       if(d>s.range+z.r)continue;
       if(Math.abs(angDiff(Math.atan2(dy,dx),this.angle))>s.cone+z.r/Math.max(d,1))continue;
-      applyDamage(z,s.dmg*mul,'fire'); if(!z.dead)ignite(z,s.burnDps,s.burnT);
+      applyDamage(z,s.dmg*mul,'fire',{owner:this}); if(!z.dead)ignite(z,s.burnDps,s.burnT);
     }
     FX.flame(m.x,m.y,this.angle,s.range); this.recoil=.3; Snd.play('flame');
   }
@@ -1872,7 +2216,7 @@ class Tower {
 // Função pura: a mesma onda sempre tem a mesma composição (permite pré-visualizar).
 function buildWave(n){
   const U=WAVECFG.unlock,C=WAVECFG.threat,I=WAVECFG.interval;
-  const avail=Object.keys(U).filter(k=>U[k]<=n), boss=n%10===0;
+  const avail=Object.keys(U).filter(k=>U[k]<=n&&k!=='speedboss'), boss=n%10===0;
   const budget=(62+19*n+1.05*n*n)*(boss?.72:1);
   const others=avail.filter(k=>k!=='common'), picked=[];
   if(others.length){
@@ -1908,6 +2252,7 @@ function buildWave(n){
     cursor+=g.count*iv*.58+.9;
   }
   if(boss){ const bc=1+Math.floor(n/35); for(let b=0;b<bc;b++)out.push({t:3+b*13,type:'boss'}); }
+  if(n===15||n===25||n===35||(n>=40&&n%10===5))out.push({t:4.2,type:'speedboss'});
   if(n%20===0&&n>=40)out.push({t:8,type:'nemesis'});
   if(n%10===0&&n>=20)out.push({t:6,type:'colossus'});
   out.sort((a,b)=>a.t-b.t);
@@ -1929,7 +2274,7 @@ const WM = {
     for(const e of list)this.queue.push({t:this.clock+.5+e.t,type:e.type,wave:this.num});
     this.queue.sort((a,b)=>a.t-b.t);
     this.total+=list.length; this.pending.push(this.num); this.state='active'; this.prep=null;
-    const isBoss=this.num%10===0&&this.num>=10;
+    const isBoss=(this.num%10===0&&this.num>=10)||this.num===15||this.num===25||this.num===35;
     toast('ONDA '+this.num+(isBoss?' — CHEFE!':this.num%5===0?' — DESAFIO!':''),isBoss?'bad':'');
     if(isBoss)Snd.play('alarm'); else Snd.play('horn');
   },
@@ -1937,13 +2282,13 @@ const WM = {
     this.clock+=h;
     while(this.queue.length&&this.queue[0].t<=this.clock){
       const e=this.queue.shift();
-      const z=new Zombie(e.type,e.wave);
+      const z=acquireZombie(e.type,e.wave);
       zombies.push(z);
       if(z.D.boss){
         Snd.play('alarm');
         G.shake=Math.max(G.shake,8);
         G.flash=0.4;
-        G.flashCol='rgba(239, 68, 68, 0.38)';
+        G.flashCol=z.D.speedBoss?'rgba(56, 189, 248, 0.38)':'rgba(239, 68, 68, 0.38)';
         toast('🚨 ALERTA DE EMERGÊNCIA: '+z.D.name+' DETECTADO!','bad');
       }
     }
@@ -1959,7 +2304,20 @@ const WM = {
     FX.popup(W/2,H/2,'+'+bonus+' BÔNUS','#f2c230',true); Snd.play('coin');
     toast('Onda '+this.num+' concluída! +'+bonus+' moedas','good');
     this.state='idle'; this.total=0; this.done=0; this.prep=G.auto?CFG.prepTime:null;
-    if(this.num>=CFG.victoryWave&&!G.won){G.won=true;G.paused=true;career.bestWave=Math.max(career.bestWave,WM.num);career.totalKills+=G.kills;career.games++;career.lastMap=activeMap;career.lastDifficulty=activeDifficulty;saveCareer();showEnd(true);}
+    if(this.num>=CFG.victoryWave&&!G.won){
+      G.won=true;G.paused=true;
+      career.bestWave=Math.max(career.bestWave,WM.num);
+      career.totalKills+=G.kills;
+      career.games++;
+      career.lastMap=activeMap;
+      career.lastDifficulty=activeDifficulty;
+      career.medals=career.medals||{};
+      career.medals[activeMap]=career.medals[activeMap]||{};
+      career.medals[activeMap][activeDifficulty]=true;
+      saveCareer();
+      if(typeof renderMapMedals==='function')renderMapMedals();
+      showEnd(true);
+    }
   },
   remaining(){return this.queue.length+zombies.length;}
 };
@@ -1968,11 +2326,11 @@ function supplyOk(){return powerState.supply.uses<3&&G.simT>=powerState.supply.n
 const Powers = {
   click(key){
     const P=POWERS[key];
-    if(G.mode!=='play')return;
+    if(!P||G.mode!=='play')return;
     if(key==='supply'){const sp=powerState.supply;
       if(sp.uses>=3){toast('Você já usou os 3 suprimentos desta partida.','bad');return;}
       if(G.simT<sp.nextAt){toast('Suprimentos disponíveis em '+fmtTime(sp.nextAt-G.simT)+'.','bad');return;}}
-    if(G.money<P.cost){noMoney();return;}
+    if(!Number.isFinite(G.money)||G.money<P.cost){noMoney();return;}
     
     // Poderes são consumíveis: pagar novamente antes de CADA ativação.
     if(key==='repair'||key==='supply'||key==='pulse'){
@@ -1996,13 +2354,75 @@ const Powers = {
 
 /* ===================== 9. SIMULAÇÃO ===================== */
 function updateMinesBombsHazards(h){
-  // minas
-  for(const m of mines){
+  // minas terrestres acumuláveis (com atordoamento / stun)
+  for(let i=mines.length-1;i>=0;i--){
+    const m=mines[i];
+    if(m.life!==undefined){
+      m.life-=h;
+      if(m.life<=0){m.armed=false;}
+    }
     if(!m.armed)continue;
-    for(const z of zombies){ if(z.dead||z.reached)continue;
-      if(Math.abs(z.x-m.x)<z.r+10&&Math.abs(z.y-m.y)<z.r+10){ m.armed=false; explode(m.x,m.y,55,140,'expl'); break; } }
+    for(const z of zombies){
+      if(z.dead||z.reached||z.D.flying)continue;
+      if(Math.abs(z.x-m.x)<z.r+12&&Math.abs(z.y-m.y)<z.r+12){
+        m.armed=false;
+        const stacks=Math.max(1,m.stacks||1);
+        const dmg=(m.dmg||140)*(1+(stacks-1)*0.65);
+        const splash=(m.splash||55)*(1+(stacks-1)*0.08);
+        const stun=(m.stun||0.75)*(1+(stacks-1)*0.15);
+        explode(m.x,m.y,splash,dmg,'expl',{armorPen:m.armorPen||.35,stun,burnDps:m.burnDps||0,burnT:m.burnT||0,owner:m.owner});
+        FX.ring(m.x,m.y,6,splash,.32,'#fde047',3);
+        break;
+      }
+    }
   }
-  pruneArr(mines,m=>m.armed);
+  for(let i=mines.length-1;i>=0;i--){
+    if(!mines[i].armed){
+      const deadM=mines[i];
+      if(_minePool.length<300)_minePool.push(deadM);
+      mines[i]=mines[mines.length-1];
+      mines.pop();
+    }
+  }
+  // aliados invocados na pista (Torre Domador Jurássico)
+  for(let i=allies.length-1;i>=0;i--){
+    const a=allies[i];
+    a.life-=h;
+    if(a.atkCD>0)a.atkCD-=h;
+    if(a.life<=0||a.hp<=0){
+      if(_allyPool.length<120)_allyPool.push(a);
+      allies[i]=allies[allies.length-1];
+      allies.pop();
+      continue;
+    }
+    // Procura zumbi próximo na pista
+    let target=null, bd=34;
+    for(const z of zombies){
+      if(z.dead||z.reached||z.D.flying)continue;
+      const d=dist(z.x,z.y,a.x,a.y);
+      if(d<bd){bd=d;target=z;}
+    }
+    if(target){
+      a.face=target.x>=a.x?1:-1;
+      if(a.atkCD<=0){
+        applyDamage(target,a.dmg,'phys',{armorPen:.25,owner:a.owner});
+        if(!target.dead&&a.stun)stunZ(target,a.stun);
+        a.hp-=target.D.boss?45:18;
+        a.atkCD=0.55;
+        FX.spark(target.x,target.y-6,'#4ade80',3);
+      }
+    } else {
+      a.dist=Math.max(10,a.dist-a.speed*h);
+      pathPos(a.dist,_pp);
+      a.x=_pp.x; a.y=_pp.y;
+      if(Math.abs(_pp.dx)>.1)a.face=_pp.dx>0?-1:1;
+    }
+  }
+  // portais táticos ativos na pista
+  for(let i=portals.length-1;i>=0;i--){
+    portals[i].life-=h;
+    if(portals[i].life<=0){portals.splice(i,1);}
+  }
   // bombas do bombardeio
   for(const b of bombs){
     if(b.wait>0){b.wait-=h;continue;}
@@ -2042,10 +2462,13 @@ const towerById=id=>towers.find(t=>t.id===id);
 const CMDS={
   place:c=>placeTower(c.key,c.x,c.y),
   up:c=>{const t=towerById(c.id);return t?upgradeTower(t,c.i||0,c.path|0):false;},
-  paragon:c=>{const t=towerById(c.id);if(t)makeParagon(t);},
-  ability:c=>{const t=towerById(c.id);if(t)activateTowerAbility(t);},
-  sell:c=>{const t=towerById(c.id);if(t)sellTower(t);},
-  prio:c=>{const t=towerById(c.id);if(t)t.priority=c.k;},
+  paragon:c=>{const t=towerById(c.id);return t?makeParagon(t):false;},
+  ability:c=>{const t=towerById(c.id);return t?activateTowerAbility(t):false;},
+  sell:c=>{const t=towerById(c.id);if(t){sellTower(t);return true;}return false;},
+  prio:c=>{const t=towerById(c.id);if(t){t.priority=c.k;return true;}return false;},
+  aim:c=>{const t=towerById(c.id);return t?setTowerAim(t,c.x,c.y):false;},
+  portal_exit:c=>{const t=towerById(c.id);return t?setPortalExit(t,c.x,c.y):false;},
+  clearObs:c=>clearObstacle(c.id),
   wave:()=>WM.send(),
   power:c=>Powers.click(c.key),
   auto:c=>setAuto(!!c.on)
@@ -2777,8 +3200,8 @@ function update(h){
   for(const p of projs)p.alive=p.update(h);
   updateMinesBombsHazards(h);
   updateFX(h);
-  pruneArr(projs,p=>p.alive);
-  pruneArr(zombies,z=>!z.dead&&!z.reached);   // remove mortos/que chegaram (recompensa/dano já aplicados 1x)
+  pruneArr(projs,p=>{if(p.alive)return true;releaseProj(p);return false;});
+  pruneArr(zombies,z=>{if(!z.dead&&!z.reached)return true;releaseZombie(z);return false;});
   WM.checkClear();
   SecurityGuard.syncVault();
 }
@@ -3079,6 +3502,21 @@ function paintZombieBody(type,D,sw,ar){
       P([[10,-16+ar],[17,-13+ar],[10,-10+ar]],'#c084fc');
       P([[11,-14.5+ar],[15.5,-13+ar],[11,-11.5+ar]],'#ffffff');
       break;
+    case 'speedboss':
+      // PREDADOR VELOZ: Chefe Ciber-Mutante de Alta Velocidade com propulsores de plasma ciano, barbatanas aerodinâmicas e garras duplas
+      P([[-8.5,-19],[7.5,-19],[7,-7],[-8,-7]],'#0f172a');
+      R(-7.5,-18,14,3,'#0284c7');
+      // Propulsores dorsais de plasma ciano
+      R(-11,-18,3.5,8,'#1e293b');
+      C(-11,-14,2.8,'#38bdf8');C(-11,-14,1.4,'#ffffff');
+      // Barbatanas aerodinâmicas na cabeça e costas
+      P([[-5,-27],[-13,-31],[-2,-25]],'#38bdf8');
+      P([[0,-27],[-8,-33],[4,-26]],'#7dd3fc');
+      // Visor predador néon e garras energéticas longas
+      R(0,-24.5,5.5,2.4,'#38bdf8');R(1.2,-24.1,3.5,1.2,'#ffffff');
+      P([[9,-15+ar],[17,-16.5+ar],[11,-12.5+ar]],'#38bdf8');
+      P([[9,-12.5+ar],[16.5,-11.5+ar],[10.5,-10+ar]],'#bae6fd');
+      break;
   }
 }
 function zombieSprite(z,moving,tm){
@@ -3095,9 +3533,9 @@ function drawZombie(z){
   const D=z.D,s=D.size,tm=G.simT*(D.flying?5.2:D.anim)+z.phase;
   if(D.boss){
     const pr=.5+.5*Math.sin(G.simT*3.5);
-    ctx.fillStyle=D.nemesis?'rgba(168,85,247,'+(0.16+0.1*pr)+')':'rgba(225,29,72,'+(0.15+0.1*pr)+')';
+    ctx.fillStyle=D.speedBoss?'rgba(56,189,248,'+(0.16+0.1*pr)+')':D.nemesis?'rgba(168,85,247,'+(0.16+0.1*pr)+')':'rgba(225,29,72,'+(0.15+0.1*pr)+')';
     ctx.beginPath();ctx.ellipse(z.x,z.y+10,38+pr*6,18,0,0,6.283);ctx.fill();
-    ctx.strokeStyle=D.nemesis?'rgba(232,121,249,.55)':'rgba(251,113,133,.5)';
+    ctx.strokeStyle=D.speedBoss?'rgba(125,211,252,.65)':D.nemesis?'rgba(232,121,249,.55)':'rgba(251,113,133,.5)';
     ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(z.x,z.y+10,30+pr*4,13,0,0,6.283);ctx.stroke();
   } else if(D.commander){
     ctx.strokeStyle='rgba(251,191,36,.35)';ctx.lineWidth=1.3;
@@ -3128,12 +3566,23 @@ function drawZombie(z){
     ctx.translate(0,-bob);
   }
   ctx.drawImage(zombieSprite(z,moving,tm),-28,-44);
-  if(z.freezeT>0){R(-8,-28,16,28,'rgba(125,211,252,.55)');R(-8,-28,16,1.5,'#fff');}
-  else if(z.slowT>0)R(-7,-27,14,27,'rgba(56,189,248,.28)');
+  // Feedback visual estilo Bloons: congelamento, lentidão, vulnerabilidade, choque/stun, veneno, queimadura e piscada de dano
+  if(z.freezeT>0){
+    R(-8,-28,16,28,'rgba(125,211,252,.58)');R(-8,-28,16,1.8,'#ffffff');
+    R(-6,-12,12,2,'#bae6fd');
+  } else if(z.slowT>0){
+    R(-7,-27,14,27,'rgba(56,189,248,.30)');
+  }
+  if(z.stunT>0){
+    R(-7,-27,14,27,'rgba(250,204,21,.28)');
+    const sa=G.simT*9;
+    R(Math.cos(sa)*6-1.5,-31+Math.sin(sa)*2,3,3,'#fde047');
+    R(Math.cos(sa+3.14)*6-1.5,-31+Math.sin(sa+3.14)*2,3,3,'#38bdf8');
+  }
   if(z.vulnT>0)R(-7,-27,14,27,'rgba(192,132,252,.26)');
-  if(z.flash>0)R(-7,-27,14,27,'rgba(255,255,255,.55)');
+  if(z.flash>0)R(-7,-27,14,27,z.flashType==='elec'?'rgba(186,230,253,.72)':z.flashType==='poison'?'rgba(190,242,100,.65)':'rgba(255,255,255,.65)');
   if(z.burnT>0){const f=(((G.simT*10)|0)+z.id)%3;R(-3,-29-f,3,4.5,'#f97316');R(1,-28-(2-f),2.5,3.5,'#fde047');}
-  if(z.poisonT>0)R(-5,-28+(((G.simT*6)|0)%2),2.5,2.5,'#a3e635');
+  if(z.poisonT>0){R(-5,-28+(((G.simT*6)|0)%2),2.8,2.8,'#a3e635');R(2,-26+(((G.simT*5)|0)%2),2.2,2.2,'#bef264');}
   ctx.restore();
   // Indicadores táticos e barra de vida
   const flyOff=D.flying?12:0;
@@ -3145,7 +3594,7 @@ function drawZombie(z){
     R(bx,by,Math.round(bw*f),bh,f>.5?'#2be3a1':f>.25?'#f59e0b':'#ef4444');
     if(f>0)R(bx,by,Math.round(bw*f),1,'rgba(255,255,255,.28)');
     if(D.boss){
-      ctx.fillStyle=D.nemesis?'#e879f9':'#fda4af';
+      ctx.fillStyle=D.speedBoss?'#38bdf8':D.nemesis?'#e879f9':'#fda4af';
       ctx.font='bold 11px "Segoe UI",sans-serif';ctx.textAlign='center';
       ctx.fillText('☠ '+D.name,z.x,by-4);ctx.textAlign='left';
     }
@@ -3159,16 +3608,19 @@ const TOWER_ACCENT={
   ice:'#7dd3fc',poison:'#a3e635',antitank:'#fbbf24',archer:'#fbbf24',boomerang:'#2dd4bf',
   engineer:'#f59e0b',radar:'#38bdf8',shotgun:'#fb923c',drone:'#7dd3fc',demolition:'#ef4444',
   railgun:'#a855f7',medstation:'#10b981',acid:'#bef264',
-  beacon:'#fbbf24',supplydepot:'#f59e0b',cryogen:'#c084fc',nanomed:'#2be3a1'
+  beacon:'#fbbf24',supplydepot:'#f59e0b',cryogen:'#c084fc',nanomed:'#2be3a1',
+  dartgun:'#38bdf8',dino:'#f97316',minefactory:'#fbbf24',portal:'#c084fc'
 };
-function drawTowerSprite(key,x,y,ang,rec,lvl,spec,tm,tw){
+const PATH_SKIN_ACCENT=['#f97316','#38bdf8','#a855f7'];
+function drawTowerSprite(key,x,y,ang,rec,lvl,spec,tm,tw,pathIdx,tier){
   ctx.save(); ctx.translate(Math.round(x),Math.round(y));
   const poly=(pts,fill,stroke,lw)=>{ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||.9;ctx.stroke();}};
   const circ=(cx,cy,r,fill,stroke,lw)=>{ctx.beginPath();ctx.arc(cx,cy,r,0,6.283);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||1;ctx.stroke();}};
-  const ac=TOWER_ACCENT[key]||'#38bdf8';
-  const band=spec>=0?SPEC_COL[spec]:LVL_COL[Math.min(3,(lvl||1)-1)];
+  const pCol=(pathIdx>=0&&PATH_SKIN_ACCENT[pathIdx])?PATH_SKIN_ACCENT[pathIdx]:null;
+  const ac=(tier>=2&&pCol)?pCol:(TOWER_ACCENT[key]||'#38bdf8');
+  const band=spec>=0?SPEC_COL[spec]:(pCol||LVL_COL[Math.min(3,(lvl||1)-1)]);
   const isSup=SUPPORT_ORDER.includes(key)||key==='medstation';
-  const _bk=lvl+'|'+spec+'|'+ac+'|'+(isSup?1:0);
+  const _bk=lvl+'|'+spec+'|'+ac+'|'+(isSup?1:0)+'|'+(tier||0);
   let _bc=BASE_CACHE[_bk];
   if(!_bc){
     _bc=BASE_CACHE[_bk]=document.createElement('canvas');_bc.width=52;_bc.height=46;
@@ -3586,14 +4038,142 @@ function drawTowerSprite(key,x,y,ang,rec,lvl,spec,tm,tw){
       circ(0,-14,3+Math.sin(tm*6)*.8,'rgba(43,227,161,.55)');
       circ(0,-14,1.8,'#ffffff');
       break;}
+    case 'dartgun':{
+      // NOVA TORRE BTD6: Metralhadora Direcional (Estilo Dartling Gunner) com giroscópio e cano rotativo pesado
+      circ(0,0,9.5,'#0f172a',ac,1.2);
+      rot(()=>{
+        const L=16+lvl*2.5;
+        // Trilho estabilizador e 3 canos rotativos direcionais
+        R(-4-rc,-6.5,10,13,'#1e293b');
+        R(2-rc,-4.5,L,2.4,'#334155');
+        R(2-rc,-1.2,L+2,2.4,'#475569');
+        R(2-rc,2.1,L,2.4,'#334155');
+        // Anéis de contenção magnética no cano
+        R(8-rc,-5,2.5,10,ac);
+        if(lvl>=3)R(14-rc,-5,2.5,10,'#fde047');
+        // Escudo de operador e mira holográfica
+        poly([[-8,-6],[3,-5],[5,0],[3,5],[-8,6]],'#1e293b',ac,1);
+        circ(-2,0,3.2,band,'#ffffff',.8);
+      });
+      break;}
+    case 'dino':{
+      // NOVA TORRE BTD6: Domador Jurássico (Estilo Beast Handler) com totem pré-histórico e lançador
+      circ(0,0,9.5,'#291d12','#f97316',1.2);
+      // Totem ósseo / âmbar jurássico na base
+      poly([[-8,-7],[8,-7],[9,6],[-9,6]],'#451a03','#d97706',1);
+      rot(()=>{
+        const L=12+lvl*2;
+        R(1-rc,-2.5,L,5,'#78350f');
+        poly([[L-rc,-4],[L+5-rc,0],[L-rc,4]],'#fef3c7','#f97316',.8);
+      });
+      // Emblema de âmbar luminoso no topo
+      circ(0,-3,4.5,'#f97316','#fef08a',1);
+      circ(-1,-4,1.5,'#ffffff');
+      break;}
+    case 'minefactory':{
+      // NOVA TORRE BTD6: Usina de Minas Terrestres (Estilo Spike Factory) com chaminé industrial e ejetor
+      poly([[-12,-8],[12,-8],[13,8],[-13,8]],'#1e293b','#fbbf24',1.2);
+      R(-9,-5,18,10,'#0f172a');
+      // Esteira e tambor central gerador de minas com bobina de choque
+      const gr=tm*3.2;
+      ctx.save();ctx.rotate(gr);
+      R(-6,-2,12,4,'#475569');R(-2,-6,4,12,'#475569');
+      ctx.restore();
+      circ(0,0,5.2,'#fbbf24','#ffffff',1);
+      circ(0,0,2.2,((tm*5)|0)%2?'#ef4444':'#38bdf8');
+      break;}
+    case 'portal':{
+      // NOVA TORRE BTD6: Torre de Portal Tático com anéis dimensionais e núcleo de dobra
+      circ(0,0,10,'#1e1b4b','#c084fc',1.3);
+      ctx.save();ctx.rotate(tm*2.4);
+      poly([[0,-12],[10,0],[0,12],[-10,0]],'rgba(192,132,252,.22)','#38bdf8',1.2);
+      ctx.restore();
+      rot(()=>{
+        const L=11+lvl*2;
+        R(2-rc,-2,L,4,'#312e81');
+        circ(L+2-rc,0,3,'#38bdf8','#ffffff',.8);
+      });
+      const wp=4+Math.sin(tm*7)*1.2;
+      circ(0,-3,wp+2,'rgba(56,189,248,.38)');
+      circ(0,-3,wp,'#c084fc','#ffffff',1.1);
+      break;}
+  }
+  // Insígnia de Skin Nível 5 (Coroa de Maestria dinâmica por caminho)
+  if((tier||0)>=5){
+    ctx.fillStyle=ac;
+    ctx.beginPath();ctx.arc(0,-16,3.2,0,6.283);ctx.fill();
+    ctx.strokeStyle='#ffffff';ctx.lineWidth=1;ctx.stroke();
   }
   ctx.restore();
 }
 const GLOW_CACHE={};
 function glowSprite(c,r,a){const k=c+r+a;let g=GLOW_CACHE[k];if(!g){g=GLOW_CACHE[k]=document.createElement('canvas');g.width=g.height=r*2;const x=g.getContext('2d'),gr=x.createRadialGradient(r,r,4,r,r,r);gr.addColorStop(0,c+a);gr.addColorStop(1,c+'00');x.fillStyle=gr;x.fillRect(0,0,r*2,r*2);}return g;}
 const TIER_GLOW=['','#7fd0ff','#3ee0a0','#ffb020','#ff6a3a','#d070ff'];
+
+function drawDinoCompanion(t){
+  const dn=t._dino;
+  if(!dn)return;
+  ctx.save();
+  // Linha de vínculo tático sutil quando a torre está selecionada
+  if(G.selected===t){
+    ctx.strokeStyle='rgba(249,115,22,.45)';ctx.lineWidth=1.2;ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(t.x,t.y);ctx.lineTo(dn.x,dn.y);ctx.stroke();ctx.setLineDash([]);
+  }
+  ctx.translate(Math.round(dn.x),Math.round(dn.y));
+  const sc=1+Math.min(0.45,t.tier*0.08)+(t.paragon?0.25:0);
+  const face=Math.cos(dn.angle)>=0?1:-1;
+  ctx.fillStyle='rgba(0,0,0,.38)';ctx.beginPath();ctx.ellipse(0,6,11*sc,4.5*sc,0,0,6.283);ctx.fill();
+  ctx.scale(face*sc,sc);
+  const bob=Math.sin(G.simT*9)*1.4;
+  ctx.translate((dn.lunge||0)*4,-bob);
+  // Cauda musculosa do Dinossauro (T-Rex / Raptor)
+  ctx.fillStyle=t.paragon?'#dc2626':t.tier>=3?'#ea580c':'#15803d';
+  ctx.beginPath();ctx.moveTo(-4,-4);ctx.lineTo(-17,-9);ctx.lineTo(-14,-2);ctx.closePath();ctx.fill();
+  // Pernas traseiras fortes
+  R(-4,0,3.5,6,'#14532d');R(1,0,3.5,6,'#166534');
+  // Corpo e placas dorsais
+  ctx.fillStyle=t.paragon?'#ef4444':t.tier>=3?'#f97316':'#22c55e';
+  ctx.beginPath();ctx.ellipse(0,-6,8.5,5.5,-0.2,0,6.283);ctx.fill();
+  // Crista dorsal
+  ctx.fillStyle='#fde047';
+  R(-6,-12,2.5,2,'#fde047');R(-2,-13,2.5,2.2,'#fde047');R(2,-14,2.5,2.2,'#fde047');
+  // Cabeça e mandíbula com presas
+  ctx.fillStyle=t.paragon?'#dc2626':t.tier>=3?'#ea580c':'#16a34a';
+  ctx.fillRect(3,-15,9,6.5);
+  ctx.fillStyle='#fef3c7';
+  ctx.fillRect(6,-9,1.5,2);ctx.fillRect(9,-9,1.5,2);
+  // Olho feroz brilhante
+  ctx.fillStyle='#fef08a';ctx.fillRect(7,-13.5,2.2,1.8);
+  ctx.restore();
+}
+
 function drawTower(t){
   ctx.fillStyle='rgba(0,0,0,.38)';ctx.beginPath();ctx.ellipse(t.x,t.y+13,17,6.5,0,0,6.283);ctx.fill();
+  // Se for Torre Direcional (dartgun), desenha linha de mira laser travada quando selecionada (ou sutil sempre)
+  if(t.key==='dartgun'&&Number.isFinite(t.aimX)&&Number.isFinite(t.aimY)){
+    ctx.save();
+    const sel=G.selected===t;
+    ctx.strokeStyle=sel?'rgba(56,189,248,.75)':'rgba(56,189,248,.18)';
+    ctx.lineWidth=sel?2:1;
+    ctx.setLineDash([6,5]);
+    ctx.beginPath();ctx.moveTo(t.x,t.y-4);ctx.lineTo(t.aimX,t.aimY);ctx.stroke();
+    ctx.setLineDash([]);
+    if(sel){
+      ctx.strokeStyle='#38bdf8';ctx.lineWidth=1.8;
+      ctx.beginPath();ctx.arc(t.aimX,t.aimY,10,0,6.283);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(t.aimX-14,t.aimY);ctx.lineTo(t.aimX+14,t.aimY);ctx.moveTo(t.aimX,t.aimY-14);ctx.lineTo(t.aimX,t.aimY+14);ctx.stroke();
+    }
+    ctx.restore();
+  }
+  // Se for Torre de Portal Tático, desenha marcador do portal de saída quando selecionada
+  if(t.key==='portal'&&G.selected===t&&Number.isFinite(t.exitX)&&Number.isFinite(t.exitY)){
+    ctx.save();
+    ctx.strokeStyle='rgba(192,132,252,.75)';ctx.lineWidth=1.8;ctx.setLineDash([5,4]);
+    ctx.beginPath();ctx.moveTo(t.x,t.y);ctx.lineTo(t.exitX,t.exitY);ctx.stroke();ctx.setLineDash([]);
+    ctx.strokeStyle='#38bdf8';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(t.exitX,t.exitY,14,0,6.283);ctx.stroke();
+    ctx.restore();
+  }
   // Se for uma Torre de Suporte, desenha aura tática suave e conexões com torres aliadas quando selecionada
   if(t.def.role==='support'){
     const ac=TOWER_ACCENT[t.key]||'#2be3a1';
@@ -3617,12 +4197,14 @@ function drawTower(t){
     ctx.beginPath();ctx.ellipse(t.x,t.y+8,16,7,0,0,6.283);ctx.stroke();
     ctx.restore();
   }
-  const ac=TOWER_ACCENT[t.key]||'#38bdf8';
+  const pIdx=t.dominantPath;
+  const ac=(t.tier>=2&&pIdx>=0&&PATH_SKIN_ACCENT[pIdx])?PATH_SKIN_ACCENT[pIdx]:(TOWER_ACCENT[t.key]||'#38bdf8');
   // Anel tematico sutil na base para diferenciar classes rapidamente no mapa e no mobile
-  ctx.strokeStyle=ac;ctx.globalAlpha=t.paragon?.65:.34;ctx.lineWidth=1.4;ctx.beginPath();ctx.ellipse(t.x,t.y+9,17.5,7.5,0,0,6.283);ctx.stroke();ctx.globalAlpha=1;
+  ctx.strokeStyle=ac;ctx.globalAlpha=t.paragon?.65:.38;ctx.lineWidth=1.4;ctx.beginPath();ctx.ellipse(t.x,t.y+9,17.5,7.5,0,0,6.283);ctx.stroke();ctx.globalAlpha=1;
   const gc=t.paragon?'#ffd24a':TIER_GLOW[Math.min(5,t.tier)];
   if(gc){const gs=glowSprite(gc,t.paragon?34:26,t.paragon?'66':'38');ctx.drawImage(gs,Math.round(t.x-gs.width/2),Math.round(t.y-gs.height/2));}
-  drawTowerSprite(t.key,t.x,t.y,t.angle,t.recoil,t.level,t.spec,G.simT,t.pulse);
+  drawTowerSprite(t.key,t.x,t.y,t.angle,t.recoil,t.level,t.spec,G.simT,t.pulse,pIdx,t.tier);
+  if(t._dino)drawDinoCompanion(t);
   if(t.paragon){
     // Ascensao: anel dourado pulsante + aro tracejado giratorio + 2 orbes orbitais
     const pu=.5+.5*Math.sin(G.simT*4);
@@ -3654,13 +4236,67 @@ function drawProj(p){
   }
 }
 function drawFX(){
+  // Obstáculos destrutíveis mediante pagamento em moedas
+  for(const ob of obstacles){
+    if(ob.cleared)continue;
+    ctx.save();
+    ctx.translate(ob.x,ob.y);
+    ctx.fillStyle='rgba(0,0,0,.45)';ctx.beginPath();ctx.ellipse(2,5,ob.r+2,ob.r*.65,0,0,6.283);ctx.fill();
+    if(ob.kind==='wagon'){
+      R(-16,-10,32,20,'#1e293b');R(-14,-8,28,16,'#334155');
+      R(-12,-4,24,4,'#38bdf8');R(-10,3,20,3,'#facc15');
+    } else if(ob.kind==='crate'){
+      R(-14,-11,28,22,'#78350f');R(-12,-9,24,18,'#b45309');
+      R(-12,-2,24,4,'#facc15');
+    } else {
+      ctx.fillStyle='#475569';ctx.beginPath();ctx.arc(0,0,ob.r-2,0,6.283);ctx.fill();
+      R(-9,-6,18,12,'#64748b');R(-6,-3,12,4,'#f59e0b');
+    }
+    if(G.selectedObs===ob){
+      ctx.strokeStyle='#fbbf24';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,ob.r+4,0,6.283);ctx.stroke();
+    }
+    ctx.fillStyle='rgba(15,23,42,.88)';ctx.fillRect(-20,ob.r-4,40,12);
+    ctx.fillStyle='#fde047';ctx.font='bold 9px "Segoe UI",sans-serif';ctx.textAlign='center';
+    ctx.fillText('💥 '+ob.cost+'●',0,ob.r+5);
+    ctx.restore();
+  }
   for(const hz of hazards){
     const a=Math.min(1,hz.life/1.2)*(hz.kind==='zt'?.28:.34);
     ctx.fillStyle=hz.kind==='zt'?'rgba(120,200,50,'+a+')':'rgba(80,220,60,'+a+')';
     ctx.beginPath();ctx.ellipse(hz.x,hz.y,hz.r,hz.r*.75,0,0,6.283);ctx.fill();
   }
   for(const a of areas){ctx.strokeStyle='rgba(255,60,40,'+(.4+.3*Math.sin(G.simT*8))+')';ctx.lineWidth=2;ctx.setLineDash([8,6]);ctx.beginPath();ctx.arc(a.x,a.y,a.r,0,6.283);ctx.stroke();ctx.setLineDash([]);}
-  for(const m of mines){R(m.x-5,m.y-2,10,6,'#3a3a3a');R(m.x-4,m.y-3,8,2,'#555');R(m.x-1,m.y-5,2,2,((G.simT*3)|0)%2?'#f33':'#611');}
+  // Portais táticos ativos na pista
+  for(const pt of portals){
+    ctx.save();
+    const al=Math.min(1,pt.life*2);
+    ctx.globalAlpha=al;
+    for(const [px,py,col] of [[pt.inX,pt.inY,'#c084fc'],[pt.outX,pt.outY,'#38bdf8']]){
+      ctx.strokeStyle=col;ctx.lineWidth=3;
+      ctx.beginPath();ctx.ellipse(px,py,18,11,G.simT*3,0,6.283);ctx.stroke();
+      ctx.fillStyle=col+'44';ctx.fill();
+    }
+    ctx.restore();
+  }
+  // Minas terrestres acumuláveis com indicador de carga e choque
+  for(const m of mines){
+    const st=m.stacks||1;
+    R(m.x-6,m.y-3,12,7,'#1e293b');
+    R(m.x-5,m.y-4,10,3,'#475569');
+    R(m.x-2,m.y-6,4,3,((G.simT*4)|0)%2?'#fde047':'#38bdf8');
+    if(st>1){
+      ctx.fillStyle='#fde047';ctx.font='bold 9px monospace';ctx.textAlign='center';
+      ctx.fillText('x'+st,m.x,m.y+10);ctx.textAlign='left';
+    }
+  }
+  // Aliados invocados na pista
+  for(const a of allies){
+    ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y));
+    ctx.fillStyle='rgba(0,0,0,.32)';ctx.beginPath();ctx.ellipse(0,3,6,2.5,0,0,6.283);ctx.fill();
+    ctx.scale(a.face||1,1);
+    R(-3,-9,6,8,'#16a34a');R(-2,-14,5,5,'#4ade80');R(2,-12,4,2,'#fef08a');
+    ctx.restore();
+  }
   for(const b of bombs){
     const f=b.wait>0?0:b.fall/.55;
     ctx.strokeStyle='rgba(255,70,40,.8)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(b.x,b.y,8+(b.wait>0?0:f*40),0,6.283);ctx.stroke();
@@ -3684,10 +4320,12 @@ function drawEffects(){
   ctx.globalAlpha=1;ctx.textAlign='left';
 }
 function validSpot(x,y){
+  if(!Number.isFinite(x)||!Number.isFinite(y))return 'Coordenada inválida';
   if(x<CFG.towerR+2||x>W-CFG.towerR-2||y<CFG.towerR+2||y>H-CFG.towerR-2)return 'Fora do mapa';
   if(distToPath(x,y)<CFG.pathClear)return 'Não pode construir no caminho';
   if(x>845&&y>180&&y<320)return 'Muito perto da base';
   for(const [bx,by,bw,bh] of (MAPS[activeMap].blocked||[]))if(x>bx-14&&x<bx+bw+14&&y>by-14&&y<by+bh+14)return 'Terreno bloqueado (água)';
+  for(const ob of obstacles)if(!ob.cleared&&dist(ob.x,ob.y,x,y)<ob.r+CFG.towerR)return 'Obstáculo no terreno (clique para demolir)';
   for(const t of towers)if(dist(t.x,t.y,x,y)<CFG.towerR*2)return 'Sobreposição com outra torre';
   return null;
 }
@@ -3700,8 +4338,18 @@ function drawPreview(){
     ctx.globalAlpha=.85;drawTowerSprite(G.placing,M.x,M.y,-.6,0,1,-1,G.anim);ctx.globalAlpha=1;
     ctx.strokeStyle=ok?'#6f6':'#f55';ctx.lineWidth=2;ctx.beginPath();ctx.arc(M.x,M.y,CFG.towerR+2,0,6.283);ctx.stroke();
     if(bad){ctx.fillStyle='#ff9080';ctx.font='bold 12px "Courier New",monospace';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText(bad,M.x,M.y-26);ctx.fillText(bad,M.x,M.y-26);ctx.textAlign='left';}
+  } else if(G.targeting==='aim'&&G.selected){
+    ctx.strokeStyle='#38bdf8';ctx.lineWidth=2;ctx.setLineDash([6,4]);
+    ctx.beginPath();ctx.moveTo(G.selected.x,G.selected.y-4);ctx.lineTo(M.x,M.y);ctx.stroke();ctx.setLineDash([]);
+    ctx.beginPath();ctx.arc(M.x,M.y,12,0,6.283);ctx.stroke();
+  } else if(G.targeting==='portal_exit'&&G.selected){
+    const np=nearestPathProg(M.x,M.y);pathPos(np.d,_pp);
+    ctx.strokeStyle='#c084fc';ctx.lineWidth=2;ctx.setLineDash([5,4]);
+    ctx.beginPath();ctx.moveTo(G.selected.x,G.selected.y);ctx.lineTo(_pp.x,_pp.y);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='rgba(192,132,252,.28)';ctx.beginPath();ctx.arc(_pp.x,_pp.y,16,0,6.283);ctx.fill();ctx.stroke();
   } else if(G.targeting){
     const k=G.targeting,P=POWERS[k];
+    if(!P)return;
     if(k==='mines'){
       const p=nearestPathProg(M.x,M.y);ctx.strokeStyle=p.dist<70?'rgba(255,220,60,.9)':'rgba(255,80,80,.7)';ctx.lineWidth=8;ctx.beginPath();
       for(let d=Math.max(0,p.d-100);d<=Math.min(PATH_LEN,p.d+100);d+=8){pathPos(d,_pp);if(d===Math.max(0,p.d-100))ctx.moveTo(_pp.x,_pp.y);else ctx.lineTo(_pp.x,_pp.y);}
@@ -3784,21 +4432,35 @@ function render(){
   ctx.restore();
   if(G.flash>0){ctx.globalAlpha=Math.min(.45,G.flash);ctx.fillStyle=G.flashCol;ctx.fillRect(-VIEW.padX,-VIEW.padY,W+VIEW.padX*2,H+VIEW.padY*2);ctx.globalAlpha=1;}
 }
-function makeIcon(key){
+const PORTRAIT_CACHE={};
+function makeIcon(key,lvl,spec,pathIdx,tier,paragon){
+  const lv=lvl||2, sp=spec!==undefined?spec:-1, pi=pathIdx!==undefined?pathIdx:-1, tr=tier||0, pg=paragon?1:0;
+  const ck=key+'|'+lv+'|'+sp+'|'+pi+'|'+tr+'|'+pg;
+  if(PORTRAIT_CACHE[ck])return PORTRAIT_CACHE[ck];
   const c=document.createElement('canvas');c.width=c.height=64;const old=ctx;ctx=c.getContext('2d');
-  const ac=TOWER_ACCENT[key]||'#38bdf8';
-  const gr=ctx.createRadialGradient(32,34,4,32,34,26);
-  gr.addColorStop(0,ac+'33');gr.addColorStop(1,ac+'00');
+  const ac=pg?'#fbbf24':(tr>=2&&pi>=0&&PATH_SKIN_ACCENT[pi])?PATH_SKIN_ACCENT[pi]:(TOWER_ACCENT[key]||'#38bdf8');
+  const gr=ctx.createRadialGradient(32,34,4,32,34,28);
+  gr.addColorStop(0,ac+'55');gr.addColorStop(1,ac+'00');
   ctx.fillStyle=gr;ctx.fillRect(0,0,64,64);
-  drawTowerSprite(key,32,37,-.45,0,2,-1,0.8,0);ctx=old;return c.toDataURL();
+  if(tr>0||pg){
+    ctx.strokeStyle=ac;ctx.lineWidth=pg?2.5:1.5;
+    ctx.beginPath();ctx.arc(32,34,27,0,6.283);ctx.stroke();
+  }
+  drawTowerSprite(key,32,37,-.45,0,lv,sp,0.8,0,pi,tr);
+  ctx=old;
+  return PORTRAIT_CACHE[ck]=c.toDataURL();
+}
+function getTowerPortrait(t){
+  if(!t)return '';
+  return makeIcon(t.key,t.level,t.spec,t.dominantPath,t.tier,t.paragon);
 }
 
 /* ===================== 11. INTERFACE E ENTRADA ===================== */
-const TOWER_KEYS=['1','2','3','4','5','6','7','8','9','0','q','w','e','r','t','y','u','i','o','p','a','s'];
-const UI = {cache:{}, panelKey:'', cards:{}, pcards:{}, icons:{}, toastT:0, restartT:0};
-function setText(id,v){ if(UI.cache[id]!==v){UI.cache[id]=v;$(id).textContent=v;} }
-function setCls(el,key,cls,on){ const k=key; if(UI.cache[k]!==on){UI.cache[k]=on;el.classList.toggle(cls,on);} }
-function setHint(t){ $('hint').textContent=t||''; }
+const TOWER_KEYS=['1','2','3','4','5','6','7','8','9','0','q','w','e','r','t','y','u','i','o','p','a','s','d','g','h','j'];
+const UI = {cache:{}, panelKey:'', cards:{}, pcards:{}, icons:{}, toastT:0, restartT:0, quickKey:''};
+function setText(id,v){ const el=$(id); if(el&&UI.cache[id]!==v){UI.cache[id]=v;el.textContent=v;} }
+function setCls(el,key,cls,on){ if(!el)return; const k=key; if(UI.cache[k]!==on){UI.cache[k]=on;el.classList.toggle(cls,on);} }
+function setHint(t){ const el=$('hint'); if(el&&UI.cache._hint!==t){UI.cache._hint=t;el.textContent=t||'';} }
 function toast(msg,kind){
   if(G.replay)return;
   const el=$('toast'); el.textContent=msg; el.className='show'+(kind?' '+kind:'');
@@ -3808,27 +4470,88 @@ function noMoney(){ toast('Dinheiro insuficiente!','bad'); Snd.play('err'); $('s
 let lastCoinBump=0;
 function coinBump(){ const n=performance.now(); if(n-lastCoinBump<120)return; lastCoinBump=n; $('coins').animate([{transform:'scale(1.35)',color:'#fff'},{transform:'scale(1)'}],{duration:220}); }
 
-function select(t){ G.selected=t; UI.panelKey=''; }
+function select(t){ G.selected=t; G.selectedObs=null; UI.panelKey=''; }
 function cancelAll(){
   if(G.placing||G.targeting){G.placing=null;G.targeting=null;setHint('');return;}
-  if(G.selected)select(null);
+  if(G.selected||G.selectedObs){G.selected=null;G.selectedObs=null;UI.panelKey='';}
 }
 function pickTower(key){
   if(G.mode!=='play')return;
   const d=TOWERS[key];
+  if(!d)return;
   if(G.placing===key){G.placing=null;setHint('');return;}
-  if(G.money<d.cost){noMoney();const c=UI.cards[key];c.classList.remove('shake');void c.offsetWidth;c.classList.add('shake');return;}
+  if(!Number.isFinite(G.money)||G.money<d.cost){noMoney();const c=UI.cards[key];if(c){c.classList.remove('shake');void c.offsetWidth;c.classList.add('shake');}return;}
   G.placing=key;G.targeting=null;select(null);Snd.play('ui');
   setHint('Clique no mapa para construir '+d.name+'. Verde = válido. ESC cancela (Shift mantém a construção).');
 }
 function placeTower(key,x,y){
   const d=TOWERS[key]; if(!d)return null;
-  if(G.money<d.cost){noMoney();return null;}
+  if(!Number.isFinite(x)||!Number.isFinite(y))return null;
+  if(!Number.isFinite(G.money)||G.money<d.cost){noMoney();return null;}
   const bad=validSpot(x,y); if(bad){toast(bad,'bad');Snd.play('err');return null;}
   G.money-=d.cost;
   const t=new Tower(key,x,y); towers.push(t); towers.sort((a,b)=>a.y-b.y); psAdd('built');
   FX.ring(x,y,6,26,.3,'#f2c230',3); FX.spark(x,y,'#d8c890',6); Snd.play('build');
   return t;
+}
+function setTowerAim(t,x,y){
+  if(!t||t.key!=='dartgun'||!Number.isFinite(x)||!Number.isFinite(y))return false;
+  t.aimX=clamp(Math.round(x),10,W-10);
+  t.aimY=clamp(Math.round(y),10,H-10);
+  t.angle=Math.atan2(t.aimY-t.y,t.aimX-t.x);
+  FX.ring(t.aimX,t.aimY,4,18,.28,'#38bdf8',2.5);
+  Snd.play('ui');
+  UI.panelKey='';
+  return true;
+}
+function setPortalExit(t,x,y){
+  if(!t||t.key!=='portal'||!Number.isFinite(x)||!Number.isFinite(y))return false;
+  const np=nearestPathProg(clamp(x,10,W-10),clamp(y,10,H-10));
+  t.exitDist=clamp(np.d,10,PATH_LEN-20);
+  pathPos(t.exitDist,_pp);
+  t.exitX=Math.round(_pp.x);
+  t.exitY=Math.round(_pp.y);
+  FX.ring(t.exitX,t.exitY,6,26,.35,'#c084fc',3);
+  toast('Saída do Portal definida na pista!','good');
+  Snd.play('ui');
+  UI.panelKey='';
+  return true;
+}
+function spawnMapObstacles(){
+  obstacles.length=0;
+  const presets=(activeMap==='metro')
+    ?[{dx:310,dy:240,r:18,cost:220,name:'Vagão Descarrilado',kind:'wagon'},{dx:480,dy:360,r:18,cost:250,name:'Barricada Subterrânea',kind:'debris'},{dx:650,dy:260,r:18,cost:280,name:'Gerador de Linha',kind:'crate'}]
+    :[{dx:320,dy:230,r:18,cost:200,name:'Destroços Blindados',kind:'debris'},{dx:490,dy:370,r:18,cost:240,name:'Contentor Militar',kind:'crate'},{dx:660,dy:250,r:18,cost:270,name:'Barricada Pesada',kind:'wagon'}];
+  let oid=0;
+  for(const pr of presets){
+    let bx=pr.dx, by=pr.dy, found=false;
+    for(let step=0;step<14;step++){
+      const ang=step*1.1, rad=step*16;
+      const cx=clamp(Math.round(pr.dx+Math.cos(ang)*rad),210,740);
+      const cy=clamp(Math.round(pr.dy+Math.sin(ang)*rad),180,500);
+      if(distToPath(cx,cy)>=CFG.pathClear+pr.r+8){
+        let blk=false;
+        for(const [rx,ry,rw,rh] of (MAPS[activeMap].blocked||[]))if(cx>rx-22&&cx<rx+rw+22&&cy>ry-22&&cy<ry+rh+22)blk=true;
+        if(!blk){bx=cx;by=cy;found=true;break;}
+      }
+    }
+    if(found){
+      obstacles.push({id:++oid,x:bx,y:by,r:pr.r,cost:pr.cost,name:pr.name,kind:pr.kind,cleared:false});
+    }
+  }
+}
+function clearObstacle(id){
+  const ob=obstacles.find(o=>o.id===id&&!o.cleared);
+  if(!ob)return false;
+  if(!Number.isFinite(G.money)||G.money<ob.cost){noMoney();return false;}
+  G.money-=ob.cost;
+  ob.cleared=true;
+  if(G.selectedObs===ob)G.selectedObs=null;
+  FX.blast(ob.x,ob.y,36);
+  FX.popup(ob.x,ob.y-16,'TERRENO LIBERADO!','#4ade80',true);
+  Snd.play('boom');
+  UI.panelKey='';
+  return true;
 }
 function nextUpgrade(t){
   if(t.paragon)return [];
@@ -3837,14 +4560,15 @@ function nextUpgrade(t){
   return paths.map((path,i)=>({path:i,level:t.pathLevels[i],up:path[t.pathLevels[i]]||null})).filter(x=>x.up && x.level<5 && (chosen===-1 ? t.pathChoices[x.path]!==false : x.path===chosen));
 }
 function upgradeTower(t,choice,pathIndex){
+  if(!t)return false;
   const available=nextUpgrade(t); if(!available.length)return false;
   // Compatibilidade com chamadas antigas: escolha a primeira melhoria disponível.
   let entry=Number.isInteger(pathIndex)?available.find(x=>x.path===pathIndex):available[0];
   if(!entry)return false;
   const path=entry.path, up=entry.up;
-  if(up.choices){const u=up.choices[choice];if(!u)return false;if(G.money<u.cost){noMoney();return false;}
+  if(up.choices){const u=up.choices[choice];if(!u)return false;if(!Number.isFinite(G.money)||G.money<u.cost){noMoney();return false;}
     G.money-=u.cost;t.spent+=u.cost;t.pathChoices[path]=choice;t.ups.push(u);
-  } else {const u=up;if(G.money<u.cost){noMoney();return false;}G.money-=u.cost;t.spent+=u.cost;t.ups.push(u);}
+  } else {const u=up;if(!Number.isFinite(G.money)||G.money<u.cost){noMoney();return false;}G.money-=u.cost;t.spent+=u.cost;t.ups.push(u);}
   t.pathLevels[path]++;t.tier++;psAdd('upgrades');
   // Escolher uma linha bloqueia permanentemente as outras duas.
   for(let i=0;i<3;i++)t.pathChoices[i]=(i===path);
@@ -3854,7 +4578,7 @@ function paragonCost(key){
   const ov=ASCENSION_BALANCE[key];
   if(ov&&ov.cost)return ov.cost;
   const d=TOWERS[key];
-  return Math.ceil((2200 + d.cost*2.8)/100)*100;
+  return Math.ceil((2800 + (d?d.cost:400)*3.3)/100)*100;
 }
 function applyParagonStats(t){
   const cfg=Object.assign({},ASCENSION_BALANCE.default,ASCENSION_BALANCE[t.key]||{});
@@ -3872,15 +4596,16 @@ function applyParagonStats(t){
   if(s.auraDmg)s.auraDmg=Math.min(.60,s.auraDmg*cfg.aura);
   if(s.auraRate)s.auraRate=Math.min(.60,s.auraRate*cfg.aura);
   if(s.auraRange)s.auraRange=Math.min(.45,s.auraRange*cfg.aura);
-  if(s.slow)s.slow=Math.min(.85,s.slow*1.25);
+  if(s.slow)s.slow=Math.min(.78,s.slow*1.18);
   if(s.vuln)s.vuln=Math.min(.60,s.vuln*cfg.aura);
   if(s.healBase)s.healBase=Math.round(s.healBase)+1;
 }
 function makeParagon(t){
+  if(!t)return false;
   const same=towers.filter(q=>q.key===t.key&&Math.max(...q.pathLevels)>=5&&!q.paragon);
   if(Math.max(...t.pathLevels)<5||same.length<3){toast('Precisa de 3 torres iguais com um caminho no nível 5.','bad');return false;}
   const cost=paragonCost(t.key);
-  if(G.money<cost){toast('Moedas insuficientes para criar esta Ascensão.','bad');return false;}
+  if(!Number.isFinite(G.money)||G.money<cost){toast('Moedas insuficientes para criar esta Ascensão.','bad');return false;}
   G.money-=cost; t.spent+=cost;
   for(const q of same){if(q===t)continue;const i=towers.indexOf(q);if(i>=0)towers.splice(i,1);}
   t.paragon=true;G.stats.paragons++;psAdd('paragons');t.tier=7;t.def=Object.assign({},t.def,{name:'Ascendida: '+t.def.name});
@@ -3888,16 +4613,51 @@ function makeParagon(t){
   t.spent+=same.filter(q=>q!==t).reduce((n,q)=>n+q.spent,0);FX.ring(t.x,t.y,12,95,.9,'#f2c230',6);FX.popup(t.x,t.y-35,'ASCENSÃO!','#f2c230',true);Snd.play('power');UI.panelKey='';toast('Ascensão criada! Poder e alcance aumentados.','good');return true;
 }
 function activateTowerAbility(t){
-  const a=TOWER_ABILITIES[t.key];if(!a||t.abilityCD>0)return false;if(G.money<a.cost){noMoney();return false;}G.money-=a.cost;t.spent+=a.cost;t.abilityCD=a.cd;
+  if(!t)return false;
+  const a=TOWER_ABILITIES[t.key];if(!a||t.abilityCD>0)return false;if(!Number.isFinite(G.money)||G.money<a.cost){noMoney();return false;}G.money-=a.cost;t.spent+=a.cost;t.abilityCD=a.cd;
   if(t.key==='tesla'){t.abilityT=Math.max(t.abilityT,6);if(!t._teslaBoost){t._teslaBoost=true;t.recalc();}}
-  else if(t.key==='mortar'){const target=zombies.filter(z=>!z.dead&&!z.reached).sort((x,y)=>y.dist-x.dist).slice(0,8);for(const z of target)explode(z.x,z.y,82,210,'expl',{armorPen:.5});}
-  else if(t.key==='drone'){for(const z of zombies){if(!z.dead&&!z.reached&&dist(z.x,z.y,t.x,t.y)<260)applyDamage(z,175,'phys',{armorPen:.5});}FX.ring(t.x,t.y,20,260,.7,'#8fe7ff',5);}
+  else if(t.key==='mortar'){const target=zombies.filter(z=>!z.dead&&!z.reached).sort((x,y)=>y.dist-x.dist).slice(0,8);for(const z of target)explode(z.x,z.y,82,210,'expl',{armorPen:.5,owner:t});}
+  else if(t.key==='drone'){for(const z of zombies){if(!z.dead&&!z.reached&&dist(z.x,z.y,t.x,t.y)<260)applyDamage(z,175,'phys',{armorPen:.5,owner:t});}FX.ring(t.x,t.y,20,260,.7,'#8fe7ff',5);}
   else if(t.key==='medstation'){for(const q of towers){if(dist(q.x,q.y,t.x,t.y)>=190)continue;q.abilityT=Math.max(q.abilityT,7);if(!q._supportBoost){q._supportBoost=true;q.recalc();}}}
-  else if(t.key==='flame'){for(const z of zombies)if(!z.dead&&!z.reached&&dist(z.x,z.y,t.x,t.y)<150){applyDamage(z,90,'fire');z.burnDps=Math.max(z.burnDps,40);z.burnT=Math.max(z.burnT,4);}FX.ring(t.x,t.y,10,150,.6,'#ff6a28',5);}
+  else if(t.key==='flame'){for(const z of zombies)if(!z.dead&&!z.reached&&dist(z.x,z.y,t.x,t.y)<150){applyDamage(z,90,'fire',{owner:t});z.burnDps=Math.max(z.burnDps,40);z.burnT=Math.max(z.burnT,4);}FX.ring(t.x,t.y,10,150,.6,'#ff6a28',5);}
   else if(t.key==='beacon'){for(const q of towers){if(dist(q.x,q.y,t.x,t.y)>t.s.range*1.15)continue;q.abilityT=Math.max(q.abilityT,7);if(!q._supportBoost||!q._teslaBoost){q._supportBoost=true;q._teslaBoost=true;q.recalc();}}FX.ring(t.x,t.y,14,t.s.range*1.15,.7,'#fbbf24',5);Snd.play('power');}
   else if(t.key==='supplydepot'){const gain=280;G.money+=gain;G.earned+=gain;coinBump();FX.popup(t.x,t.y-28,'+'+gain+' SUPRIMENTO AÉREO','#ffd24a',true);FX.ring(t.x,t.y,10,120,.6,'#ffd24a',4);Snd.play('coin');}
   else if(t.key==='cryogen'){for(const z of zombies){if(!z.dead&&!z.reached&&dist(z.x,z.y,t.x,t.y)<=t.s.range*1.2){freezeZ(z,2.2);z.vulnT=Math.max(z.vulnT||0,4.5);z.vulnAmt=Math.max(z.vulnAmt||0,.35);}}FX.ring(t.x,t.y,12,t.s.range*1.2,.75,'#c084fc',5);Snd.play('ice');}
   else if(t.key==='nanomed'){const bf=G.life;G.life=Math.min(CFG.baseLife,G.life+10);for(const q of towers)q.weak=0;FX.ring(t.x,t.y,15,280,.75,'#2be3a1',5);FX.popup(t.x,t.y-28,'+'+(G.life-bf)+' VIDA BASE','#2be3a1',true);Snd.play('power');}
+  else if(t.key==='portal'){
+    // Habilidade Ativa Portal Tático: abre portal de entrada no alcance e teletransporta zumbis (incluindo speedboss) para o portal de saída
+    const np=nearestPathProg(t.x,t.y);
+    pathPos(np.d,_pp);
+    const inX=Math.round(_pp.x), inY=Math.round(_pp.y);
+    const outDist=Number.isFinite(t.exitDist)?t.exitDist:Math.max(10,np.d-(t.s.warpBack||190));
+    pathPos(outDist,_pp);
+    const outX=Math.round(_pp.x), outY=Math.round(_pp.y);
+    portals.push({inX,inY,outX,outY,life:2.8});
+    const inRange=zombies.filter(z=>!z.dead&&!z.reached&&dist(z.x,z.y,t.x,t.y)<=t.s.range*1.25).sort((x,y)=>y.dist-x.dist).slice(0,10);
+    for(const z of inRange){
+      const warpAmt=z.D.boss?Math.min(180,Math.max(95,(z.dist-outDist)*0.55)):Math.max(110,z.dist-outDist);
+      z.dist=Math.max(8,z.dist-warpAmt);
+      z.place();
+      stunZ(z,z.D.speedBoss?1.35:0.85);
+      applyDamage(z,(t.s.dmg||26)*2.2,'elec',{owner:t});
+      FX.spark(z.x,z.y-8,'#38bdf8',5);
+    }
+    FX.ring(inX,inY,6,72,.55,'#c084fc',4);
+    FX.ring(outX,outY,6,72,.55,'#38bdf8',4);
+    Snd.play('power');
+  } else if(t.key==='dino'){
+    // Habilidade Ativa Investida Jurássica: rugido sísmico + invocação dupla + atordoamento em área
+    spawnTrackAlly(t);
+    spawnTrackAlly(t);
+    for(const z of zombies){
+      if(!z.dead&&!z.reached&&dist(z.x,z.y,t.x,t.y)<=t.s.range*1.35){
+        applyDamage(z,(t.s.dinoDmg||52)*2.6,'phys',{armorPen:.5,owner:t});
+        stunZ(z,1.25);
+      }
+    }
+    FX.ring(t.x,t.y,10,t.s.range*1.35,.65,'#f97316',5);
+    Snd.play('power');
+  }
   FX.popup(t.x,t.y-25,a.name,'#ffe06a',true);UI.panelKey='';return true;
 }
 function sellTower(t){
@@ -3911,6 +4671,9 @@ function sellTower(t){
 
 function extrasText(t){
   const s=t.s,a=[];
+  if(s.dinoDmg)a.push('Dino '+Math.round(s.dinoDmg)+' dano');
+  if(s.maxStacks)a.push('Acumula '+Math.round(s.maxStacks)+'x minas');
+  if(s.warpBack)a.push('Recuo '+Math.round(s.warpBack)+'m');
   if(s.auraDmg)a.push('Aura +'+Math.round(s.auraDmg*100)+'% dano');
   if(s.auraRate)a.push('Aura +'+Math.round(s.auraRate*100)+'% cadência');
   if(s.auraRange)a.push('Aura +'+Math.round(s.auraRange*100)+'% alcance');
@@ -3931,38 +4694,87 @@ function extrasText(t){
   if(s.spreadR)a.push('Contagioso');
   if(s.slow)a.push('Lentidão '+Math.round(s.slow*100)+'%');
   if(s.freezeChance)a.push('Congela '+Math.round(s.freezeChance*100)+'%');
-  if(s.stun)a.push('Atordoa');
+  if(s.stun)a.push('Atordoa '+(typeof s.stun==='number'?s.stun.toFixed(1)+'s':''));
   return a.join(' · ');
 }
 function refreshPanel(){
-  const p=$('towerPanel'),t=G.selected;
-  if(!t){ if(UI.panelKey!=='none'){UI.panelKey='none';p.classList.add('hidden');} return; }
+  const p=$('towerPanel'),t=G.selected,ob=G.selectedObs;
+  if(!t&&!ob){ if(UI.panelKey!=='none'){UI.panelKey='none';p.classList.add('hidden');} return; }
+  if(ob&&!t){
+    const oKey='obs|'+ob.id+'|'+(G.money>=ob.cost?1:0);
+    if(UI.panelKey===oKey)return;
+    UI.panelKey=oKey;
+    p.classList.remove('hidden'); p.classList.toggle('pl',ob.x>W/2);
+    p.innerHTML='<div class="tp-head"><div class="tp-obs-ico">🚧</div><div><div class="nm">'+escHtml(ob.name)+'</div><div class="lv">OBSTÁCULO DO MAPA</div></div><button class="tp-close" data-act="close" title="Fechar (ESC)">✕</button></div>'
+      +'<div class="tp-extra">Libere este ponto estratégico para posicionar novas torres com visão privilegiada da pista.</div>'
+      +'<button class="tp-up'+(G.money>=ob.cost?'':' poor')+'" data-act="clearObs" data-id="'+ob.id+'"><b>💥 Demolir e Limpar Terreno</b> — '+ob.cost+' ●<small>Remove permanentemente este obstáculo da zona de operação.</small></button>';
+    return;
+  }
   const upgrades=nextUpgrade(t);
   const aff=upgrades.map(e=>e.path+':'+e.level+':'+(e.up.choices?e.up.choices.map(c=>G.money>=c.cost?1:0).join(''):(G.money>=e.up.cost?1:0))).join('|')||'-';
-  const key=t.id+'|'+t.tier+'|'+t.priority+'|'+aff+'|'+Math.floor(t.spent*CFG.sellRatio)+'|'+Math.ceil(t.abilityCD)+'|'+t.paragon+'|'+towers.filter(q=>q.key===t.key&&Math.max(...q.pathLevels)>=5).length;
+  const key=t.id+'|'+t.tier+'|'+t.priority+'|'+aff+'|'+Math.floor(t.spent*CFG.sellRatio)+'|'+Math.ceil(t.abilityCD)+'|'+t.paragon+'|'+(t.kills||0)+'|'+G.targeting+'|'+towers.filter(q=>q.key===t.key&&Math.max(...q.pathLevels)>=5).length;
   if(key===UI.panelKey)return;
   UI.panelKey=key;
   const s=t.s,d=t.def;
+  const portraitUrl=getTowerPortrait(t);
+  const domP=t.dominantPath;
+  const skinTag=t.paragon?'ASCENDIDA':domP===0?'SKIN: CALIBRE':domP===1?'SKIN: CADÊNCIA':domP===2?'SKIN: TECNOLOGIA':'SKIN: PADRÃO';
   p.classList.remove('hidden'); p.classList.toggle('pl',t.x>W/2);
-  let h='<div class="tp-head"><img src="'+UI.icons[t.key]+'" alt=""><div><div class="nm">'+d.name+'</div><div class="lv">'+(t.paragon?'ASCENSÃO':'Melhorias '+Math.min(5,t.tier)+'/5')+'</div></div><button class="tp-close" data-act="close" title="Fechar (ESC)">✕</button></div>';
+  let h='<div class="tp-head btd6-head">'
+    +'<div class="tp-portrait-wrap tier-'+Math.min(5,t.tier)+(t.paragon?' paragon':'')+'"><img src="'+portraitUrl+'" alt="'+escHtml(d.name)+'"><span class="tp-tier-badge">'+(t.paragon?'ASC':'T'+Math.min(5,t.tier))+'</span></div>'
+    +'<div class="tp-title-col"><div class="nm">'+d.name+'</div><div class="lv">'+(t.paragon?'★ UNIDADE ASCENDIDA':skinTag+' · Nv '+Math.min(5,t.tier)+'/5')+'</div>'
+    +'<div class="tp-kills" title="Contagem de zumbis abatidos por esta torre">☠ <b>'+(t.kills||0).toLocaleString('pt-BR')+'</b> abates</div></div>'
+    +'<button class="tp-close" data-act="close" title="Fechar (ESC)">✕</button></div>';
   const dmgTxt=d.kind==='flame'?(s.dmg.toFixed(1)+' (+calor)'):d.kind==='ice'?s.dmg.toFixed(0)+' (+lentidão)':Math.round(s.dmg)+(s.splash?' (área)':'');
-  h+='<div class="tp-stats"><span>Dano/ataque</span><span>'+dmgTxt+'</span><span>Cadência</span><span>'+s.rate.toFixed(2)+' /s</span><span>Alcance</span><span>'+Math.round(s.range)+'</span><span>Tipo de dano</span><span>'+d.dtype+'</span></div>';
+  h+='<div class="tp-stats"><span>Dano/ataque</span><span>'+dmgTxt+'</span><span>Cadência</span><span>'+s.rate.toFixed(2)+' /s</span><span>Alcance</span><span>'+Math.round(s.range)+'</span><span>Tipo</span><span>'+d.dtype+'</span></div>';
   h+='<div class="tp-extra">'+(extrasText(t)||'&nbsp;')+'</div>';
-  h+='<div class="tp-lbl">Prioridade de alvo</div><div class="tp-prio">';
-  for(const k of ['first','last','strong','close'])h+='<button data-act="prio" data-k="'+k+'" class="'+(t.priority===k?'active':'')+'" title="'+PRIO_LABEL[k]+'">'+PRIO_LABEL[k]+'</button>';
-  h+='</div>';
-  if(!upgrades.length)h+='<div class="tp-max">★ Linha de melhoria concluída</div>';
-  else {
-    h+='<div class="tp-lbl">Escolha uma linha de melhoria (somente uma linha pode ser evoluída):</div>';
-    const labels=['I · Poder de fogo','II · Alcance e precisão','III · Cadência e suporte'];
-    upgrades.forEach(e=>{const up=e.up;h+='<div class="tp-lbl">'+labels[e.path]+' · nível '+(e.level+1)+'/5</div>';
-      if(up.choices)up.choices.forEach((c,i)=>{h+='<button class="tp-up'+(G.money>=c.cost?'':' poor')+'" data-act="up" data-i="'+i+'" data-path="'+e.path+'"><b>'+c.name+'</b> — '+c.cost+' ●<small>'+c.desc+'</small></button>';});
-      else h+='<button class="tp-up'+(G.money>=up.cost?'':' poor')+'" data-act="up" data-i="0" data-path="'+e.path+'"><b>'+up.name+'</b> — '+up.cost+' ●<small>'+up.desc+'</small></button>';
-    });
+  if(t.key==='dartgun'){
+    h+='<div class="tp-lbl">Mira Travada (Estilo BTD6)</div><div class="tp-prio"><button data-act="aim" class="'+(G.targeting==='aim'?'active':'')+'" style="grid-column:span 4">🎯 '+(G.targeting==='aim'?'Clique no mapa para travar...':'Mudar Ponto de Mira ('+t.aimX+', '+t.aimY+')')+'</button></div>';
+  } else if(t.key!=='minefactory'){
+    h+='<div class="tp-lbl">Alvo Prioritário</div><div class="tp-prio">';
+    for(const k of ['first','last','strong','close'])h+='<button data-act="prio" data-k="'+k+'" class="'+(t.priority===k?'active':'')+'" title="'+PRIO_LABEL[k]+'">'+PRIO_LABEL[k]+'</button>';
+    h+='</div>';
   }
+  if(t.key==='portal'){
+    h+='<div class="tp-prio" style="margin-top:4px"><button data-act="portal_exit" class="'+(G.targeting==='portal_exit'?'active':'')+'" style="grid-column:span 4">🌀 '+(G.targeting==='portal_exit'?'Clique na pista para posicionar...':'Definir Saída do Portal na Pista')+'</button></div>';
+  }
+  // As 3 Linhas de Evolução estilo BTD6 com indicadores de nível (pips)
+  const paths=TOWER_PATHS[t.key]||[];
+  const chosen=t.pathLevels.findIndex(n=>n>0);
+  const labels=['Linha 1 · Poder de Fogo','Linha 2 · Cadência & Tática','Linha 3 · Alcance & Tecnologia'];
+  h+='<div class="tp-lbl">3 Linhas de Evolução (Skin Dinâmica por Upgrade)</div><div class="btd6-paths">';
+  for(let pi=0;pi<3;pi++){
+    const lv=t.pathLevels[pi]||0;
+    const locked=(chosen!==-1&&chosen!==pi)||t.paragon;
+    let pips='<span class="btd6-pips">';
+    for(let k=1;k<=5;k++)pips+='<i class="btd6-pip'+(k<=lv?' on':'')+'"></i>';
+    pips+='</span>';
+    h+='<div class="btd6-path-row'+(locked?' locked':'')+(chosen===pi?' active-path':'')+'">';
+    h+='<div class="btd6-path-head"><span>'+labels[pi]+'</span>'+pips+'</div>';
+    if(t.paragon){
+      h+='<div class="btd6-path-max">◆ Ascensão Completa</div>';
+    } else if(lv>=5){
+      h+='<div class="btd6-path-max">★ Nível Máximo (5/5)</div>';
+    } else if(locked){
+      h+='<div class="btd6-path-locked">🔒 Linha bloqueada</div>';
+    } else {
+      const up=paths[pi]&&paths[pi][lv];
+      if(up){
+        if(up.choices){
+          up.choices.forEach((c,ci)=>{
+            h+='<button class="tp-up'+(G.money>=c.cost?'':' poor')+'" data-act="up" data-i="'+ci+'" data-path="'+pi+'"><b>'+c.name+'</b> — '+c.cost+' ●<small>'+c.desc+'</small></button>';
+          });
+        } else {
+          h+='<button class="tp-up'+(G.money>=up.cost?'':' poor')+'" data-act="up" data-i="0" data-path="'+pi+'"><b>'+up.name+'</b> — '+up.cost+' ●<small>'+up.desc+'</small></button>';
+        }
+      }
+    }
+    h+='</div>';
+  }
+  h+='</div>';
   const sameMax=towers.filter(q=>q!==t&&q.key===t.key&&Math.max(...q.pathLevels)>=5&&!q.paragon).length;
-  if(Math.max(...t.pathLevels)>=5&&!t.paragon&&sameMax>=2)h+='<button class="tp-up" data-act="paragon"><b>◆ Criar Ascensão</b> — '+paragonCost(t.key)+' ●<small>Consome esta torre e mais 2 torres '+d.name+' com um caminho no nível 5.</small></button>';
-  const ab=TOWER_ABILITIES[t.key]; if(ab&&!t.paragon)h+='<button class="tp-up" data-act="ability" '+(t.abilityCD>0?'disabled':'')+'><b>Habilidade: '+ab.name+'</b> — '+ab.cost+' ●<small>'+(t.abilityCD>0?'Recarga '+Math.ceil(t.abilityCD)+'s':ab.desc)+'</small></button>';
+  if(Math.max(...t.pathLevels)>=5&&!t.paragon&&sameMax>=2)h+='<button class="tp-up" data-act="paragon"><b>◆ Criar Ascensão</b> — '+paragonCost(t.key)+' ●<small>Consome esta torre e mais 2 torres '+d.name+' no nível 5.</small></button>';
+  const ab=TOWER_ABILITIES[t.key]; if(ab&&!t.paragon)h+='<button class="tp-up" data-act="ability" '+(t.abilityCD>0?'disabled':'')+'><b>⚡ '+ab.name+'</b> — '+ab.cost+' ●<small>'+(t.abilityCD>0?'Recarga '+Math.ceil(t.abilityCD)+'s':ab.desc)+'</small></button>';
   if(t.paragon)h+='<div class="tp-max">◆ ASCENSÃO — Poder máximo desbloqueado</div>';
   h+='<button class="tp-sell" data-act="sell">Vender por '+Math.floor(t.spent*CFG.sellRatio)+' ●</button>';
   p.innerHTML=h;
@@ -3979,17 +4791,21 @@ function tip(html,el){
 function hideTip(){ $('tooltip').classList.add('hidden'); }
 function towerTip(key){
   const d=TOWERS[key],b=d.base;
-  return '<b>'+d.name+'</b> — '+d.cost+' ●<br>Dano '+b.dmg+' · '+b.rate.toFixed(2)+'/s · Alcance '+b.range+'<br>Tipo: '+d.dtype+'<br><span class="d">'+d.short+'</span>'+(d.detectCamo?'<br><span class="d">✔ Detecta camuflados e acerta voadores</span>':'<br><span class="d">✖ Não vê camuflados nem voadores</span>')+'<br><span class="d">4 melhorias, incluindo especialização e aprimoramento final.</span>';
+  return '<b>'+d.name+'</b> — '+d.cost+' ●<br>Dano '+b.dmg+' · '+b.rate.toFixed(2)+'/s · Alcance '+b.range+'<br>Tipo: '+d.dtype+'<br><span class="d">'+d.short+'</span>'+(d.detectCamo?'<br><span class="d">✔ Detecta camuflados e acerta voadores</span>':'<br><span class="d">✖ Não vê camuflados nem voadores</span>')+'<br><span class="d">3 linhas de evolução com skins dinâmicas.</span>';
 }
 
-/* --- construção da lateral --- */
+/* --- construção da lateral compacta (Estilo BTD6: ícone, atalho e preço; detalhes no tooltip) --- */
 function buildSidebar(){
   const list=$('towerList'), supList=$('supportList');
+  if(list)list.innerHTML='';
+  if(supList)supList.innerHTML='';
   TOWER_ORDER.forEach((key,i)=>{
     const d=TOWERS[key],el=document.createElement('button');
     const isSup=d.role==='support';
-    el.className='tcard'+(isSup?' support-card':''); el.dataset.key=key;
-    el.innerHTML='<span class="key">'+TOWER_KEYS[i].toUpperCase()+'</span>'+(isSup?'<span class="sup-badge">SUPORTE</span>':'')+'<img class="ticon" src="'+UI.icons[key]+'" alt=""><span class="tname">'+d.name+'</span><span class="tcost">'+d.cost+'</span><span class="tdesc">'+d.short+'</span>';
+    const kLabel=(TOWER_KEYS[i]||'').toUpperCase();
+    el.className='tcard compact-tcard'+(isSup?' support-card':''); el.dataset.key=key;
+    if(el.setAttribute)el.setAttribute('aria-label',d.name+' ('+d.cost+' moedas)');
+    el.innerHTML='<span class="key">'+kLabel+'</span><img class="ticon" src="'+UI.icons[key]+'" alt=""><span class="tname">'+d.name+'</span><span class="tcost">'+d.cost+' ●</span>';
     if(isSup&&supList)supList.appendChild(el);
     else list.appendChild(el);
     UI.cards[key]=el;
@@ -4002,6 +4818,7 @@ function buildSidebar(){
   }
 
   const pl=$('powerList');
+  if(pl)pl.innerHTML='';
   POWER_ORDER.forEach(key=>{
     const P=POWERS[key],el=document.createElement('button');
     el.className='pcard'; el.dataset.key=key;
@@ -4012,16 +4829,57 @@ function buildSidebar(){
   pl.addEventListener('pointerover',e=>{const c=e.target.closest('.pcard');if(c&&e.pointerType==='mouse'){const P=POWERS[c.dataset.key];tip('<b>'+P.name+'</b> — '+P.cost+' ●<br><span class="d">'+P.desc+'</span><br><span class="d">Consumível: precisa pagar novamente em cada uso.</span>',c);}});
   pl.addEventListener('pointerout',hideTip);
 
+  const qab=$('quickAbilityBar');
+  if(qab){
+    qab.addEventListener('click',e=>{
+      const btn=e.target.closest('[data-qab-id]');
+      if(!btn)return;
+      const tid=Number(btn.dataset.qabId);
+      const tw=towerById(tid);
+      if(tw){dispatch({type:'ability',id:tw.id});}
+    });
+  }
+
   $('towerPanel').addEventListener('click',e=>{
-    const b=e.target.closest('[data-act]'),t=G.selected; if(!b||!t)return;
+    const b=e.target.closest('[data-act]'); if(!b)return;
     const a=b.dataset.act;
-    if(a==='close')select(null);
-    else if(a==='prio'){dispatch({type:'prio',id:t.id,k:b.dataset.k});UI.panelKey='';Snd.play('ui');}
+    if(a==='close'){select(null);return;}
+    if(a==='clearObs'){dispatch({type:'clearObs',id:Number(b.dataset.id)});return;}
+    const t=G.selected; if(!t)return;
+    if(a==='prio'){dispatch({type:'prio',id:t.id,k:b.dataset.k});UI.panelKey='';Snd.play('ui');}
+    else if(a==='aim'){G.targeting=G.targeting==='aim'?null:'aim';UI.panelKey='';setHint(G.targeting==='aim'?'Clique em qualquer ponto do mapa para travar a mira da Metralhadora Direcional.':'');Snd.play('ui');}
+    else if(a==='portal_exit'){G.targeting=G.targeting==='portal_exit'?null:'portal_exit';UI.panelKey='';setHint(G.targeting==='portal_exit'?'Clique em um ponto da pista para definir a saída do Portal Tático.':'');Snd.play('ui');}
     else if(a==='up')dispatch({type:'up',id:t.id,i:+b.dataset.i,path:Number(b.dataset.path)});
     else if(a==='paragon')dispatch({type:'paragon',id:t.id});
     else if(a==='ability')dispatch({type:'ability',id:t.id});
     else if(a==='sell')dispatch({type:'sell',id:t.id});
   });
+}
+
+function updateQuickAbilities(){
+  const qab=$('quickAbilityBar');
+  if(!qab)return;
+  const activeTowers=towers.filter(t=>TOWER_ABILITIES[t.key]&&!t.paragon);
+  const sig=activeTowers.map(t=>t.id+':'+Math.ceil(t.abilityCD)+':'+(G.money>=TOWER_ABILITIES[t.key].cost?1:0)).join('|');
+  if(UI.quickKey===sig)return;
+  UI.quickKey=sig;
+  if(!activeTowers.length){
+    qab.innerHTML='';
+    return;
+  }
+  let html='';
+  for(const t of activeTowers.slice(0,6)){
+    const ab=TOWER_ABILITIES[t.key];
+    const cd=Math.ceil(t.abilityCD);
+    const pct=cd>0?Math.min(100,Math.round((t.abilityCD/ab.cd)*100)):0;
+    const ready=cd<=0&&G.money>=ab.cost;
+    html+='<button type="button" class="qab-btn'+(ready?' ready':'')+(cd>0?' cooling':'')+(G.money<ab.cost?' poor':'')+'" data-qab-id="'+t.id+'" title="'+escHtml(ab.name)+' ('+ab.cost+' ●) — '+escHtml(ab.desc)+'">'
+      +'<i class="qab-cd-fill" style="height:'+pct+'%"></i>'
+      +'<img src="'+UI.icons[t.key]+'" alt="">'
+      +'<span class="qab-lbl">'+(cd>0?cd+'s':ab.cost+'●')+'</span>'
+      +'</button>';
+  }
+  qab.innerHTML=html;
 }
 
 function updateUI(){
@@ -4066,18 +4924,19 @@ function updateUI(){
   const pw=Math.round(prog*100)+'%'; if(UI.cache.pw!==pw){UI.cache.pw=pw;$('progBar').style.width=pw;}
   setText('btnNext','▶ Iniciar onda '+(WM.num+1));
   setCls($('btnCancel'),'bc','hidden',!(G.placing||G.targeting));
-  setCls($('btnMobCancel'),'mbc','hidden',!(G.placing||G.targeting||G.selected));
+  setCls($('btnMobCancel'),'mbc','hidden',!(G.placing||G.targeting||G.selected||G.selectedObs));
   const showPause=G.paused&&G.mode==='play'&&UI.endEl.classList.contains('hidden');
   setCls($('pauseOv'),'po','hidden',!showPause);
   setText('btnPause',G.paused?'▶':'❚❚');
   setText('btnMobPause',G.paused?'▶':'❚❚');
   setText('btnMobSpeed','⚡ '+G.speed+'x');
+  updateQuickAbilities();
   refreshPanel();
 }
 
-/* --- progresso local e recordes --- */
+/* --- progresso local, medalhas de dificuldade e recordes --- */
 const SAVE_KEY='quarentenaz_career_v4';
-let career={bestWave:0,totalKills:0,games:0,lastMap:'four',lastDifficulty:'normal'};
+let career={bestWave:0,totalKills:0,games:0,lastMap:'four',lastDifficulty:'normal',medals:{}};
 function loadCareer(){
   try{
     const raw=localStorage.getItem(SAVE_KEY);
@@ -4089,6 +4948,7 @@ function loadCareer(){
         if(Number.isFinite(d.games)&&d.games>=0&&d.games<=1000000)career.games=Math.floor(d.games);
         if(typeof d.lastMap==='string'&&MAPS[d.lastMap])career.lastMap=d.lastMap;
         if(['easy','normal','hard','apocalypse'].includes(d.lastDifficulty))career.lastDifficulty=d.lastDifficulty;
+        if(d.medals&&typeof d.medals==='object')career.medals=d.medals;
       }
     }
   }catch(e){}
@@ -4101,11 +4961,36 @@ function saveCareer(){
       totalKills:Math.max(0,Math.min(100000000,Math.floor(career.totalKills||0))),
       games:Math.max(0,Math.min(1000000,Math.floor(career.games||0))),
       lastMap:MAPS[career.lastMap]?career.lastMap:'four',
-      lastDifficulty:['easy','normal','hard','apocalypse'].includes(career.lastDifficulty)?career.lastDifficulty:'normal'
+      lastDifficulty:['easy','normal','hard','apocalypse'].includes(career.lastDifficulty)?career.lastDifficulty:'normal',
+      medals:career.medals&&typeof career.medals==='object'?career.medals:{}
     };
     localStorage.setItem(SAVE_KEY,JSON.stringify(sanitized));
   }catch(e){toast('Não foi possível salvar o recorde neste navegador.','bad');}
   updateCareerLabel();
+}
+function renderMapMedals(){
+  const medals=career.medals||{};
+  const defs=[
+    {k:'easy',lbl:'Fácil',ico:'🥉',cls:'mm-easy'},
+    {k:'normal',lbl:'Normal',ico:'🥈',cls:'mm-normal'},
+    {k:'hard',lbl:'Difícil',ico:'🥇',cls:'mm-hard'},
+    {k:'apocalypse',lbl:'Apocalipse',ico:'☣',cls:'mm-apoc'}
+  ];
+  document.querySelectorAll('.map-card').forEach(card=>{
+    const mKey=card.dataset.map;
+    if(!mKey)return;
+    const mRec=medals[mKey]||{};
+    let bar=card.querySelector('.map-medals');
+    if(!bar){
+      bar=document.createElement('div');
+      bar.className='map-medals';
+      card.appendChild(bar);
+    }
+    bar.innerHTML=defs.map(d=>{
+      const won=!!mRec[d.k];
+      return '<span class="map-medal '+d.cls+(won?' won':' locked')+'" title="Medalha '+d.lbl+(won?' (Conquistada!)':' (Não vencida)')+'">'+d.ico+'</span>';
+    }).join('');
+  });
 }
 function updateCareerLabel(){const el=$('careerRecord');if(el)el.textContent='Recorde: onda '+career.bestWave+' · Zumbis eliminados: '+career.totalKills+' · Partidas: '+career.games;}
 
@@ -4133,13 +5018,14 @@ function resetGame(seed){
   G.auto0=G.auto;ACC=0;G.replay=null;G.newAch=[];G.stats={bosses:0,leaks:0,paragons:0};G.banner=null;G.tips=null;
   try{if(!localStorage.getItem('ztd_v19_tut'))G.tips=[[3,'Escolha uma torre na lista à direita e clique no mapa para construir.'],[30,'Clique numa torre construída para melhorá-la: são 3 caminhos de upgrade.'],[70,'Camuflados e voadores só são atacados por Radar e Drone.'],[140,'3 torres iguais no nível máximo do mesmo caminho formam uma ASCENSÃO.']];}catch(e){}
   G.money=CFG.startMoney;G.life=CFG.baseLife;G.kills=0;G.earned=0;G.time=0;G.simT=0;G.shake=0;G.flash=0;
-  G.paused=false;G.speed=1;G.placing=null;G.targeting=null;G.selected=null;G.won=false;G.mode='play';
-  for(const a of [towers,zombies,projs,parts,popups,rings,bolts,hazards,mines,bombs,areas])a.length=0;
+  G.paused=false;G.speed=1;G.placing=null;G.targeting=null;G.selected=null;G.selectedObs=null;G.won=false;G.mode='play';
+  for(const a of [towers,zombies,projs,parts,popups,rings,bolts,hazards,mines,bombs,areas,allies,portals])a.length=0;
+  spawnMapObstacles();
   WM.reset();
   for(const k of POWER_ORDER){powerState[k].owned=false;powerState[k].cd=0;} powerState.supply.uses=0;powerState.supply.nextAt=0;
   SecurityGuard.syncVault();
   OnlineAPI.startRunTicket(activeMap,activeDifficulty,G.seed);
-  UI.panelKey='';setHint('');hideEnd();setSpeedBtns();
+  UI.panelKey='';UI.quickKey='';setHint('');hideEnd();setSpeedBtns();
 }
 function setSpeedBtns(){ document.querySelectorAll('.spd').forEach(b=>b.classList.toggle('active',+b.dataset.speed===G.speed)); }
 function setSpeed(n){ G.speed=n; setSpeedBtns(); Snd.play('ui'); }
@@ -4158,6 +5044,17 @@ function updateMouse(e){
 }
 function canvasClick(e){
   if(G.mode!=='play'||isPortraitBlocked())return;
+  if(!Number.isFinite(M.x)||!Number.isFinite(M.y))return;
+  if(G.targeting==='aim'&&G.selected){
+    dispatch({type:'aim',id:G.selected.id,x:M.x,y:M.y});
+    G.targeting=null;setHint('');
+    return;
+  }
+  if(G.targeting==='portal_exit'&&G.selected){
+    dispatch({type:'portal_exit',id:G.selected.id,x:M.x,y:M.y});
+    G.targeting=null;setHint('');
+    return;
+  }
   if(G.targeting){
     const k=G.targeting;
     if(k==='mines'){const p=nearestPathProg(M.x,M.y);if(p.dist>70){toast('Escolha um ponto sobre o caminho','bad');Snd.play('err');return;}}
@@ -4172,7 +5069,14 @@ function canvasClick(e){
   // Raio de seleção ampliado no modo mobile para facilitar o toque nas torres
   let best=null,bd=IS_MOBILE?32:22;
   for(const t of towers){const d=dist(t.x,t.y,M.x,M.y);if(d<bd){bd=d;best=t;}}
-  select(best); if(best)Snd.play('ui');
+  if(best){select(best);Snd.play('ui');return;}
+  // Verifica clique em obstáculo destrutível do mapa
+  for(const ob of obstacles){
+    if(!ob.cleared&&dist(ob.x,ob.y,M.x,M.y)<=ob.r+8){
+      G.selected=null;G.selectedObs=ob;UI.panelKey='';Snd.play('ui');return;
+    }
+  }
+  select(null);
 }
 
 /* --- gerenciamento de plataforma (PC vs Mobile) e orientação obrigatória --- */
@@ -4238,6 +5142,15 @@ function fitCanvas(){
     c.height=targetH;
   }
   c.style.width=aw+'px'; c.style.height=ah+'px';
+  const bgCv=$('bgCanvas');
+  if(bgCv){
+    if(bgCv.width!==targetW||bgCv.height!==targetH){
+      bgCv.width=targetW;
+      bgCv.height=targetH;
+    }
+    bgCv.style.width=aw+'px'; bgCv.style.height=ah+'px';
+    syncBgCanvas();
+  }
 }
 
 function applyQuality(){
@@ -4538,6 +5451,7 @@ function registerExtraMaps(){
     const card=document.createElement('button');card.className='map-card';card.dataset.map=id;card.dataset.diff=m.diff||'normal';
     card.innerHTML='<span class="map-thumb" role="img" aria-label="'+m.name+'"><em class="map-diff-badge diff-'+(m.diff||'normal')+'">'+lab[m.diff]+'</em></span><b>'+m.name.toUpperCase()+'</b><small>'+lab[m.diff]+' · '+m.desc+'</small>';
     host.appendChild(card);}
+  renderMapMedals();
   renderMapPagination(false);
 }
 const WEATHER=[];let _wt=0;
@@ -4970,7 +5884,7 @@ function init(){
 }
 
 // Pequena API para depuração/testes automatizados
-window.ZTD={G,CFG,MAPS,TOWERS,ZOMBIES,WM,Powers,powerState,towers,zombies,projs,mines,bombs,hazards,buildWave,placeTower,upgradeTower,sellTower,update,resetGame,validSpot,applyDamage,pathPos,PATH_LEN,endGame:()=>endGame(),POWERS,dispatch,CMDLOG,stateHash,seedRng,srand,rngState:()=>_s,achievements:()=>ACH,ps:()=>PS,psSave,renderAch,checkAch,saveGame,readSave,loadRank,renderRank,getPlayerName,setPlayerName,recordRankEntry,clearRanks,deleteRankEntry,OnlineAPI,SecurityGuard,detectDevice,applyPlatformMode,isMobile:()=>IS_MOBILE};
+window.ZTD={G,CFG,MAPS,TOWERS,ZOMBIES,WM,Powers,powerState,towers,zombies,projs,mines,bombs,hazards,allies,obstacles,portals,buildWave,placeTower,upgradeTower,sellTower,setTowerAim,setPortalExit,clearObstacle,stunZ,renderMapMedals,update,resetGame,validSpot,applyDamage,pathPos,PATH_LEN,endGame:()=>endGame(),POWERS,dispatch,CMDLOG,stateHash,seedRng,srand,rngState:()=>_s,achievements:()=>ACH,ps:()=>PS,psSave,renderAch,checkAch,saveGame,readSave,loadRank,renderRank,getPlayerName,setPlayerName,recordRankEntry,clearRanks,deleteRankEntry,OnlineAPI,SecurityGuard,detectDevice,applyPlatformMode,isMobile:()=>IS_MOBILE};
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

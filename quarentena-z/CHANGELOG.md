@@ -98,3 +98,28 @@ Método: DPS base × cadência dividido pelo custo (alvo único) e revisão da a
 - **Paginação mobile estreita**: texto compacto (`PÁG. X/Y · 3 DE 18 MAPAS`) e `overflow-x: auto` em `.map-pagination-bar` para caber sem quebra até em telas de `568px`.
 - **Verificador e CI**: atualizado `verificar_projeto.js` (todas as verificações passando) e expandido `.github/workflows/test.yml` para rodar os 10 testes em cada push.
 - **Manifest PWA**: atualizada a descrição em `manifest.webmanifest` para `18 cenários táticos`.
+
+## [v1.0.6] — 2026-11-16
+
+### Pacote de Expansão & Balanceamento Estilo Bloons TD 6 (`v19.22`)
+1. **Arquitetura Modular & Programação Defensiva (`modules/` + `game.js`)**:
+   - Módulos dedicados em `quarentena-z/modules/object-pool.js`, `quarentena-z/modules/btd6-towers.js` e `quarentena-z/modules/btd6-ui.js`.
+   - Validação defensiva rigorosa de coordenadas (`Number.isFinite`, `clamp`), limites de mapa, tempos de recarga e saldo de moedas antes de executar qualquer comando (`dispatch`).
+2. **Balanceamento, Economia Restrita e Dificuldade**:
+   - **Nerf na Torre de Gelo (`ice`)**: custo base `280 → 310`, lentidão base `36% → 28%` (`1,7s → 1,35s`), redução de `freezeT`/`slow` em todas as linhas e aumento de ~22% no custo dos upgrades.
+   - **Nerf no Protocolo de Ascensão (`ASCENSION_BALANCE`)**: custos de fusão aumentados (`3500` a `6800` moedas) e multiplicadores de dano base reduzidos (`×2,00` a `×2,38`) para preservar o desafio estratégico.
+   - **Economia Restrita**: bônus de fim de onda reduzido (`waveBonusBase: 48 → 36`, `waveBonusPer: 8 → 6`) e recompensa por abate reduzida em ~18%.
+   - **Fortalecimento das Hordas & Boss de Alta Velocidade (`speedboss`)**: maior escalonamento de vida (`hpMult`), velocidade (`spdMult`) e armadura progressiva nas 40 ondas, além do novo chefe mutante **PREDADOR VELOZ** (`speedboss`), resistente a lentidão comum (`slowResist: 85%`) e vulnerável a **Atordoamento (`stunZ`)** e **Portal Tático**.
+3. **4 Novas Torres e Habilidades Estilo BTD6 (Total: 26 Torres)**:
+   - **Metralhadora Direcional (`dartgun`)**: mira travada em um ponto fixo do mapa (`🎯 Mudar Ponto de Mira`), disparando continuamente naquela linha de tiro.
+   - **Domador Jurássico (`dino`)**: comanda um **Dinossauro** em combate direto na pista, invoca aliados terrestres e possui a habilidade ativa *Investida Jurássica*.
+   - **Usina de Minas (`minefactory`) + Minas com Atordoamento**: lança minas terrestres acumuláveis na pista que explodem e aplicam **stun (`stunZ`)** em hordas e chefes velozes.
+   - **Torre de Portal Tático (`portal`)**: dispara pulsos dimensionais e possui a habilidade ativa *Portal Tático*, abrindo um portal de entrada no alcance e um portal de saída configurável na pista (`🌀 Definir Saída do Portal`) que recua os zumbis.
+4. **UI/UX Estilo BTD6, Camadas de Canvas e Performance**:
+   - **Painel de Inspeção da Torre (`#towerPanel`)**: exibe retrato com **Skin Dinâmica por Upgrade**, contador de abates (`☠ abates`), seletor de alvo prioritário e as **3 linhas de evolução** com indicadores visuais (`● ● ● ○ ○`).
+   - **Loja Lateral Compacta (`.compact-tcard`)**: exibe ícone, atalho, nome compacto e preço, com descrições completas em tooltips flutuantes leves.
+   - **Barra de Habilidades Rápidas (`#quickAbilityBar`)**: botões de acesso rápido no rodapé com indicador visual de tempo de recarga.
+   - **Medalhas nos 18 Mapas (`.map-medals`)**: insígnias visuais nas dificuldades Fácil (`🥉`), Normal (`🥈`), Difícil (`🥇`) e Apocalipse (`☣`).
+   - **Canvas de Fundo em Camada Separada (`#bgCanvas`) & Obstáculos Destrutíveis**: cenário enriquecido (incluindo o *Metrô Subterrâneo*) e obstáculos destrutíveis mediante pagamento em moedas (`clearObs`).
+   - **Object Pooling Completo**: reuso de memória para projéteis (`_projPool`), minas (`_minePool`), aliados (`_allyPool`), zumbis (`_zombiePool`), partículas (`_partPool`) e anéis (`_ringPool`), mais atualização inteligente do DOM (`UI.cache`).
+

@@ -21,4 +21,5 @@ jobs:
       - run: node tools/test-maps.js game.js
       - run: node tools/test-supplies.js game.js
       - run: node tools/test-end-screen.js game.js
+      - run: node tools/test-btd6-expansion.js game.js
       - run: node tools/test-backend.js

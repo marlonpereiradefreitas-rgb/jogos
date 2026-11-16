@@ -15,8 +15,8 @@
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/icon.svg">
 <title>Quarentena Z — Tower Defense de Zumbis</title>
-<link rel="stylesheet" href="style.css?v=19.21">
-<link rel="stylesheet" href="theme-v19.css?v=19.21">
+<link rel="stylesheet" href="style.css?v=19.22">
+<link rel="stylesheet" href="theme-v19.css?v=19.22">
 </head>
 <body class="menu-mode">
 <div id="app">
@@ -117,6 +117,7 @@
   <main id="main">
     <!-- ===== ÁREA DO JOGO ===== -->
     <section id="stage">
+      <canvas id="bgCanvas" class="bg-layer-canvas" width="960" height="640" aria-hidden="true"></canvas>
       <canvas id="game" width="960" height="640"></canvas>
       <div id="toast"></div>
       <div id="hint"></div>
@@ -193,7 +194,7 @@
                   <span class="logo-sub">TOWER DEFENSE DE SOBREVIVÊNCIA</span>
                   <span class="logo-line"></span>
                 </div>
-                <p class="home-tagline">Fortifique o perímetro, comande 22 torres especializadas e resista às hordas implacáveis de infectados.</p>
+                <p class="home-tagline">Fortifique o perímetro, comande 26 torres especializadas e resista às hordas implacáveis de infectados.</p>
               </div>
 
               <!-- Seletor Visual de Plataforma (Automático | PC / Mouse | Mobile / Toque) -->
@@ -281,8 +282,8 @@
                   <div class="intel-item">
                     <div class="intel-icon ii-cyan">🗼</div>
                     <div>
-                      <b>22 Torres &amp; 3 Linhas de Evolução</b>
-                      <p>Combine dano físico, fogo, gelo, eletricidade, veneno e artilharia pesada.</p>
+                      <b>26 Torres &amp; 3 Linhas de Evolução</b>
+                      <p>Combine dano físico, fogo, gelo, eletricidade, dinossauro, minas e portais táticos.</p>
                     </div>
                   </div>
                   <div class="intel-item">
@@ -637,6 +638,7 @@
     <label class="auto" title="Inicia a próxima onda automaticamente após um breve intervalo">
       <input type="checkbox" id="chkAuto"> Envio automático
     </label>
+    <div id="quickAbilityBar" class="quick-ability-bar" aria-label="Habilidades ativas rápidas"></div>
     <div id="progress" title="Progresso da onda atual">
       <i id="progBar"></i><span id="progTxt">Pronto para começar</span>
     </div>
@@ -731,6 +733,9 @@
   </div>
 </div>
 
-<script src="game.js?v=19.21"></script>
+<script src="modules/object-pool.js?v=19.22"></script>
+<script src="modules/btd6-towers.js?v=19.22"></script>
+<script src="modules/btd6-ui.js?v=19.22"></script>
+<script src="game.js?v=19.22"></script>
 </body>
 </html>
