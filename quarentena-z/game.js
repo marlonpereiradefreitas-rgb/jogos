@@ -1898,6 +1898,7 @@ function spawnTrackAlly(t){
   a.maxHp=a.hp;
   a.dmg=Math.round((t.s.dmg||34)*(1+(t._auraDmg||0))*0.85);
   a.speed=72+t.tier*5;
+  a.armor=Math.min(0.45,0.12+t.tier*0.06);
   a.atkCD=0;
   a.life=16+t.tier*1.5;
   a.stun=t.s.stun||0.22;
@@ -2469,7 +2470,7 @@ function updateMinesBombsHazards(h){
       if(a.atkCD<=0){
         applyDamage(target,a.dmg,'phys',{armorPen:.25,owner:a.owner});
         if(!target.dead&&a.stun){stunZ(target,a.stun);FX.stunSparks(target.x,target.y,3);}
-        a.hp-=target.D.boss?45:18;
+        a.hp-=Math.round((target.D.boss?45:18)*(1-(a.armor||0)));
         a.atkCD=0.55;
         a.biteT=1.0;
         FX.spark(target.x,target.y-6,'#4ade80',4);
@@ -4121,28 +4122,54 @@ function drawTowerSprite(key,x,y,ang,rec,lvl,spec,tm,tw,pathIdx,tier){
       circ(0,-14,1.8,'#ffffff');
       break;}
     case 'dartgun':{
-      // NOVA TORRE BTD6: Metralhadora Direcional (Estilo Dartling Gunner) com giroscópio e cano rotativo pesado
-      circ(0,0,9.5,'#0f172a',ac,1.2);
+      // TORRE DIRECIONAL (Estilo Arma de Dados): Tripé tático militar + mira laser + painel luminoso
+      // Evolui de arma cinza-chumbo básica (T0-1) para canhão de energia com brilho azul no nível máximo (T4-5)
+      const isEnergy=(tier||0)>=4;
+      const bodyCol=isEnergy?'#0c4a6e':((tier||0)>=2?'#1e293b':'#334155');
+      const barrelCol=isEnergy?'#0284c7':((tier||0)>=2?'#475569':'#64748b');
+      const glowCol=isEnergy?'#38bdf8':ac;
+      // Tripé tático militar (3 hastes de aço com sapatas estabilizadoras)
+      ctx.strokeStyle='#1e293b';ctx.lineWidth=2.4;
+      for(const [tx,ty] of [[-12,-9],[-12,9],[11,0]]){
+        ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(tx,ty);ctx.stroke();
+        circ(tx,ty,2.2,'#334155',glowCol,.8);
+      }
+      circ(0,0,8.5,'#0f172a',glowCol,1.2);
+      if(isEnergy){
+        // Brilho azul de energia no nível máximo
+        circ(0,0,12,'rgba(56,189,248,'+(0.25+0.15*Math.sin(tm*8))+')');
+      }
       rot(()=>{
         const L=16+lvl*2.5;
-        // Trilho estabilizador e 3 canos rotativos direcionais
-        R(-4-rc,-6.5,10,13,'#1e293b');
-        R(2-rc,-4.5,L,2.4,'#334155');
-        R(2-rc,-1.2,L+2,2.4,'#475569');
-        R(2-rc,2.1,L,2.4,'#334155');
-        // Anéis de contenção magnética no cano
-        R(8-rc,-5,2.5,10,ac);
-        if(lvl>=3)R(14-rc,-5,2.5,10,'#fde047');
-        // Escudo de operador e mira holográfica
-        poly([[-8,-6],[3,-5],[5,0],[3,5],[-8,6]],'#1e293b',ac,1);
-        circ(-2,0,3.2,band,'#ffffff',.8);
+        // Feixe de mira laser direcional
+        ctx.strokeStyle=isEnergy?'rgba(56,189,248,.85)':'rgba(239,68,68,.65)';
+        ctx.lineWidth=isEnergy?1.5:1;
+        ctx.beginPath();ctx.moveTo(L-rc,0);ctx.lineTo(L+16-rc,0);ctx.stroke();
+        // Bloco receptor e canos rotativos / canhão de energia azul
+        R(-4-rc,-6.2,10,12.4,bodyCol);
+        R(2-rc,-4.5,L,2.4,barrelCol);
+        R(2-rc,-1.2,L+2,2.4,isEnergy?'#bae6fd':barrelCol);
+        R(2-rc,2.1,L,2.4,barrelCol);
+        // Anéis de contenção magnética / bobinas de energia azul
+        R(8-rc,-5,2.5,10,glowCol);
+        if((tier||0)>=3||lvl>=3)R(14-rc,-5,2.5,10,isEnergy?'#e0f2fe':'#fde047');
+        if(isEnergy){
+          circ(L+3-rc,0,3.2,'#38bdf8','#ffffff',.9);
+        }
+        // Escudo de operador + Painel Luminoso Tático
+        poly([[-9,-6],[3,-5],[5,0],[3,5],[-9,6]],bodyCol,glowCol,1);
+        // Painel luminoso retroiluminado na traseira
+        R(-8,-3.5,5.5,7,'#090d16');
+        R(-7.2,-2.7,4,5.4,isEnergy?'#38bdf8':'#22d3ee');
+        R(-6.8,-1.5,3,1,'#ffffff');
+        circ(0,0,2.8,band,'#ffffff',.8);
       });
       break;}
     case 'dino':{
-      // TORRE COM INVOCAÇÕES (Domador Jurássico): Cúpula bio-tática futurista com LEDs que acendem ao invocar unidades
+      // TORRE COM INVOCAÇÕES (Domador Jurássico): Posto de comando tático com antena, painel holográfico e LEDs de invocação
       const ledOn=Math.min(1,(tw||0)*1.6);
       const ledCol=ledOn>0.2?'#34d399':((tier||0)>=3?ac:'#10b981');
-      // Base octogonal blindada futurista
+      // Base octogonal blindada futurista do posto de comando
       poly([[-11,-7],[11,-7],[13,0],[11,7],[-11,7],[-13,0]],'#0f172a','#334155',1.1);
       poly([[-9,-5],[9,-5],[10,0],[9,5],[-9,5],[-10,0]],'#1e293b',ledCol,.9);
       // 4 Faixas de LED táticas nos cantos (acendem intensamente ao invocar)
@@ -4162,16 +4189,18 @@ function drawTowerSprite(key,x,y,ang,rec,lvl,spec,tm,tw,pathIdx,tier){
         R(-3-rc,-4.2,9,8.4,'#0f172a');
         R(2-rc,-3.2,L,2.2,'#334155');
         R(2-rc,1.0,L,2.2,'#334155');
-        // Trilho de LED no cano
         R(3-rc,-0.8,L-1,1.6,ledOn>0.15?'#fef08a':ledCol);
-        // Ponteira emissora bio-sônica
         poly([[L+1-rc,-4],[L+5-rc,0],[L+1-rc,4]],ledCol,'#ffffff',.7);
       });
-      // Domo central de controle neural + antena holográfica
-      circ(0,-2,5.5,'#064e3b',ledCol,1.1);
-      circ(0,-2,3.2,ledOn>0.15?'#fef08a':ac);
-      R(-1,-13,2,9,'#64748b');
-      circ(0,-14,2.4+(ledOn*1.4),ledOn>0.15?'#34d399':'#f97316','#ffffff',.9);
+      // Painel Holográfico Tático translúcido no posto de comando
+      R(-8,-10,8,5,'rgba(6,78,59,0.88)');
+      ctx.strokeStyle='#34d399';ctx.lineWidth=0.9;ctx.strokeRect(-8,-10,8,5);
+      R(-6.8,-8.8,5.5,1,'#a7f3d0');R(-6.8,-7,4,1,'#38bdf8');
+      // Domo central de controle neural + antena de transmissão
+      circ(0,-2,5.2,'#064e3b',ledCol,1.1);
+      circ(0,-2,3,ledOn>0.15?'#fef08a':ac);
+      R(4,-14,2,10,'#64748b');
+      circ(5,-15,2.4+(ledOn*1.4),ledOn>0.15?'#34d399':'#f97316','#ffffff',.9);
       break;}
     case 'minefactory':{
       // USINA DE MINAS TERRESTRES: Unidade industrial militar compacta com rampa ejetora de minas metálicas
@@ -5039,6 +5068,39 @@ function extrasText(t){
   if(s.stun)a.push('Atordoa '+(typeof s.stun==='number'?s.stun.toFixed(1)+'s':''));
   return a.join(' · ');
 }
+function btd6UpgradeNodeSvg(pathIdx,stepIdx){
+  // Ícones circulares ilustrados e customizados para cada nível (1..5) das 3 linhas de melhoria
+  if(pathIdx===0){ // Linha 1: Poder de Fogo & Calibre
+    const svgs=[
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>',
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18V9l3-5 3 5v9H7zm6 0v-7l2.5-4 2.5 4v7h-5z" fill="currentColor"/></svg>',
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,2 15,9 22,9 16.5,13.5 18.5,21 12,16.5 5.5,21 7.5,13.5 2,9 9,9" fill="currentColor"/></svg>',
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6" fill="currentColor"/><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 2"/></svg>',
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18v2H3v-2zm0-2l3-9 6 4 6-4 3 9H3z" fill="currentColor"/></svg>'
+    ];
+    return svgs[Math.min(4,Math.max(0,stepIdx))]||svgs[0];
+  }
+  if(pathIdx===1){ // Linha 2: Cadência & Tática
+    const svgs=[
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 17l5-5-5-5M13 17l5-5-5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="13,2 4,14 11,14 10,22 20,10 13,10" fill="currentColor"/></svg>',
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="3" fill="currentColor"/><circle cx="7" cy="16" r="3" fill="currentColor"/><circle cx="17" cy="16" r="3" fill="currentColor"/><circle cx="12" cy="13" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>',
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.5 5.5L20 11l-5.5 2.5L12 19l-2.5-5.5L4 11l5.5-2.5L12 3z" fill="currentColor"/></svg>',
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,2 19,7 19,17 12,22 5,17 5,7" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="12" r="4.5" fill="currentColor"/></svg>'
+    ];
+    return svgs[Math.min(4,Math.max(0,stepIdx))]||svgs[0];
+  }
+  // Linha 3: Alcance & Tecnologia
+  const svgs=[
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18a8 8 0 0 1 16 0M7 18a5 5 0 0 1 10 0" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="18" r="2" fill="currentColor"/><path d="M12 16V6" stroke="currentColor" stroke-width="2"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="9" y="9" width="6" height="6" fill="currentColor"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4" stroke="currentColor" stroke-width="1.8"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="12" rx="10" ry="4.5" transform="rotate(-30 12 12)" fill="none" stroke="currentColor" stroke-width="2"/><ellipse cx="12" cy="12" rx="10" ry="4.5" transform="rotate(30 12 12)" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,2 21,12 12,22 3,12" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>'
+  ];
+  return svgs[Math.min(4,Math.max(0,stepIdx))]||svgs[0];
+}
+
 function refreshPanel(){
   const p=$('towerPanel'),t=G.selected,ob=G.selectedObs;
   if(!t&&!ob){ if(UI.panelKey!=='none'){UI.panelKey='none';p.classList.add('hidden');p.classList.remove('collapsed');} return; }
@@ -5065,6 +5127,8 @@ function refreshPanel(){
     skinTag=t.tier>=4?'SKIN: CYBER T-REX ALFA':t.tier>=2?'SKIN: ALOSSAURO BLINDADO':'SKIN: BIO-RAPTOR';
   } else if(!t.paragon&&t.key==='minefactory'){
     skinTag=t.tier>=4?'SKIN: USINA DE PLASMA':t.tier>=2?'SKIN: FUNDIDORA DE CHOQUE':'SKIN: USINA TÁTICA';
+  } else if(!t.paragon&&t.key==='dartgun'){
+    skinTag=t.tier>=4?'SKIN: CANHÃO DE ENERGIA AZUL':t.tier>=2?'SKIN: ROTATIVA TÁTICA':'SKIN: CINZA CHUMBO';
   }
   p.classList.remove('hidden'); p.classList.toggle('pl',t.x>W/2); p.classList.toggle('collapsed',!!UI.panelCollapsed);
   const colIco=UI.panelCollapsed?(t.x>W/2?'▶':'◀'):(t.x>W/2?'◀':'▶');
@@ -5091,11 +5155,11 @@ function refreshPanel(){
   if(t.key==='portal'){
     h+='<div class="tp-prio" style="margin-top:4px"><button data-act="portal_exit" class="'+(G.targeting==='portal_exit'?'active':'')+'" style="grid-column:span 4">🌀 '+(G.targeting==='portal_exit'?'Clique na pista para posicionar...':'Definir Saída do Portal na Pista')+'</button></div>';
   }
-  // As 3 Linhas de Evolução estilo BTD6 com indicadores de nível (pips)
+  // As 3 Linhas de Evolução estilo BTD6 com Ícones Circulares Ilustrados e Tooltips
   const paths=TOWER_PATHS[t.key]||[];
   const chosen=t.pathLevels.findIndex(n=>n>0);
   const labels=['Linha 1 · Poder de Fogo','Linha 2 · Cadência & Tática','Linha 3 · Alcance & Tecnologia'];
-  h+='<div class="tp-lbl">3 Linhas de Evolução (Skin Dinâmica por Upgrade)</div><div class="btd6-paths">';
+  h+='<div class="tp-lbl">Caminhos de Habilidade (Toque ou passe o mouse nos ícones)</div><div class="btd6-paths">';
   for(let pi=0;pi<3;pi++){
     const lv=t.pathLevels[pi]||0;
     const locked=(chosen!==-1&&chosen!==pi)||t.paragon;
@@ -5104,6 +5168,34 @@ function refreshPanel(){
     pips+='</span>';
     h+='<div class="btd6-path-row'+(locked?' locked':'')+(chosen===pi?' active-path':'')+'">';
     h+='<div class="btd6-path-head"><span>'+labels[pi]+'</span>'+pips+'</div>';
+    // Sequência horizontal de 5 ícones circulares ilustrados (estados: comprado, disponível, sem saldo ou bloqueado)
+    h+='<div class="btd6-circle-seq">';
+    for(let step=0;step<5;step++){
+      const rawUp=paths[pi]&&paths[pi][step];
+      const uItem=rawUp&&(rawUp.choices?rawUp.choices[0]:rawUp);
+      const uName=uItem?uItem.name:('Melhoria '+(step+1));
+      const uCost=uItem?uItem.cost:0;
+      const uDesc=uItem?uItem.desc:'';
+      const isBought=step<lv||t.paragon;
+      const isNext=(step===lv)&&!locked&&!t.paragon;
+      const canBuy=isNext&&G.money>=uCost;
+      const stateCls=isBought?'state-bought':isNext?(canBuy?'state-available':'state-poor'):'state-locked';
+      const stLabel=isBought?'✔ Comprado':isNext?(canBuy?'● Disponível para compra':'✖ Moedas insuficientes'):'🔒 Bloqueado';
+      const badgeHtml=isBought?'<span class="btd6-nc-badge ok">✓</span>':isNext?('<span class="btd6-nc-badge cost">'+uCost+'●</span>'):'<span class="btd6-nc-badge lck">🔒</span>';
+      const actAttr=isNext?' data-act="up" data-i="0" data-path="'+pi+'"':' data-act="nodeTip"';
+      h+='<button type="button" class="btd6-node-circle '+stateCls+'"'+actAttr
+        +' data-up-tip="1"'
+        +' data-up-name="'+escHtml(uName)+'"'
+        +' data-up-cost="'+uCost+'"'
+        +' data-up-desc="'+escHtml(uDesc)+'"'
+        +' data-up-status="'+escHtml(stLabel)+'"'
+        +' data-up-tier="Linha '+(pi+1)+' · Nível '+(step+1)+'/5"'
+        +' aria-label="'+escHtml(uName)+' ('+uCost+' moedas) - '+escHtml(stLabel)+'">'
+        +'<span class="btd6-nc-ico">'+btd6UpgradeNodeSvg(pi,step)+'</span>'
+        +badgeHtml
+        +'</button>';
+    }
+    h+='</div>';
     if(t.paragon){
       h+='<div class="btd6-path-max">◆ Ascensão Completa</div>';
     } else if(lv>=5){
@@ -5193,21 +5285,39 @@ function buildSidebar(){
     });
   }
 
-  $('towerPanel').addEventListener('click',e=>{
-    const b=e.target.closest('[data-act]'); if(!b)return;
-    const a=b.dataset.act;
-    if(a==='close'){select(null);return;}
-    if(a==='toggleCollapse'){UI.panelCollapsed=!UI.panelCollapsed;UI.panelKey='';Snd.play('ui');refreshPanel();return;}
-    if(a==='clearObs'){dispatch({type:'clearObs',id:Number(b.dataset.id)});return;}
-    const t=G.selected; if(!t)return;
-    if(a==='prio'){dispatch({type:'prio',id:t.id,k:b.dataset.k});UI.panelKey='';Snd.play('ui');}
-    else if(a==='aim'){G.targeting=G.targeting==='aim'?null:'aim';UI.panelKey='';setHint(G.targeting==='aim'?'Clique em qualquer ponto do mapa para travar a mira da Metralhadora Direcional.':'');Snd.play('ui');}
-    else if(a==='portal_exit'){G.targeting=G.targeting==='portal_exit'?null:'portal_exit';UI.panelKey='';setHint(G.targeting==='portal_exit'?'Clique em um ponto da pista para definir a saída do Portal Tático.':'');Snd.play('ui');}
-    else if(a==='up')dispatch({type:'up',id:t.id,i:+b.dataset.i,path:Number(b.dataset.path)});
-    else if(a==='paragon')dispatch({type:'paragon',id:t.id});
-    else if(a==='ability')dispatch({type:'ability',id:t.id});
-    else if(a==='sell')dispatch({type:'sell',id:t.id});
-  });
+  const tpEl=$('towerPanel');
+  if(tpEl){
+    const showNodeTip=nd=>{
+      if(!nd)return;
+      const html='<b>'+escHtml(nd.dataset.upName||'')+'</b> — <span style="color:#fbbf24">'+(nd.dataset.upCost||'0')+' ●</span>'
+        +'<br><span class="d">'+escHtml(nd.dataset.upTier||'')+' · '+escHtml(nd.dataset.upStatus||'')+'</span>'
+        +'<br><span>'+escHtml(nd.dataset.upDesc||'')+'</span>';
+      tip(html,nd);
+    };
+    tpEl.addEventListener('pointerover',e=>{
+      const nd=e.target.closest('[data-up-tip]');
+      if(nd&&e.pointerType==='mouse')showNodeTip(nd);
+    });
+    tpEl.addEventListener('pointerout',e=>{
+      if(e.target.closest('[data-up-tip]'))hideTip();
+    });
+    tpEl.addEventListener('click',e=>{
+      const b=e.target.closest('[data-act]'); if(!b)return;
+      const a=b.dataset.act;
+      if(a==='nodeTip'){showNodeTip(b);Snd.play('ui');return;}
+      if(a==='close'){hideTip();select(null);return;}
+      if(a==='toggleCollapse'){hideTip();UI.panelCollapsed=!UI.panelCollapsed;UI.panelKey='';Snd.play('ui');refreshPanel();return;}
+      if(a==='clearObs'){dispatch({type:'clearObs',id:Number(b.dataset.id)});return;}
+      const t=G.selected; if(!t)return;
+      if(a==='prio'){dispatch({type:'prio',id:t.id,k:b.dataset.k});UI.panelKey='';Snd.play('ui');}
+      else if(a==='aim'){G.targeting=G.targeting==='aim'?null:'aim';UI.panelKey='';setHint(G.targeting==='aim'?'Clique em qualquer ponto do mapa para travar a mira da Metralhadora Direcional.':'');Snd.play('ui');}
+      else if(a==='portal_exit'){G.targeting=G.targeting==='portal_exit'?null:'portal_exit';UI.panelKey='';setHint(G.targeting==='portal_exit'?'Clique em um ponto da pista para definir a saída do Portal Tático.':'');Snd.play('ui');}
+      else if(a==='up'){hideTip();dispatch({type:'up',id:t.id,i:+b.dataset.i,path:Number(b.dataset.path)});}
+      else if(a==='paragon'){hideTip();dispatch({type:'paragon',id:t.id});}
+      else if(a==='ability')dispatch({type:'ability',id:t.id});
+      else if(a==='sell'){hideTip();dispatch({type:'sell',id:t.id});}
+    });
+  }
 }
 
 function updateQuickAbilities(){
@@ -6233,7 +6343,7 @@ function init(){
     if(typeof navigator!=='undefined'&&'serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
       let refreshing=false;
       navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;location.reload();}});
-      navigator.serviceWorker.register('./sw.js?v=19.24').then(reg=>{try{reg.update();}catch(_){}}).catch(()=>{});
+      navigator.serviceWorker.register('./sw.js?v=19.25').then(reg=>{try{reg.update();}catch(_){}}).catch(()=>{});
     }
   }catch(_){}
   document.querySelectorAll('.map-card').forEach(c=>c.classList.toggle('selected',c.dataset.map===$('mapSelect').value));

@@ -1597,6 +1597,107 @@ button.big:hover,.box button.big:hover{box-shadow:0 0 22px rgba(16, 185, 129,.6)
   border-color: #34d399;
 }
 
+/* Sequência de Ícones Circulares de Melhoria por Caminho (Estilo Bloons TD 6) */
+.btd6-circle-seq {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 5px;
+  margin: 5px 0 6px;
+}
+
+.btd6-node-circle {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  margin: 0 auto;
+  border-radius: 50% !important;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(148, 163, 184, 0.35) !important;
+  background: radial-gradient(circle at 50% 35%, #1e293b, #0f172a) !important;
+  color: #cbd5e1 !important;
+  cursor: pointer;
+  transform: translate3d(0, 0, 0);
+  transition: transform 0.14s ease, border-color 0.14s ease, opacity 0.14s ease !important;
+}
+
+.btd6-node-circle:hover {
+  transform: translate3d(0, -2px, 0) scale(1.06);
+}
+
+.btd6-node-circle .btd6-nc-ico {
+  width: 19px;
+  height: 19px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btd6-node-circle .btd6-nc-ico svg {
+  width: 18px;
+  height: 18px;
+}
+
+.btd6-node-circle.state-bought {
+  border-color: #10b981 !important;
+  background: radial-gradient(circle at 50% 35%, rgba(16, 185, 129, 0.35), #064e3b) !important;
+  color: #6ee7b7 !important;
+}
+
+.btd6-node-circle.state-available {
+  border-color: #fbbf24 !important;
+  background: radial-gradient(circle at 50% 35%, rgba(56, 189, 248, 0.35), #0f172a) !important;
+  color: #fde047 !important;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.35) !important;
+}
+
+.btd6-node-circle.state-poor {
+  border-color: #ef4444 !important;
+  background: radial-gradient(circle at 50% 35%, rgba(127, 29, 29, 0.35), #0f172a) !important;
+  color: #fca5a5 !important;
+  opacity: 0.78;
+}
+
+.btd6-node-circle.state-locked {
+  border-color: rgba(100, 116, 139, 0.3) !important;
+  background: rgba(15, 23, 42, 0.75) !important;
+  color: #475569 !important;
+  opacity: 0.62;
+}
+
+.btd6-nc-badge {
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translate3d(-50%, 0, 0);
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 1px 4px;
+  border-radius: 6px;
+  white-space: nowrap;
+  background: #090d16;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.btd6-nc-badge.ok {
+  color: #34d399;
+  border-color: #10b981;
+  background: #064e3b;
+}
+
+.btd6-nc-badge.cost {
+  color: #fde047;
+  border-color: #fbbf24;
+}
+
+.btd6-nc-badge.lck {
+  font-size: 7.5px;
+  color: #64748b;
+}
+
 .btd6-path-max {
   font-size: 11px;
   font-weight: 700;
