@@ -1609,7 +1609,37 @@ const Snd = {
   }
 };
 
-/* ===================== 6. DANO, STATUS E EXPLOSÕES ===================== */
+/* ===================== 6. DANO, STATUS, COMBOS ELEMENTAIS E CO-OP ===================== */
+const COOP={
+  active:false,
+  roomCode:'QZ-8K4M9X',
+  maxPlayers:2,
+  division:'sectors', // 'sectors' | 'free'
+  mySlot:0,
+  votesWave:1,
+  votesSpeed:1,
+  players:[
+    {slot:0,name:'Comandante',money:650,isLocal:true,color:'#38bdf8'},
+    {slot:1,name:'Aliado Bravo',money:650,isLocal:false,color:'#4ade80'}
+  ],
+  pings:[]
+};
+
+function evaluateElementalCombo(z,incomingDtype){
+  if(window.QZ_COOP&&typeof window.QZ_COOP.evaluateElementalCombo==='function'){
+    return window.QZ_COOP.evaluateElementalCombo(z,incomingDtype);
+  }
+  if(!z)return {count:0,mult:1.0,activeElements:[]};
+  const elems=[];
+  if((z.burnT&&z.burnT>0)||incomingDtype==='fire')elems.push('fire');
+  if((z.slowT&&z.slowT>0)||(z.freezeT&&z.freezeT>0)||incomingDtype==='ice')elems.push('ice');
+  if((z.stunT&&z.stunT>0)||incomingDtype==='elec')elems.push('elec');
+  if((z.poisonT&&z.poisonT>0)||incomingDtype==='poison')elems.push('poison');
+  const count=elems.length;
+  const bonus=[1,1,1.18,1.30,1.45][Math.min(4,count)]||1;
+  return {count,mult:bonus,activeElements:elems};
+}
+
 // dtype: 'phys' | 'expl' | 'fire' | 'elec' | 'ice' | 'poison'  (só phys/expl sofrem redução de armadura)
 function applyDamage(z,amount,dtype,o){
   if(!z||z.dead||z.reached||!(amount>0))return 0;
@@ -1620,6 +1650,15 @@ function applyDamage(z,amount,dtype,o){
   }
   if(o&&o.bigMult&&z.D.big)d*=o.bigMult;
   if(z.vulnT>0&&z.vulnAmt>0)d*=(1+z.vulnAmt);
+  // Combos Elementais: bônus quando aliados combinam Fogo, Gelo, Eletricidade e Veneno
+  if(COOP.active||z._comboEnabled){
+    const combo=evaluateElementalCombo(z,dtype);
+    if(combo.count>=2){
+      d*=combo.mult;
+      z._lastCombo=combo.count;
+      if(Math.random()<0.18)FX.popup(z.x,z.y-22,'⚡ COMBO ELEMENTAL x'+combo.count+'!','#38bdf8',false);
+    }
+  }
   if(o&&o.owner)z._lastAttacker=o.owner;
   z.hp-=d; z.dmgAcc+=d; z.flash=.09; z.flashType=dtype||'phys';
   if(o&&o.crit){FX.popup(z.x,z.y-18,Math.round(d)+'!','#ffd23a',true);}
@@ -1671,8 +1710,17 @@ function killZombie(z,killerTower){
   z.dead=true; G.kills++; WM.done++; if(z.D.boss)G.stats.bosses++; psAdd('kills'); if(z.D.boss)psAdd('bosses');
   const atk=killerTower||z._lastAttacker;
   if(atk&&typeof atk.kills==='number')atk.kills++;
-  G.money+=z.reward; G.earned+=z.reward;
-  FX.popup(z.x,z.y-14,'+'+z.reward,'#f2c230'); coinBump();
+  if(COOP.active&&COOP.maxPlayers>1){
+    const share=Math.max(1,Math.round(z.reward/COOP.maxPlayers));
+    G.money+=share; G.earned+=share;
+    for(let i=1;i<COOP.players.length;i++){
+      COOP.players[i].money=(COOP.players[i].money||0)+share;
+    }
+    FX.popup(z.x,z.y-14,'+'+share+' (Co-op)','#f2c230'); coinBump();
+  }else{
+    G.money+=z.reward; G.earned+=z.reward;
+    FX.popup(z.x,z.y-14,'+'+z.reward,'#f2c230'); coinBump();
+  }
   FX.blood(z.x,z.y,z.D.boss?24:8,z.type==='toxic'?'#5fa020':'#8a1a14');
   Snd.play('die'); Snd.play('coin');
   const D=z.D;
@@ -2524,6 +2572,10 @@ function updateFX(h){
     if(r.life<=0){if(_ringPool.length<120)_ringPool.push(r);rings[i]=rings[rings.length-1];rings.pop();}
   }
   for(const b of bolts)b.life-=h; pruneArr(bolts,b=>b.life>0);
+  if(COOP.pings&&COOP.pings.length){
+    for(const pg of COOP.pings)pg.life-=h;
+    pruneArr(COOP.pings,pg=>pg.life>0);
+  }
 }
 /* ---- v19: núcleo determinístico (pronto para servidor autoritativo / replay) ----
    Regra de ouro: tudo que afeta o resultado do jogo usa srand() e só muda via dispatch().
@@ -2542,6 +2594,7 @@ const CMDS={
   aim:c=>{const t=towerById(c.id);return t?setTowerAim(t,c.x,c.y):false;},
   portal_exit:c=>{const t=towerById(c.id);return t?setPortalExit(t,c.x,c.y):false;},
   clearObs:c=>clearObstacle(c.id),
+  donate:c=>donateCoopCoins(c.toSlot|0,+c.pct),
   wave:()=>WM.send(),
   power:c=>Powers.click(c.key),
   auto:c=>setAuto(!!c.on)
@@ -4710,6 +4763,41 @@ function drawEffects(){
     ctx.fillStyle=p.c;ctx.fillText(p.text,p.x,p.y);
   }
   ctx.globalAlpha=1;ctx.textAlign='left';
+  // Divisão de Setores Co-op (2 a 4 jogadores) e Marcadores Visuais de Alerta na Pista
+  if(COOP.active&&COOP.division==='sectors'){
+    ctx.save();
+    ctx.strokeStyle='rgba(56,189,248,0.32)';
+    ctx.lineWidth=1.5;
+    ctx.setLineDash([7,7]);
+    if(COOP.maxPlayers===2){
+      ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.stroke();
+    }else if(COOP.maxPlayers===3){
+      ctx.beginPath();ctx.moveTo(W/3,0);ctx.lineTo(W/3,H);ctx.moveTo((W*2)/3,0);ctx.lineTo((W*2)/3,H);ctx.stroke();
+    }else{
+      ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+  if(COOP.pings&&COOP.pings.length){
+    ctx.save();
+    for(const pg of COOP.pings){
+      const al=Math.min(1,pg.life/1.2);
+      const pulseR=12+((G.simT*38)%26);
+      ctx.globalAlpha=al;
+      ctx.strokeStyle=pg.color||'#38bdf8';
+      ctx.lineWidth=2.2;
+      ctx.beginPath();ctx.arc(pg.x,pg.y,pulseR,0,6.283);ctx.stroke();
+      ctx.fillStyle='rgba(15,23,42,0.88)';
+      ctx.fillRect(pg.x-44,pg.y-26,88,16);
+      ctx.strokeRect(pg.x-44,pg.y-26,88,16);
+      ctx.fillStyle='#ffffff';
+      ctx.font='bold 10px "Segoe UI",sans-serif';
+      ctx.textAlign='center';
+      ctx.fillText(pg.label||'⚠ ALERTA',pg.x,pg.y-14);
+    }
+    ctx.restore();
+  }
 }
 function validSpot(x,y){
   if(!Number.isFinite(x)||!Number.isFinite(y))return 'Coordenada inválida';
@@ -4979,13 +5067,28 @@ function setTowerAim(t,x,y){
 }
 function setPortalExit(t,x,y){
   if(!t||t.key!=='portal'||!Number.isFinite(x)||!Number.isFinite(y))return false;
-  const np=nearestPathProg(clamp(x,10,W-10),clamp(y,10,H-10));
+  let linkType=null, tx=clamp(x,10,W-10), ty=clamp(y,10,H-10);
+  // Sinergia Tática: permite conectar a saída do portal direto no Dinossauro aliado ou nas Minas Terrestres
+  for(const q of towers){
+    if(q._dino&&dist(q._dino.x,q._dino.y,tx,ty)<=48){
+      tx=q._dino.x; ty=q._dino.y; linkType='dino'; break;
+    }
+  }
+  if(!linkType){
+    for(const m of mines){
+      if(m.armed&&dist(m.x,m.y,tx,ty)<=42){
+        tx=m.x; ty=m.y; linkType='mine'; break;
+      }
+    }
+  }
+  const np=nearestPathProg(tx,ty);
   t.exitDist=clamp(np.d,10,PATH_LEN-20);
   pathPos(t.exitDist,_pp);
   t.exitX=Math.round(_pp.x);
   t.exitY=Math.round(_pp.y);
-  FX.ring(t.exitX,t.exitY,6,26,.35,'#c084fc',3);
-  toast('Saída do Portal definida na pista!','good');
+  t.exitLink=linkType;
+  FX.ring(t.exitX,t.exitY,6,30,.4,linkType?'#fbbf24':'#c084fc',3.5);
+  toast(linkType==='dino'?'🌀 Portal conectado direto ao Dinossauro Aliado!':linkType==='mine'?'🌀 Portal conectado direto às Minas Terrestres!':'Saída do Portal definida na pista!','good');
   Snd.play('ui');
   UI.panelKey='';
   return true;
@@ -5075,18 +5178,30 @@ function applyParagonStats(t){
   if(s.slow)s.slow=Math.min(.78,s.slow*1.18);
   if(s.vuln)s.vuln=Math.min(.60,s.vuln*cfg.aura);
   if(s.healBase)s.healBase=Math.round(s.healBase)+1;
+  if(t.teamParagon){
+    s.dmg*=1.12;
+    if(t.key!=='sniper')s.range*=1.06;
+  }
 }
 function makeParagon(t){
   if(!t)return false;
+  // Ascensão em Equipe: une 3 torres idênticas no nível máximo (mesmo de jogadores diferentes no Co-op)
   const same=towers.filter(q=>q.key===t.key&&Math.max(...q.pathLevels)>=5&&!q.paragon);
   if(Math.max(...t.pathLevels)<5||same.length<3){toast('Precisa de 3 torres iguais com um caminho no nível 5.','bad');return false;}
   const cost=paragonCost(t.key);
   if(!Number.isFinite(G.money)||G.money<cost){toast('Moedas insuficientes para criar esta Ascensão.','bad');return false;}
   G.money-=cost; t.spent+=cost;
+  const isTeamUnion=COOP.active||same.some(q=>(q.ownerSlot||0)!==(t.ownerSlot||0));
   for(const q of same){if(q===t)continue;const i=towers.indexOf(q);if(i>=0)towers.splice(i,1);}
-  t.paragon=true;G.stats.paragons++;psAdd('paragons');t.tier=7;t.def=Object.assign({},t.def,{name:'Ascendida: '+t.def.name});
+  t.paragon=true;t.teamParagon=isTeamUnion;G.stats.paragons++;psAdd('paragons');t.tier=7;
+  t.def=Object.assign({},t.def,{name:(isTeamUnion?'Ascendida Co-op: ':'Ascendida: ')+t.def.name});
   t.recalc();
-  t.spent+=same.filter(q=>q!==t).reduce((n,q)=>n+q.spent,0);FX.ring(t.x,t.y,12,95,.9,'#f2c230',6);FX.popup(t.x,t.y-35,'ASCENSÃO!','#f2c230',true);Snd.play('power');UI.panelKey='';toast('Ascensão criada! Poder e alcance aumentados.','good');return true;
+  t.spent+=same.filter(q=>q!==t).reduce((n,q)=>n+q.spent,0);
+  FX.ring(t.x,t.y,12,95,.9,'#f2c230',6);
+  FX.popup(t.x,t.y-35,isTeamUnion?'★ ASCENSÃO EM EQUIPE! ★':'ASCENSÃO!','#f2c230',true);
+  Snd.play('power');UI.panelKey='';
+  toast(isTeamUnion?'Ascensão em Equipe ativada! Sinergia máxima desbloqueada.':'Ascensão criada! Poder e alcance aumentados.','good');
+  return true;
 }
 function activateTowerAbility(t){
   if(!t)return false;
@@ -6124,6 +6239,171 @@ function closeInstallModal(){
   if(m)m.classList.add('hidden');
 }
 
+/* ===== SISTEMA MODO COOPERATIVO (SALAS PRIVADAS 2–4P, DOAÇÃO %, PINGS E VOTAÇÃO) ===== */
+function generateCoopRoomCode(){
+  if(window.QZ_COOP&&typeof window.QZ_COOP.generateRoomCode==='function'){
+    COOP.roomCode=window.QZ_COOP.generateRoomCode();
+  }else{
+    const chars='23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+    let s='QZ-';
+    for(let i=0;i<6;i++)s+=chars[Math.floor(Math.random()*chars.length)];
+    COOP.roomCode=s;
+  }
+  if($('coopRoomCodeDisplay'))$('coopRoomCodeDisplay').textContent=COOP.roomCode;
+  if($('coopHudRoomCode'))$('coopHudRoomCode').textContent=COOP.roomCode;
+  return COOP.roomCode;
+}
+
+function setupCoopPlayers(maxP){
+  const n=Math.max(2,Math.min(4,Number(maxP)||2));
+  COOP.maxPlayers=n;
+  const allyNames=['Comandante','Aliado Bravo','Aliado Charlie','Aliado Delta'];
+  const allyCols=['#38bdf8','#4ade80','#facc15','#f472b6'];
+  COOP.players=[];
+  for(let i=0;i<n;i++){
+    COOP.players.push({
+      slot:i,
+      name:i===0?getPlayerName():allyNames[i],
+      money:CFG.startMoney,
+      isLocal:i===0,
+      color:allyCols[i]
+    });
+  }
+}
+
+function renderCoopModalSlots(){
+  const box=$('coopSlotsPreview');
+  if(!box)return;
+  const n=Math.max(2,Math.min(4,Number($('coopPlayersSelect')&&$('coopPlayersSelect').value)||COOP.maxPlayers||2));
+  setupCoopPlayers(n);
+  const divMode=($('coopDivisionSelect')&&$('coopDivisionSelect').value)||COOP.division||'sectors';
+  COOP.division=divMode;
+  box.innerHTML=COOP.players.map((p,i)=>{
+    const secLbl=divMode==='free'?'Mapa Livre':('Setor P'+(i+1));
+    return '<div class="coop-slot-chip"><span><b>P'+(i+1)+'</b> · '+escHtml(p.name)+'</span><small>'+secLbl+'</small></div>';
+  }).join('');
+}
+
+function renderCoopHud(){
+  const w=$('coopHudWidget');
+  if(!w)return;
+  w.classList.toggle('hidden',!COOP.active);
+  if(!COOP.active)return;
+  if($('coopHudRoomCode'))$('coopHudRoomCode').textContent=COOP.roomCode;
+  if($('coopHudModeTag'))$('coopHudModeTag').textContent=(COOP.division==='free'?'LIVRE ':'SETORES ')+COOP.maxPlayers+'P';
+  if($('coopVoteCount'))$('coopVoteCount').textContent=COOP.votesWave+'/'+COOP.maxPlayers;
+  const listEl=$('coopAllyList');
+  if(!listEl)return;
+  const curBal=Math.max(0,Math.floor(G.money||0));
+  const p25=Math.floor(curBal*0.25);
+  const p50=Math.floor(curBal*0.50);
+  const p100=Math.floor(curBal*1.00);
+  listEl.innerHTML=COOP.players.filter(p=>p.slot>0).map(p=>(
+    '<div class="coop-ally-row">'
+    +'<div class="coop-ally-top"><b>P'+(p.slot+1)+' · '+escHtml(p.name)+'</b><span class="coop-ally-coins">● '+Math.floor(p.money||0)+'</span></div>'
+    +'<div class="coop-pct-group">'
+    +'<button type="button" class="coop-pct-btn" data-slot="'+p.slot+'" data-pct="0.25" title="Doar 25% ('+p25+' moedas)">25% ('+p25+')</button>'
+    +'<button type="button" class="coop-pct-btn" data-slot="'+p.slot+'" data-pct="0.5" title="Doar 50% ('+p50+' moedas)">50% ('+p50+')</button>'
+    +'<button type="button" class="coop-pct-btn" data-slot="'+p.slot+'" data-pct="1" title="Doar 100% ('+p100+' moedas)">100% ('+p100+')</button>'
+    +'</div></div>'
+  )).join('');
+  listEl.querySelectorAll('.coop-pct-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      dispatch({type:'donate',toSlot:+btn.dataset.slot,pct:+btn.dataset.pct});
+    });
+  });
+}
+
+function donateCoopCoins(toSlot,pct){
+  const curBal=Math.floor(Number(G.money)||0);
+  const numPct=Number(pct);
+  const validPcts=[0.25,0.50,1.00];
+  const matched=validPcts.find(p=>Math.abs(p-numPct)<0.001);
+  if(!matched||curBal<1){
+    toast('Saldo insuficiente para doar moedas!','bad');
+    Snd.play('err');
+    return false;
+  }
+  const amount=Math.floor(curBal*matched);
+  if(amount<1){
+    toast('Saldo insuficiente para doar '+Math.round(matched*100)+'%!','bad');
+    Snd.play('err');
+    return false;
+  }
+  const target=COOP.players.find(p=>p.slot===(toSlot|0))||COOP.players[1];
+  if(!target)return false;
+  G.money-=amount;
+  target.money=(target.money||0)+amount;
+  SecurityGuard.syncVault();
+  OnlineAPI.req('/api/mp/donate',{
+    method:'POST',
+    body:JSON.stringify({
+      roomCode:COOP.roomCode,
+      fromSlot:0,
+      toSlot:target.slot,
+      pct:matched,
+      balance:curBal,
+      amount
+    })
+  });
+  FX.popup(W/2,90,'💸 -'+amount+' ● ('+Math.round(matched*100)+'% → '+target.name+')','#facc15',true);
+  toast('💸 Doou '+amount+' moedas ('+Math.round(matched*100)+'%) para '+target.name+'!','good');
+  Snd.play('coin');
+  renderCoopHud();
+  return amount;
+}
+
+function triggerCoopPing(kind,customX,customY){
+  pathPos(Math.min(PATH_LEN-40,Math.max(40,PATH_LEN*0.42)),_pp);
+  const px=Number.isFinite(customX)?customX:(M.in?M.x:Math.round(_pp.x));
+  const py=Number.isFinite(customY)?customY:(M.in?M.y:Math.round(_pp.y));
+  const meta=kind==='focus'
+    ?{label:'🎯 FOCAR ALVO',color:'#ef4444'}
+    :kind==='combo'
+    ?{label:'🌀 COMBO / PORTAL',color:'#c084fc'}
+    :{label:'⚠ ALERTA NA PISTA',color:'#facc15'};
+  COOP.pings.push({x:px,y:py,kind:kind||'danger',label:meta.label,color:meta.color,life:4.2,max:4.2});
+  FX.ring(px,py,6,56,.45,meta.color,3.5);
+  Snd.play('ui');
+  toast('📍 '+meta.label+' enviado ao esquadrão!','good');
+  OnlineAPI.req('/api/mp/ping',{method:'POST',body:JSON.stringify({roomId:COOP.roomCode,x:px,y:py,kind:kind||'danger',playerName:getPlayerName()})});
+  return true;
+}
+
+function voteCoopAction(voteType,speedVal){
+  if(voteType==='speed'){
+    const sp=[1,2,3].includes(Number(speedVal))?Number(speedVal):1;
+    setSpeed(sp);
+    document.querySelectorAll('.coop-vote-spd').forEach(b=>b.classList.toggle('active',+b.dataset.vspd===sp));
+    toast('🗳 Votação de grupo aprovada: Velocidade '+sp+'x!','good');
+    OnlineAPI.req('/api/mp/vote',{method:'POST',body:JSON.stringify({roomId:COOP.roomCode,voteType:'speed',speed:sp,playerName:getPlayerName()})});
+    return true;
+  }
+  COOP.votesWave=COOP.maxPlayers;
+  renderCoopHud();
+  if(G.mode==='play'&&!G.paused){
+    dispatch({type:'wave'});
+    toast('🗳 Esquadrão votou ('+COOP.maxPlayers+'/'+COOP.maxPlayers+'): Onda iniciada!','good');
+  }
+  OnlineAPI.req('/api/mp/vote',{method:'POST',body:JSON.stringify({roomId:COOP.roomCode,voteType:'wave',playerName:getPlayerName()})});
+  return true;
+}
+
+function openCoopModal(){
+  const m=$('coopModal');
+  if(!m)return;
+  if(!COOP.roomCode)generateCoopRoomCode();
+  if($('coopRoomCodeDisplay'))$('coopRoomCodeDisplay').textContent=COOP.roomCode;
+  renderCoopModalSlots();
+  m.classList.remove('hidden');
+  Snd.play('ui');
+}
+
+function closeCoopModal(){
+  const m=$('coopModal');
+  if(m)m.classList.add('hidden');
+}
+
 function bindEvents(){
   registerExtraMaps();drawHomeArt();refreshContinue();window.addEventListener('beforeunload',()=>psSave());
   $('btnHomeContinue').addEventListener('click',loadSave);
@@ -6175,7 +6455,61 @@ function bindEvents(){
     Snd.apply();
     Snd.play('ui');
   });
-  $('btnHomePlay').addEventListener('click',()=>{Snd.init();showScreen('startScreen');renderMapPagination(true);buildMapThumbs();});
+  $('btnHomePlay').addEventListener('click',()=>{COOP.active=false;renderCoopHud();Snd.init();showScreen('startScreen');renderMapPagination(true);buildMapThumbs();});
+  if($('btnHomeCoop'))$('btnHomeCoop').addEventListener('click',()=>{Snd.init();generateCoopRoomCode();openCoopModal();});
+  if($('btnOpenCoopModal'))$('btnOpenCoopModal').addEventListener('click',()=>{Snd.init();openCoopModal();});
+  if($('btnCoopClose'))$('btnCoopClose').addEventListener('click',closeCoopModal);
+  if($('btnCoopRegenCode'))$('btnCoopRegenCode').addEventListener('click',()=>{
+    const code=generateCoopRoomCode();
+    toast('Novo código de sala privada: '+code,'good');
+    Snd.play('ui');
+  });
+  if($('btnCoopCopyCode'))$('btnCoopCopyCode').addEventListener('click',()=>{
+    try{if(navigator.clipboard)navigator.clipboard.writeText(COOP.roomCode);}catch(_){}
+    toast('Código copiado: '+COOP.roomCode,'good');
+    Snd.play('ui');
+  });
+  if($('coopPlayersSelect'))$('coopPlayersSelect').addEventListener('change',renderCoopModalSlots);
+  if($('coopDivisionSelect'))$('coopDivisionSelect').addEventListener('change',renderCoopModalSlots);
+  if($('btnCoopJoinRoom'))$('btnCoopJoinRoom').addEventListener('click',()=>{
+    const raw=($('coopJoinInput')&&$('coopJoinInput').value||'').trim().toUpperCase();
+    if(!/^QZ-?[2-9A-Z]{4,8}$/.test(raw)){
+      toast('Digite um código válido no formato QZ-XXXXXX','bad');
+      Snd.play('err');
+      return;
+    }
+    COOP.roomCode=raw.includes('-')?raw:('QZ-'+raw.slice(2));
+    if($('coopRoomCodeDisplay'))$('coopRoomCodeDisplay').textContent=COOP.roomCode;
+    toast('Conectado à sala privada '+COOP.roomCode+'!','good');
+    Snd.play('up');
+  });
+  if($('btnCoopStartMatch'))$('btnCoopStartMatch').addEventListener('click',()=>{
+    const n=Number($('coopPlayersSelect')&&$('coopPlayersSelect').value)||2;
+    const div=($('coopDivisionSelect')&&$('coopDivisionSelect').value)||'sectors';
+    setupCoopPlayers(n);
+    COOP.division=div;
+    COOP.active=true;
+    closeCoopModal();
+    startGameOperation();
+    renderCoopHud();
+    if(window.QZ_NET_MP&&typeof window.QZ_NET_MP.createRoom==='function'){
+      window.QZ_NET_MP.createRoom({name:'Sala '+COOP.roomCode,mode:'coop',map:activeMap,diff:activeDifficulty,maxPlayers:COOP.maxPlayers,playerName:getPlayerName()});
+    }
+    toast('🤝 Operação Co-op ('+COOP.maxPlayers+'P · '+(div==='free'?'Mapa Livre':'Setores Divididos')+') iniciada!','good');
+  });
+  if($('btnCoopHudToggle'))$('btnCoopHudToggle').addEventListener('click',()=>{
+    const w=$('coopHudWidget');
+    if(w){
+      const col=w.classList.toggle('collapsed');
+      if($('coopHudChevron'))$('coopHudChevron').textContent=col?'▸':'▾';
+      if(!col)renderCoopHud();
+    }
+  });
+  if($('btnCoopPingDanger'))$('btnCoopPingDanger').addEventListener('click',()=>triggerCoopPing('danger'));
+  if($('btnCoopPingFocus'))$('btnCoopPingFocus').addEventListener('click',()=>triggerCoopPing('focus'));
+  if($('btnCoopPingCombo'))$('btnCoopPingCombo').addEventListener('click',()=>triggerCoopPing('combo'));
+  if($('btnCoopVoteWave'))$('btnCoopVoteWave').addEventListener('click',()=>voteCoopAction('wave'));
+  document.querySelectorAll('.coop-vote-spd').forEach(b=>b.addEventListener('click',()=>voteCoopAction('speed',+b.dataset.vspd)));
   $('btnHomeSettings').addEventListener('click',()=>{Snd.init();$('settingsMap').value=$('mapSelect').value;$('settingsDifficulty').value=$('difficultySelect').value;$('settingsVolume').value=$('vol').value;showScreen('settingsScreen');});
   $('btnHomeAbout').addEventListener('click',()=>{psAdd('about');psSave();showScreen('aboutScreen');});
   if($('btnHomeInstall'))$('btnHomeInstall').addEventListener('click',()=>{Snd.init();openInstallModal();});
@@ -6505,7 +6839,7 @@ function init(){
     if(typeof navigator!=='undefined'&&'serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
       let refreshing=false;
       navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;location.reload();}});
-      navigator.serviceWorker.register('./sw.js?v=19.29').then(reg=>{try{reg.update();}catch(_){}}).catch(()=>{});
+      navigator.serviceWorker.register('./sw.js?v=19.30').then(reg=>{try{reg.update();}catch(_){}}).catch(()=>{});
     }
   }catch(_){}
   document.querySelectorAll('.map-card').forEach(c=>c.classList.toggle('selected',c.dataset.map===$('mapSelect').value));
@@ -6516,7 +6850,7 @@ function init(){
 }
 
 // Pequena API para depuração/testes automatizados
-window.ZTD={G,UI,CFG,MAPS,TOWERS,ZOMBIES,WM,Powers,powerState,towers,zombies,projs,mines,bombs,hazards,allies,obstacles,portals,buildWave,placeTower,upgradeTower,sellTower,setTowerAim,setPortalExit,clearObstacle,stunZ,getTowerPortrait,select,selectMap,refreshPanel,renderMapMedals,update,resetGame,validSpot,applyDamage,pathPos,PATH_LEN,endGame:()=>endGame(),POWERS,dispatch,CMDLOG,stateHash,seedRng,srand,rngState:()=>_s,achievements:()=>ACH,achLoad,ps:()=>PS,psSave,career:()=>career,loadCareer,saveCareer,computeLocalSig,renderAch,checkAch,saveGame,readSave,loadRank,renderRank,getPlayerName,setPlayerName,recordRankEntry,clearRanks,deleteRankEntry,OnlineAPI,SecurityGuard,detectDevice,applyPlatformMode,isMobile:()=>IS_MOBILE};
+window.ZTD={G,UI,CFG,MAPS,TOWERS,ZOMBIES,WM,Powers,powerState,towers,zombies,projs,mines,bombs,hazards,allies,obstacles,portals,COOP,generateCoopRoomCode,donateCoopCoins,triggerCoopPing,voteCoopAction,evaluateElementalCombo,buildWave,placeTower,upgradeTower,sellTower,setTowerAim,setPortalExit,clearObstacle,stunZ,getTowerPortrait,select,selectMap,refreshPanel,renderMapMedals,update,resetGame,validSpot,applyDamage,pathPos,PATH_LEN,endGame:()=>endGame(),POWERS,dispatch,CMDLOG,stateHash,seedRng,srand,rngState:()=>_s,achievements:()=>ACH,achLoad,ps:()=>PS,psSave,career:()=>career,loadCareer,saveCareer,computeLocalSig,renderAch,checkAch,saveGame,readSave,loadRank,renderRank,getPlayerName,setPlayerName,recordRankEntry,clearRanks,deleteRankEntry,OnlineAPI,SecurityGuard,detectDevice,applyPlatformMode,isMobile:()=>IS_MOBILE};
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

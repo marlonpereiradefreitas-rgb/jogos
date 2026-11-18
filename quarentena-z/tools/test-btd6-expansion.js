@@ -120,6 +120,33 @@ Z.loadCareer();
 assert(Z.SecurityGuard.tamperCount > prevTamper, 'SecurityGuard deve detectar adulteração manual no localStorage');
 assert(Z.career().bestWave === 10, 'Recorde adulterado deve ser bloqueado pela validação de assinatura digital');
 
+// 6. Testar Modo Cooperativo (Salas Privadas, Doação por Porcentagem, Combos Elementais, Portal no Dino/Minas e Ascensão em Equipe)
+const roomCode = Z.generateCoopRoomCode();
+assert(/^QZ-[2-9A-Z]{6}$/.test(roomCode), 'Deve gerar código alfanumérico único de sala privada (QZ-XXXXXX): ' + roomCode);
+Z.COOP.active = true;
+Z.COOP.maxPlayers = 3;
+Z.G.money = 1003;
+const donated25 = Z.dispatch({ type: 'donate', toSlot: 1, pct: 0.25 });
+assert(donated25 === 250 && Z.G.money === 753, 'Doação de 25% deve transferir exatamente Math.floor(1003*0.25)=250 moedas');
+const donated50 = Z.dispatch({ type: 'donate', toSlot: 1, pct: 0.50 });
+assert(donated50 === 376 && Z.G.money === 377, 'Doação de 50% deve transferir exatamente Math.floor(753*0.50)=376 moedas');
+
+// Conectar Portal Tático diretamente ao Dinossauro aliado
+assert(Z.dispatch({ type: 'portal_exit', id: tPortal.id, x: tDino._dino.x, y: tDino._dino.y }) === true);
+assert(tPortal.exitLink === 'dino', 'Portal Tático deve vincular saída diretamente ao Dinossauro aliado');
+
+// Testar Combo Elemental (Fogo + Gelo + Eletricidade + Veneno)
+speedBossInstance.burnT = 2.0;
+speedBossInstance.slowT = 2.0;
+speedBossInstance.stunT = 1.0;
+speedBossInstance.poisonT = 2.0;
+const comboRes = Z.evaluateElementalCombo(speedBossInstance, 'fire');
+assert(comboRes.count === 4 && comboRes.mult === 1.45, 'Combo de 4 elementos (fogo, gelo, eletricidade, veneno) deve conceder bônus máximo de 1.45x');
+
+// Testar Alertas na Pista e Votação Rápida em Grupo
+assert(Z.triggerCoopPing('danger', 400, 300) === true && Z.COOP.pings.length > 0, 'Deve adicionar marcador visual de alerta na pista');
+assert(Z.voteCoopAction('speed', 2) === true && Z.G.speed === 2, 'Votação rápida de grupo deve alterar velocidade para 2x');
+
 step(10);
 assert(errs.length === 0, 'Zero erros de frame durante simulação completa BTD6: ' + errs.join('; '));
-console.log('TESTE BTD6 EXPANSION OK: 4 novas torres, speedboss, minas com stun, portal tático, obstáculos, integridade digital e balanceamento validados com zero erros.');
+console.log('TESTE BTD6 & CO-OP EXPANSION OK: 4 novas torres, Co-op 2-4P, doação %, combos elementais, speedboss, minas com stun, portal tático, obstáculos e integridade digital validados com zero erros.');

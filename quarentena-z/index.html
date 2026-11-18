@@ -132,6 +132,32 @@
         <button type="button" id="btnMobCancel" class="mob-qbtn mob-qbtn-cancel hidden" title="Cancelar ação atual">✕ CANCELAR</button>
       </div>
 
+      <!-- Mini-Janela Retrátil Co-op (Estilo Bloons TD 6: Doação por Porcentagem 25%/50%/100%, Pings e Votação) -->
+      <div id="coopHudWidget" class="coop-hud-widget hidden" aria-label="Painel Cooperativo">
+        <button type="button" id="btnCoopHudToggle" class="coop-hud-header" title="Abrir/Recolher Mini-Janela Cooperativa">
+          <span class="coop-hud-badge">🤝 CO-OP</span>
+          <strong id="coopHudRoomCode">QZ-000000</strong>
+          <span id="coopHudModeTag" class="coop-hud-sub">SETORES</span>
+          <span id="coopHudChevron" class="coop-hud-chev">▾</span>
+        </button>
+        <div id="coopHudDrawer" class="coop-hud-drawer">
+          <div class="coop-sec-title">💰 DOAR MOEDAS AOS ALIADOS (% DO SALDO)</div>
+          <div id="coopAllyList" class="coop-ally-list"></div>
+          <div class="coop-sec-title">📍 ALERTAS NA PISTA &amp; VOTAÇÃO EM GRUPO</div>
+          <div class="coop-ping-row">
+            <button type="button" id="btnCoopPingDanger" class="coop-act-btn" title="Marcar alerta de perigo na pista">⚠ Alerta</button>
+            <button type="button" id="btnCoopPingFocus" class="coop-act-btn" title="Marcar alvo prioritário">🎯 Focar</button>
+            <button type="button" id="btnCoopPingCombo" class="coop-act-btn" title="Marcar ponto de Portal/Minas/Dino">🌀 Combo</button>
+          </div>
+          <div class="coop-vote-row">
+            <button type="button" id="btnCoopVoteWave" class="coop-vote-btn" title="Votar para iniciar onda">🗳 Onda (<span id="coopVoteCount">1/2</span>)</button>
+            <button type="button" class="coop-vote-spd" data-vspd="1" title="Votar velocidade 1x">1x</button>
+            <button type="button" class="coop-vote-spd" data-vspd="2" title="Votar velocidade 2x">2x</button>
+            <button type="button" class="coop-vote-spd" data-vspd="3" title="Votar velocidade 3x">3x</button>
+          </div>
+        </div>
+      </div>
+
       <div id="homeScreen" class="screen home-screen">
         <canvas id="menuBgCanvas" class="menu-bg-canvas" width="1280" height="720" aria-hidden="true"></canvas>
         <div class="home-vignette" aria-hidden="true"></div>
@@ -224,6 +250,14 @@
                   <span class="mb-text">
                     <span class="mb-title">JOGAR</span>
                     <small class="mb-sub">Selecionar zona de combate e dificuldade</small>
+                  </span>
+                  <span class="mb-arrow">→</span>
+                </button>
+                <button id="btnHomeCoop" class="menu-button coop-menu">
+                  <span class="mb-ico">🤝</span>
+                  <span class="mb-text">
+                    <span class="mb-title">MODO COOPERATIVO (2–4P)</span>
+                    <small class="mb-sub">Salas privadas com código, doação % e Ascensão em Equipe</small>
                   </span>
                   <span class="mb-arrow">→</span>
                 </button>
@@ -593,6 +627,7 @@
             <button type="button" class="diff-pill apoc" data-diff="apocalypse">☣ APOCALIPSE</button>
           </div>
           <div class="map-nav">
+            <button type="button" id="btnOpenCoopModal" class="menu-button btn-coop-nav">🤝 SALA CO-OP (2–4P)</button>
             <button id="btnPlay" class="big">INICIAR OPERAÇÃO ▶</button>
           </div>
         </div>
@@ -714,6 +749,54 @@
   </div>
 </div>
 
+<!-- Modal de Salas Privadas do Modo Cooperativo (2 a 4 Jogadores) -->
+<div id="coopModal" class="home-confirm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="coopModalTitle">
+  <div class="home-confirm-card coop-modal-card">
+    <span class="hc-badge">🤝 ESQUADRÃO TÁTICO · SALAS PRIVADAS (2 A 4 JOGADORES)</span>
+    <h2 id="coopModalTitle">CENTRAL DO MODO COOPERATIVO</h2>
+    <p>Crie uma sala privada com código alfanumérico único para seus amigos ou entre em um esquadrão existente. A Vida da Base é compartilhada e os abates são divididos entre a equipe.</p>
+
+    <div class="coop-code-box">
+      <div class="coop-code-left">
+        <small>CÓDIGO DA SUA SALA PRIVADA</small>
+        <strong id="coopRoomCodeDisplay">QZ-8K4M9X</strong>
+      </div>
+      <div class="coop-code-actions">
+        <button type="button" id="btnCoopRegenCode" class="coop-sm-btn" title="Gerar novo código aleatório único">↻ NOVO CÓDIGO</button>
+        <button type="button" id="btnCoopCopyCode" class="coop-sm-btn primary" title="Copiar código da sala">📋 COPIAR</button>
+      </div>
+    </div>
+
+    <div class="coop-join-row">
+      <input id="coopJoinInput" type="text" maxlength="12" placeholder="Digite o código de um amigo (ex: QZ-8K4M9X)..." autocomplete="off">
+      <button type="button" id="btnCoopJoinRoom" class="coop-sm-btn">ENTRAR NA SALA</button>
+    </div>
+
+    <div class="coop-config-grid">
+      <label>TAMANHO DO ESQUADRÃO
+        <select id="coopPlayersSelect">
+          <option value="2" selected>2 Jogadores (Dupla Tática)</option>
+          <option value="3">3 Jogadores (Trio de Contenção)</option>
+          <option value="4">4 Jogadores (Esquadrão Completo)</option>
+        </select>
+      </label>
+      <label>DIVISÃO DE MAPA (18 ZONAS)
+        <select id="coopDivisionSelect">
+          <option value="sectors" selected>Setores Divididos (Quadrantes/Faixas)</option>
+          <option value="free">Mapa Livre (Construção Compartilhada)</option>
+        </select>
+      </label>
+    </div>
+
+    <div id="coopSlotsPreview" class="coop-slots-preview"></div>
+
+    <div class="hc-actions">
+      <button type="button" id="btnCoopClose" class="hc-btn hc-btn-stay">← VOLTAR</button>
+      <button type="button" id="btnCoopStartMatch" class="hc-btn coop-btn-launch">🤝 INICIAR CO-OP AGORA ▶</button>
+    </div>
+  </div>
+</div>
+
 <!-- Camada de Aviso de Orientação Obrigatória (Landscape / Celular Deitado) -->
 <div id="rotateDeviceOverlay" role="alert" aria-live="assertive">
   <div class="rotate-card">
@@ -733,12 +816,13 @@
   </div>
 </div>
 
-<script src="modules/security-vault.js?v=19.29"></script>
-<script src="modules/cloud-db.js?v=19.29"></script>
-<script src="modules/network-multiplayer.js?v=19.29"></script>
-<script src="modules/object-pool.js?v=19.29"></script>
-<script src="modules/btd6-towers.js?v=19.29"></script>
-<script src="modules/btd6-ui.js?v=19.29"></script>
-<script src="game.js?v=19.29"></script>
+<script src="modules/security-vault.js?v=19.30"></script>
+<script src="modules/cloud-db.js?v=19.30"></script>
+<script src="modules/network-multiplayer.js?v=19.30"></script>
+<script src="modules/coop-system.js?v=19.30"></script>
+<script src="modules/object-pool.js?v=19.30"></script>
+<script src="modules/btd6-towers.js?v=19.30"></script>
+<script src="modules/btd6-ui.js?v=19.30"></script>
+<script src="game.js?v=19.30"></script>
 </body>
 </html>

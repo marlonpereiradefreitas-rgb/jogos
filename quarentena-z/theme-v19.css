@@ -2059,3 +2059,267 @@ body:not(.menu-mode) #rankScreen {
   z-index: -999 !important;
 }
 
+/* ==========================================================================
+   v19.30: MODO COOPERATIVO (2–4 JOGADORES), SALAS PRIVADAS E MINI-JANELA BTD6
+   ========================================================================== */
+.coop-menu {
+  border-color: rgba(56, 189, 248, 0.45) !important;
+  background: linear-gradient(135deg, rgba(14, 42, 68, 0.88), rgba(15, 23, 42, 0.94)) !important;
+}
+.coop-menu:hover {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.35) !important;
+}
+.btn-coop-nav {
+  background: linear-gradient(135deg, #0284c7, #0369a1) !important;
+  border: 1px solid #38bdf8 !important;
+  color: #f0f9ff !important;
+  padding: 10px 16px !important;
+  border-radius: 8px !important;
+  font-weight: 800 !important;
+  font-size: 12px !important;
+  letter-spacing: 1px !important;
+}
+.coop-modal-card {
+  max-width: 560px !important;
+  width: min(94vw, 560px) !important;
+  text-align: left !important;
+}
+.coop-code-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(2, 6, 23, 0.85);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 10px 0;
+}
+.coop-code-left small {
+  display: block;
+  font-size: 10px;
+  color: #94a3b8;
+  letter-spacing: 1px;
+}
+.coop-code-left strong {
+  font-size: 22px;
+  color: #38bdf8;
+  letter-spacing: 2.5px;
+  font-family: Consolas, monospace;
+}
+.coop-code-actions {
+  display: flex;
+  gap: 6px;
+}
+.coop-sm-btn {
+  padding: 7px 11px;
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 6px;
+  background: #1e293b;
+  border: 1px solid #475569;
+  color: #e2e8f0;
+  cursor: pointer;
+}
+.coop-sm-btn.primary {
+  background: #0284c7;
+  border-color: #38bdf8;
+  color: #fff;
+}
+.coop-join-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.coop-join-row input {
+  flex: 1;
+  background: #090d16;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: #f8fafc;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.coop-config-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.coop-config-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+}
+.coop-config-grid select {
+  background: #0f172a;
+  color: #f8fafc;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 7px;
+  font-weight: 700;
+}
+.coop-slots-preview {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.coop-slot-chip {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 6px;
+  padding: 6px 9px;
+  font-size: 11px;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.coop-slot-chip b {
+  color: #38bdf8;
+}
+.coop-btn-launch {
+  background: linear-gradient(90deg, #10b981, #059669) !important;
+  border-color: #34d399 !important;
+  color: #fff !important;
+}
+
+/* Mini-Janela Retrátil Co-op no HUD de Combate (Estilo Bloons TD 6) */
+.coop-hud-widget {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 16;
+  width: 248px;
+  background: rgba(9, 14, 24, 0.92);
+  border: 1px solid rgba(56, 189, 248, 0.55);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  overflow: hidden;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+body.menu-mode .coop-hud-widget {
+  display: none !important;
+}
+.coop-hud-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 10px;
+  background: linear-gradient(90deg, rgba(2, 132, 199, 0.35), rgba(15, 23, 42, 0.85));
+  border: none;
+  border-bottom: 1px solid rgba(56, 189, 248, 0.25);
+  color: #f8fafc;
+  font-size: 11px;
+  cursor: pointer;
+}
+.coop-hud-badge {
+  background: #0284c7;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 800;
+  font-size: 10px;
+}
+.coop-hud-sub {
+  font-size: 9px;
+  color: #7dd3fc;
+  font-weight: 700;
+}
+.coop-hud-drawer {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.coop-hud-widget.collapsed .coop-hud-drawer {
+  display: none !important;
+}
+.coop-sec-title {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+.coop-ally-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.coop-ally-row {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 6px;
+  padding: 5px 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.coop-ally-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+.coop-ally-top b {
+  color: #f8fafc;
+}
+.coop-ally-coins {
+  color: #facc15;
+  font-weight: 800;
+  font-size: 11px;
+}
+.coop-pct-group {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+.coop-pct-btn {
+  padding: 3px 4px;
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 4px;
+  background: rgba(234, 179, 8, 0.16);
+  border: 1px solid rgba(250, 204, 21, 0.45);
+  color: #fef08a;
+  cursor: pointer;
+}
+.coop-pct-btn:hover {
+  background: rgba(234, 179, 8, 0.34);
+  border-color: #facc15;
+}
+.coop-ping-row,
+.coop-vote-row {
+  display: flex;
+  gap: 4px;
+}
+.coop-act-btn,
+.coop-vote-btn,
+.coop-vote-spd {
+  flex: 1;
+  padding: 4px 5px;
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 4px;
+  background: rgba(30, 41, 59, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: #e2e8f0;
+  cursor: pointer;
+}
+.coop-vote-spd.active {
+  background: #0284c7;
+  border-color: #38bdf8;
+  color: #fff;
+}
+
+

@@ -274,5 +274,28 @@ function mockReq(method, urlPath, body, customHeaders = {}) {
   assert.strictEqual(vCheck.tampered, true, 'Deve detectar adulteração de saldo via console');
   assert.strictEqual(mockG.money, 650, 'Deve restaurar o saldo legítimo do cofre fechado');
 
-  console.log('TEST-BACKEND SECURITY PASS (100% — Steam-Grade DRM, HMAC-SHA256, Multiplayer, Cloud DB, Anti-Cheat Vault, Assinatura Digital e CSP verificados)');
+  // 16. Validação Server-Side de Doações por Porcentagem (25%, 50%, 100%) e Arredondamento Inteiro
+  const validDonate = await mockReq('POST', '/api/mp/donate', {
+    roomId: room.roomId,
+    fromSlot: 0,
+    toSlot: 1,
+    pct: 0.25,
+    balance: 755,
+    amount: 188 // Math.floor(755 * 0.25) === 188
+  }, { 'x-client-token': tokenA });
+  assert.strictEqual(validDonate.status, 200);
+  assert.strictEqual(validDonate.json.amount, 188);
+  assert.strictEqual(validDonate.json.remainingBalance, 567);
+
+  const tamperedDonate = await mockReq('POST', '/api/mp/donate', {
+    roomId: room.roomId,
+    fromSlot: 0,
+    toSlot: 1,
+    pct: 0.25,
+    balance: 755,
+    amount: 500 // Tentativa de doar valor adulterado acima de 25%
+  }, { 'x-client-token': tokenB, 'x-forwarded-for': '10.0.0.105' });
+  assert.strictEqual(tamperedDonate.status, 400, 'Servidor deve bloquear valor de doação que diverge do arredondamento inteiro da porcentagem');
+
+  console.log('TEST-BACKEND SECURITY PASS (100% — Steam-Grade DRM, HMAC-SHA256, Multiplayer Co-op, Doações %, Cloud DB, Anti-Cheat Vault, Assinatura Digital e CSP verificados)');
 })();

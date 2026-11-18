@@ -1121,8 +1121,12 @@ async function handleApi(req, res, urlObj) {
       const body = await readJsonBody(req);
       const auth = extractClientAuth(req, body);
       const roomId = 'room_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex');
-      const roomCode = 'QZ' + encodeBase32Group(crypto.randomBytes(4), 4);
+      const customCode = String(body.roomCode || '').trim().toUpperCase();
+      const roomCode = /^QZ-?[2-9A-Z]{4,8}$/.test(customCode)
+        ? customCode
+        : ('QZ-' + encodeBase32Group(crypto.randomBytes(6), 6));
       const mode = ['coop', 'versus', 'daily'].includes(body.mode) ? body.mode : 'coop';
+      const division = body.division === 'free' ? 'free' : 'sectors';
       const map = VALID_MAPS.has(body.map) ? body.map : 'four';
       const diff = VALID_DIFFS.has(body.diff) ? body.diff : 'normal';
       const maxPlayers = Math.max(2, Math.min(4, Number(body.maxPlayers) || 2));
@@ -1135,6 +1139,7 @@ async function handleApi(req, res, urlObj) {
         name: cleanName(body.name || 'Operação Co-op'),
         hostHash: ownerHash,
         mode,
+        division,
         map,
         diff,
         maxPlayers,
@@ -1350,6 +1355,68 @@ async function handleApi(req, res, urlObj) {
     return;
   }
 
+  // 14. MULTIPLAYER CO-OP: POST /api/mp/donate — Validação Server-Side de Doações Percentuais (25%, 50%, 100%)
+  if (pathname === '/api/mp/donate' && req.method === 'POST') {
+    try {
+      const body = await readJsonBody(req);
+      const check = validateCoinDonation(body);
+      if (!check.valid) {
+        recordViolation(ip);
+        DB.securityAudit.antiCheatRejections = (DB.securityAudit.antiCheatRejections || 0) + 1;
+        persistDb();
+        sendJson(req, res, 400, { ok: false, error: check.reason });
+        return;
+      }
+      const roomCodeOrId = String(body.roomId || body.roomCode || '').trim();
+      const room = DB.mpRooms[roomCodeOrId] || Object.values(DB.mpRooms).find(r => r && r.roomCode === roomCodeOrId.toUpperCase());
+      const event = {
+        type: 'coop_donate',
+        roomId: room ? room.roomId : roomCodeOrId,
+        fromSlot: check.fromSlot,
+        toSlot: check.toSlot,
+        pct: check.pct,
+        amount: check.amount,
+        remainingBalance: check.remainingBalance,
+        ts: Date.now()
+      };
+      if (room) {
+        room.waveEvents = (room.waveEvents || []).concat([event]).slice(-250);
+        broadcastRoomWs(room.roomId, event);
+        persistDb();
+      }
+      sendJson(req, res, 200, Object.assign({ ok: true }, event));
+    } catch (err) {
+      sendJson(req, res, 400, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  // 15. MULTIPLAYER CO-OP: POST /api/mp/vote — Votação Rápida em Grupo (Ondas e Velocidade 1x/2x/3x) e Alertas
+  if ((pathname === '/api/mp/vote' || pathname === '/api/mp/ping') && req.method === 'POST') {
+    try {
+      const body = await readJsonBody(req);
+      const roomId = cleanId(body.roomId || '');
+      const room = DB.mpRooms[roomId];
+      if (pathname === '/api/mp/vote') {
+        const voteType = body.voteType === 'speed' ? 'speed' : 'wave';
+        const speedVal = [1, 2, 3].includes(Number(body.speed)) ? Number(body.speed) : 1;
+        const ev = { type: 'coop_vote', voteType, speed: speedVal, voter: cleanName(body.playerName || 'Comandante'), ts: Date.now() };
+        if (room) broadcastRoomWs(room.roomId, ev);
+        sendJson(req, res, 200, Object.assign({ ok: true }, ev));
+        return;
+      }
+      const x = Math.max(8, Math.min(952, Math.round(Number(body.x) || 480)));
+      const y = Math.max(8, Math.min(632, Math.round(Number(body.y) || 320)));
+      const kind = ['danger', 'focus', 'coins', 'combo'].includes(body.kind) ? body.kind : 'danger';
+      const pingEv = { type: 'coop_ping', x, y, kind, sender: cleanName(body.playerName || 'Comandante'), ts: Date.now() };
+      if (room) broadcastRoomWs(room.roomId, pingEv);
+      sendJson(req, res, 200, Object.assign({ ok: true }, pingEv));
+    } catch (err) {
+      sendJson(req, res, 400, { ok: false, error: err.message });
+    }
+    return;
+  }
+
   sendJson(req, res, 404, { ok: false, error: 'Endpoint não encontrado' });
 }
 
@@ -1359,8 +1426,50 @@ async function handleApi(req, res, urlObj) {
 
 const VALID_MP_CMDS = new Set([
   'place', 'up', 'paragon', 'ability', 'sell',
-  'prio', 'aim', 'portal_exit', 'clearObs', 'wave', 'power', 'auto'
+  'prio', 'aim', 'portal_exit', 'clearObs', 'wave', 'power', 'auto',
+  'donate', 'ping', 'vote'
 ]);
+
+const VALID_DONATION_PCTS = [0.25, 0.50, 1.00];
+
+/**
+ * Valida transferências percentuais de moedas na mini-janela Co-op (arredondadas para inteiro)
+ */
+function validateCoinDonation(payload) {
+  if (!payload || typeof payload !== 'object') {
+    return { valid: false, reason: 'Payload de doação inválido.' };
+  }
+  const balance = Number(payload.balance);
+  const pct = Number(payload.pct);
+  const fromSlot = Number(payload.fromSlot) | 0;
+  const toSlot = Number(payload.toSlot) | 0;
+
+  if (!Number.isFinite(balance) || balance < 1 || balance > 10000000 || Math.floor(balance) !== balance) {
+    return { valid: false, reason: 'Saldo de moedas inválido ou não-inteiro.' };
+  }
+  const matchedPct = VALID_DONATION_PCTS.find(p => Math.abs(p - pct) < 0.001);
+  if (!matchedPct) {
+    return { valid: false, reason: 'Porcentagem de doação não autorizada (use 25%, 50% ou 100%).' };
+  }
+  if (fromSlot < 0 || fromSlot > 3 || toSlot < 0 || toSlot > 3 || fromSlot === toSlot) {
+    return { valid: false, reason: 'Slot de destinatário de doação inválido.' };
+  }
+  const expectedAmount = Math.floor(balance * matchedPct);
+  if (expectedAmount < 1) {
+    return { valid: false, reason: 'Saldo insuficiente para doar esta porcentagem.' };
+  }
+  if (payload.amount !== undefined && Number(payload.amount) !== expectedAmount) {
+    return { valid: false, reason: 'Valor de doação adulterado (divergência de arredondamento inteiro).' };
+  }
+  return {
+    valid: true,
+    pct: matchedPct,
+    amount: expectedAmount,
+    remainingBalance: balance - expectedAmount,
+    fromSlot,
+    toSlot
+  };
+}
 
 function validateMultiplayerCommand(cmd) {
   if (!cmd || typeof cmd !== 'object') return { valid: false, reason: 'Comando inválido.' };
@@ -1370,6 +1479,10 @@ function validateMultiplayerCommand(cmd) {
     if (!Number.isFinite(x) || !Number.isFinite(y) || x < 8 || x > 952 || y < 8 || y > 632) {
       return { valid: false, reason: 'Coordenadas de construção inválidas.' };
     }
+  }
+  if (cmd.type === 'donate') {
+    const dc = validateCoinDonation(cmd);
+    if (!dc.valid) return dc;
   }
   return { valid: true };
 }
@@ -1677,5 +1790,6 @@ module.exports = {
   verifyLicenseKey,
   issueRunTicket,
   verifyRunTicket,
-  validateMultiplayerCommand
+  validateMultiplayerCommand,
+  validateCoinDonation
 };

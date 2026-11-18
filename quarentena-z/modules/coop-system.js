@@ -1,0 +1,113 @@
+// ============================================================================
+// QUARENTENA Z — MODO COOPERATIVO (2 A 4 JOGADORES), DOAÇÃO POR PORCENTAGEM,
+// DIVISÃO DE MAPA, ASCENSÃO EM EQUIPE, COMBOS ELEMENTAIS E VOTAÇÃO EM GRUPO
+// ============================================================================
+(function (root) {
+  'use strict';
+
+  const CODE_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const VALID_DONATION_PCTS = [0.25, 0.50, 1.00];
+
+  /**
+   * Gera um código alfanumérico aleatório único para Salas Privadas (ex: QZ-8K4M9X)
+   */
+  function generateRoomCode() {
+    let code = 'QZ-';
+    for (let i = 0; i < 6; i++) {
+      let r = 0;
+      if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+        const buf = new Uint8Array(1);
+        crypto.getRandomValues(buf);
+        r = buf[0];
+      } else {
+        r = Math.floor(Math.random() * 256);
+      }
+      code += CODE_ALPHABET[r % CODE_ALPHABET.length];
+    }
+    return code;
+  }
+
+  function isValidRoomCode(raw) {
+    const clean = String(raw || '').trim().toUpperCase();
+    return /^QZ-?[2-9A-Z]{4,8}$/.test(clean);
+  }
+
+  /**
+   * Calcula e valida uma doação percentual de moedas (25%, 50%, 100%)
+   * Arredonda sempre para número inteiro (Math.floor) e bloqueia valores inválidos.
+   */
+  function calculatePercentageDonation(currentBalance, pct) {
+    const bal = Math.floor(Number(currentBalance) || 0);
+    const numPct = Number(pct);
+    if (!Number.isFinite(bal) || bal <= 0) {
+      return { valid: false, amount: 0, remaining: Math.max(0, bal), error: 'Saldo insuficiente para doação.' };
+    }
+    const matchedPct = VALID_DONATION_PCTS.find((p) => Math.abs(p - numPct) < 0.001);
+    if (!matchedPct) {
+      return { valid: false, amount: 0, remaining: bal, error: 'Porcentagem de doação inválida. Use 25%, 50% ou 100%.' };
+    }
+    const amount = Math.floor(bal * matchedPct);
+    if (amount < 1 || amount > bal) {
+      return { valid: false, amount: 0, remaining: bal, error: 'Valor calculado insuficiente para transferência.' };
+    }
+    return {
+      valid: true,
+      pct: matchedPct,
+      amount: amount | 0,
+      remaining: (bal - amount) | 0
+    };
+  }
+
+  /**
+   * Verifica se uma coordenada (x, y) pertence ao setor do jogador no modo Setores Divididos
+   */
+  function getPointSectorOwner(x, y, mapW, mapH, playerCount, divisionMode) {
+    if (divisionMode === 'free' || !playerCount || playerCount <= 1) return 0;
+    const w = mapW || 960;
+    const h = mapH || 640;
+    if (playerCount === 2) {
+      return x < w * 0.5 ? 0 : 1;
+    }
+    if (playerCount === 3) {
+      if (x < w / 3) return 0;
+      if (x < (w * 2) / 3) return 1;
+      return 2;
+    }
+    // 4 jogadores: quadrantes (0: sup-esq, 1: sup-dir, 2: inf-esq, 3: inf-dir)
+    const right = x >= w * 0.5 ? 1 : 0;
+    const bottom = y >= h * 0.5 ? 2 : 0;
+    return bottom + right;
+  }
+
+  /**
+   * Calcula o multiplicador de Combo Elemental quando aliados combinam
+   * Fogo, Gelo, Eletricidade e Veneno no mesmo infectado.
+   */
+  function evaluateElementalCombo(zombie, incomingDtype) {
+    if (!zombie) return { count: 0, mult: 1.0, activeElements: [] };
+    const elems = [];
+    if ((zombie.burnT && zombie.burnT > 0) || incomingDtype === 'fire') elems.push('fire');
+    if ((zombie.slowT && zombie.slowT > 0) || (zombie.freezeT && zombie.freezeT > 0) || incomingDtype === 'ice') elems.push('ice');
+    if ((zombie.stunT && zombie.stunT > 0) || incomingDtype === 'elec') elems.push('elec');
+    if ((zombie.poisonT && zombie.poisonT > 0) || incomingDtype === 'poison') elems.push('poison');
+
+    const count = elems.length;
+    if (count < 2) return { count, mult: 1.0, activeElements: elems };
+    // 2 elementos = +18% dano | 3 elementos = +30% dano | 4 elementos = +45% dano
+    const bonusTable = [1.0, 1.0, 1.18, 1.30, 1.45];
+    return {
+      count,
+      mult: bonusTable[Math.min(4, count)] || 1.18,
+      activeElements: elems
+    };
+  }
+
+  root.QZ_COOP = {
+    VALID_DONATION_PCTS,
+    generateRoomCode,
+    isValidRoomCode,
+    calculatePercentageDonation,
+    getPointSectorOwner,
+    evaluateElementalCombo
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : window);
