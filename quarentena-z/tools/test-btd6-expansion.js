@@ -108,6 +108,18 @@ assert(Z.dispatch({ type: 'ability', id: tPortal.id }) === true, 'Habilidade ati
 assert(speedBossInstance.dist < distBeforePortal, 'Portal Tático deve recuar o chefe veloz na pista');
 assert(Z.dispatch({ type: 'ability', id: tDino.id }) === true, 'Habilidade ativa Investida Jurássica acionada');
 
+// 5. Testar Integridade Local (Assinatura Digital em Recordes e Conquistas contra adulteração manual)
+Z.career().bestWave = 25;
+Z.saveCareer();
+assert(global.__store['quarentenaz_career_v4_sig'], 'Deve gravar assinatura digital do salvamento de carreira');
+const prevTamper = Z.SecurityGuard.tamperCount;
+// Simula adulteração manual do JSON no localStorage sem atualizar a assinatura digital
+global.__store['quarentenaz_career_v4'] = JSON.stringify({ bestWave: 4999, totalKills: 9999999, games: 1 });
+Z.career().bestWave = 10;
+Z.loadCareer();
+assert(Z.SecurityGuard.tamperCount > prevTamper, 'SecurityGuard deve detectar adulteração manual no localStorage');
+assert(Z.career().bestWave === 10, 'Recorde adulterado deve ser bloqueado pela validação de assinatura digital');
+
 step(10);
 assert(errs.length === 0, 'Zero erros de frame durante simulação completa BTD6: ' + errs.join('; '));
-console.log('TESTE BTD6 EXPANSION OK: 4 novas torres, speedboss, minas com stun, portal tático, obstáculos e balanceamento validados com zero erros.');
+console.log('TESTE BTD6 EXPANSION OK: 4 novas torres, speedboss, minas com stun, portal tático, obstáculos, integridade digital e balanceamento validados com zero erros.');

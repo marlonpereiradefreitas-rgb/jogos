@@ -1,0 +1,51 @@
+{
+  "rules": {
+    "users_profiles": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid && newData.child('best_wave').isNumber() && newData.child('best_wave').val() >= 0 && newData.child('best_wave').val() <= 5000"
+      }
+    },
+    "user_achievements": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid && newData.hasChildren(['achievement_id', 'integrity_hash'])"
+      }
+    },
+    "global_leaderboard": {
+      ".read": true,
+      ".indexOn": ["wave", "kills", "time_sec", "map_id"],
+      "$runId": {
+        ".write": "auth != null && (!data.exists() || data.child('owner_uid').val() === auth.uid) && newData.child('wave').isNumber() && newData.child('wave').val() >= 0 && newData.child('wave').val() <= 5000 && newData.child('kills').isNumber() && newData.child('kills').val() >= 0 && newData.child('run_seal').isString()"
+      }
+    },
+    "cloud_saves": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid && newData.child('save_signature').isString()"
+      }
+    },
+    "mp_rooms": {
+      ".read": true,
+      ".indexOn": ["status", "mode", "room_code"],
+      "$roomId": {
+        ".write": "auth != null && newData.child('mode').val().matches(/^(coop|versus|daily)$/) && newData.child('max_players').val() >= 2 && newData.child('max_players').val() <= 4"
+      }
+    },
+    "mp_wave_events": {
+      "$roomId": {
+        ".read": "auth != null",
+        "$eventId": {
+          ".write": "auth != null && newData.hasChildren(['tick', 'cmd_type', 'state_hash'])"
+        }
+      }
+    },
+    "mp_scores": {
+      ".read": true,
+      ".indexOn": ["wave_reached", "total_kills", "mode"],
+      "$matchId": {
+        ".write": "auth != null && newData.child('wave_reached').isNumber() && newData.child('match_seal').isString()"
+      }
+    }
+  }
+}

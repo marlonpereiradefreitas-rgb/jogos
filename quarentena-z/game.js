@@ -2111,13 +2111,17 @@ class Tower {
           if(s.burnDps)ignite(best,s.burnDps,s.burnT||3);
         }
         dn.atkCount=(dn.atkCount||0)+1;
-        // Golpe de cauda e rugido sísmico em área a partir do nível 3 (ou a cada 3 mordidas)
+        // Golpe de cauda e rugido sísmico em área a partir do nível 3 (ou a cada 3 mordidas) com limite justo de alvos
         if(this.tier>=3||this.paragon||(dn.atkCount%3===0&&this.tier>=1)){
+          let hitTargets=0;
+          const maxCleave=this.paragon?7:4;
           for(const o of zombies){
+            if(hitTargets>=maxCleave)break;
             if(o===best||o.dead||o.reached)continue;
             if(dist(o.x,o.y,dn.x,dn.y)<=42){
               applyDamage(o,biteDmg*0.55,'phys',{armorPen:s.armorPen||.3,owner:this});
               if(!o.dead&&s.stun)stunZ(o,s.stun*0.6);
+              hitTargets++;
             }
           }
           dn.roarT=0.55;
@@ -2616,11 +2620,32 @@ function drawBossBar(){
   ctx.restore();
 }
 // conquistas (locais; depois ligam às conquistas da Steam / ao perfil do servidor)
-/* ===== v19.3: estatísticas permanentes + 50 conquistas (10 secretas) ===== */
-const PS_KEY='ztd_v19_stats';let PS={};try{PS=JSON.parse(localStorage.getItem(PS_KEY)||'{}')||{};}catch(e){PS={};}
+/* ===== v19.3: estatísticas permanentes + 50 conquistas (10 secretas) com assinatura digital ===== */
+function computeLocalSig(ns,rawStr){
+  if(window.QZ_SECURITY&&typeof window.QZ_SECURITY.computeDigitalSignature==='function'){
+    return window.QZ_SECURITY.computeDigitalSignature(ns,String(rawStr||''));
+  }
+  const msg=`QZ_V19_LOCAL_SIG|${ns}|${String(rawStr||'')}`;
+  let h1=0x811c9dc5>>>0,h2=5381>>>0;
+  for(let i=0;i<msg.length;i++){
+    const c=msg.charCodeAt(i);
+    h1^=c;h1=Math.imul(h1,0x01000193)>>>0;
+    h2=((Math.imul(h2,33)>>>0)^c)>>>0;
+  }
+  return 'qzsig_'+h1.toString(16).padStart(8,'0')+h2.toString(16).padStart(8,'0');
+}
+const PS_KEY='ztd_v19_stats';let PS={};
+try{
+  const rawPs=localStorage.getItem(PS_KEY);
+  const sigPs=localStorage.getItem(PS_KEY+'_sig');
+  if(rawPs){
+    if(sigPs&&sigPs!==computeLocalSig('stats',rawPs)){PS={};}
+    else{PS=JSON.parse(rawPs)||{};}
+  }
+}catch(e){PS={};}
 PS.maps=PS.maps||{};
 function psAdd(k,n){if(G.replay)return;PS[k]=(PS[k]||0)+(n===undefined?1:n);PS.dirty=true;}
-function psSave(){if(!PS.dirty)return;PS.dirty=false;try{const c=Object.assign({},PS);delete c.dirty;localStorage.setItem(PS_KEY,JSON.stringify(c));}catch(e){}}
+function psSave(){if(!PS.dirty)return;PS.dirty=false;try{const c=Object.assign({},PS);delete c.dirty;const js=JSON.stringify(c);localStorage.setItem(PS_KEY,js);localStorage.setItem(PS_KEY+'_sig',computeLocalSig('stats',js));}catch(e){}}
 function psGameStart(){psAdd('games');PS.maps[activeMap]=1;PS.dirty=true;}
 function psBest(){if(G.mode!=='play')return;const m=(k,v)=>{if(v>(PS[k]||0)){PS[k]=v;PS.dirty=true;}};
   m('bestWave',WM.num);m('bestKills',G.kills);m('bestTowers',towers.length);m('bestBosses',G.stats.bosses);m('bestMoney',Math.floor(G.money));}
@@ -2674,11 +2699,29 @@ const ACH=[
  A('apocwin','Secretas','Lenda Secreta','Vença uma partida na dificuldade Apocalipse',()=>(PS.winApoc||0)>=1,null,{secret:true,hint:'O desafio máximo.'})
 ];
 let ACH_DONE=null;
-function achLoad(){if(!ACH_DONE){try{ACH_DONE=JSON.parse(localStorage.getItem('ztd_v19_ach')||'{}');}catch(e){ACH_DONE={};}}return ACH_DONE;}
+function achLoad(){
+  if(!ACH_DONE){
+    try{
+      const raw=localStorage.getItem('ztd_v19_ach');
+      const sig=localStorage.getItem('ztd_v19_ach_sig');
+      if(raw){
+        if(sig&&sig!==computeLocalSig('ach',raw)){
+          if(typeof SecurityGuard==='object')SecurityGuard.tamperCount++;
+          ACH_DONE={};
+        }else{
+          ACH_DONE=JSON.parse(raw)||{};
+        }
+      }else{
+        ACH_DONE={};
+      }
+    }catch(e){ACH_DONE={};}
+  }
+  return ACH_DONE;
+}
 function checkAch(){if(G.replay)return;psBest();const d=achLoad();let ch=false;
   for(const a of ACH){if(d[a.id])continue;if(a.run&&G.mode!=='play')continue;let ok=false;try{ok=a.test();}catch(e){}
     if(ok){d[a.id]=Date.now();ch=true;(G.newAch=G.newAch||[]).push(a.name);toast('🏆 '+(a.secret?'Conquista secreta: ':'Conquista: ')+a.name,'good');Snd.play('coin');if(window.steamBridge)window.steamBridge.unlock(a.id);}}
-  if(ch)try{localStorage.setItem('ztd_v19_ach',JSON.stringify(d));}catch(e){}
+  if(ch)try{const js=JSON.stringify(d);localStorage.setItem('ztd_v19_ach',js);localStorage.setItem('ztd_v19_ach_sig',computeLocalSig('ach',js));}catch(e){}
   PS.t=(PS.t||0)+1;if(ch||PS.t%10===0)psSave();}
 function renderAch(){const d=achLoad(),fmt=n=>Math.floor(n).toLocaleString('pt-BR');let total=0,html='';
   for(const c of [...new Set(ACH.map(a=>a.cat))]){const list=ACH.filter(a=>a.cat===c),got=list.filter(a=>d[a.id]).length;total+=got;
@@ -2829,6 +2872,11 @@ const SecurityGuard={
       diff:validDiffs.includes(r.diff)?r.diff:'normal',
       date:Number(r.date)||Date.now()
     };
+  },
+  computeLocalSig,
+  verifyLocalSig(ns,rawStr,sig){
+    if(!sig||typeof sig!=='string')return false;
+    return computeLocalSig(ns,rawStr)===sig;
   }
 };
 
@@ -2847,6 +2895,8 @@ const OnlineAPI={
     if(!tk||typeof tk!=='string')return;
     this.token=tk;
     try{localStorage.setItem(CLIENT_TOKEN_KEY,tk);}catch(e){}
+    if(window.QZ_CLOUD_DB&&typeof window.QZ_CLOUD_DB.setTokens==='function')window.QZ_CLOUD_DB.setTokens(tk,this.licenseToken);
+    if(window.QZ_NET_MP&&typeof window.QZ_NET_MP.setClientToken==='function')window.QZ_NET_MP.setClientToken(tk);
   },
   getLicenseToken(){
     if(this.licenseToken)return this.licenseToken;
@@ -2857,6 +2907,7 @@ const OnlineAPI={
     if(!tk||typeof tk!=='string')return;
     this.licenseToken=tk;
     try{localStorage.setItem(LICENSE_TOKEN_KEY,tk);}catch(e){}
+    if(window.QZ_CLOUD_DB&&typeof window.QZ_CLOUD_DB.setTokens==='function')window.QZ_CLOUD_DB.setTokens(this.token,tk);
   },
   req(path,opts){
     if(typeof window.fetch!=='function'||(typeof location!=='undefined'&&location.protocol==='file:'))return Promise.resolve(null);
@@ -2990,7 +3041,11 @@ const OnlineAPI={
       cmdCount:CMDLOG.length,
       stateHash:typeof stateHash==='function'?stateHash():0
     });
-    this.req('/api/leaderboard',{method:'POST',body:JSON.stringify(payload)});
+    if(window.QZ_CLOUD_DB&&typeof window.QZ_CLOUD_DB.submitRunToCloud==='function'){
+      window.QZ_CLOUD_DB.submitRunToCloud(payload);
+    }else{
+      this.req('/api/leaderboard',{method:'POST',body:JSON.stringify(payload)});
+    }
   },
   renamePlayer(name,id){
     const clean=SecurityGuard.sanitizeName(name);
@@ -3007,13 +3062,21 @@ const OnlineAPI={
   pushCloudSave(rawGameSave){
     let gs=rawGameSave;
     if(!gs){try{gs=localStorage.getItem(GAME_SAVE_KEY)||null;}catch(e){gs=null;}}
-    this.req('/api/cloud-save',{method:'POST',body:JSON.stringify({
+    const bundle={
       player:getPlayerName(),
       career,
       stats:{bestWave:PS.bestWave||0,kills:PS.kills||0,bestKills:PS.bestKills||0,time:Math.floor(PS.time||0)},
       achievements:achLoad(),
       gameSave:gs
-    })});
+    };
+    this.req('/api/cloud-save',{method:'POST',body:JSON.stringify(bundle)}).then(res=>{
+      if((!res||!res.ok)&&window.QZ_CLOUD_DB&&typeof window.QZ_CLOUD_DB.enqueueOfflineAction==='function'){
+        window.QZ_CLOUD_DB.enqueueOfflineAction('cloud_save',bundle);
+      }
+    });
+    if(window.QZ_CLOUD_DB&&typeof window.QZ_CLOUD_DB.flushOfflineQueue==='function'){
+      window.QZ_CLOUD_DB.flushOfflineQueue();
+    }
   }
 };
 
@@ -3055,8 +3118,15 @@ function loadRank(){
   let cleared=false;
   try{
     cleared=localStorage.getItem(RANK_KEY+'_cleared')==='1';
-    list=JSON.parse(localStorage.getItem(RANK_KEY)||'[]');
-    if(!Array.isArray(list))list=[];
+    const raw=localStorage.getItem(RANK_KEY)||'[]';
+    const sig=localStorage.getItem(RANK_KEY+'_sig');
+    if(sig&&sig!==computeLocalSig('rank',raw)){
+      SecurityGuard.tamperCount++;
+      list=[];
+    }else{
+      list=JSON.parse(raw);
+      if(!Array.isArray(list))list=[];
+    }
   }catch(e){list=[];}
   if(cleared&&!list.length)return [];
   const pName=getPlayerName();
@@ -3077,11 +3147,16 @@ function loadRank(){
   return list;
 }
 function saveRank(list){
-  try{localStorage.setItem(RANK_KEY,JSON.stringify(list.slice(0,50)));}catch(e){}
+  try{
+    const js=JSON.stringify(list.slice(0,50));
+    localStorage.setItem(RANK_KEY,js);
+    localStorage.setItem(RANK_KEY+'_sig',computeLocalSig('rank',js));
+  }catch(e){}
 }
 function clearRanks(){
   try{
     localStorage.setItem(RANK_KEY,'[]');
+    localStorage.setItem(RANK_KEY+'_sig',computeLocalSig('rank','[]'));
     localStorage.setItem(RANK_KEY+'_cleared','1');
   }catch(e){}
   lastRecordedRankId=null;
@@ -4917,9 +4992,12 @@ function setPortalExit(t,x,y){
 }
 function spawnMapObstacles(){
   obstacles.length=0;
-  const presets=(activeMap==='metro')
+  const modPresets=(window.QZ_BTD6_TOWERS&&window.QZ_BTD6_TOWERS.MAP_OBSTACLE_PRESETS)||null;
+  const presets=(modPresets&&(modPresets[activeMap]||modPresets.default))||(activeMap==='metro'
     ?[{dx:310,dy:240,r:18,cost:220,name:'Vagão Descarrilado',kind:'wagon'},{dx:480,dy:360,r:18,cost:250,name:'Barricada Subterrânea',kind:'debris'},{dx:650,dy:260,r:18,cost:280,name:'Gerador de Linha',kind:'crate'}]
-    :[{dx:320,dy:230,r:18,cost:200,name:'Destroços Blindados',kind:'debris'},{dx:490,dy:370,r:18,cost:240,name:'Contentor Militar',kind:'crate'},{dx:660,dy:250,r:18,cost:270,name:'Barricada Pesada',kind:'wagon'}];
+    :activeMap==='forest'
+    ?[{dx:315,dy:225,r:18,cost:190,name:'Tronco Mutante Caído',kind:'debris'},{dx:510,dy:380,r:18,cost:230,name:'Rocha Coberta de Musgo',kind:'crate'},{dx:675,dy:245,r:18,cost:260,name:'Caminhão Florestal',kind:'wagon'}]
+    :[{dx:320,dy:230,r:18,cost:200,name:'Destroços Blindados',kind:'debris'},{dx:490,dy:370,r:18,cost:240,name:'Contentor Militar',kind:'crate'},{dx:660,dy:250,r:18,cost:270,name:'Barricada Pesada',kind:'wagon'}]);
   let oid=0;
   for(const pr of presets){
     let bx=pr.dx, by=pr.dy, found=false;
@@ -5437,15 +5515,20 @@ let career={bestWave:0,totalKills:0,games:0,lastMap:'four',lastDifficulty:'norma
 function loadCareer(){
   try{
     const raw=localStorage.getItem(SAVE_KEY);
+    const sig=localStorage.getItem(SAVE_KEY+'_sig');
     if(raw){
-      const d=JSON.parse(raw);
-      if(d&&typeof d==='object'){
-        if(Number.isFinite(d.bestWave)&&d.bestWave>=0&&d.bestWave<=5000)career.bestWave=Math.floor(d.bestWave);
-        if(Number.isFinite(d.totalKills)&&d.totalKills>=0&&d.totalKills<=100000000)career.totalKills=Math.floor(d.totalKills);
-        if(Number.isFinite(d.games)&&d.games>=0&&d.games<=1000000)career.games=Math.floor(d.games);
-        if(typeof d.lastMap==='string'&&MAPS[d.lastMap])career.lastMap=d.lastMap;
-        if(['easy','normal','hard','apocalypse'].includes(d.lastDifficulty))career.lastDifficulty=d.lastDifficulty;
-        if(d.medals&&typeof d.medals==='object')career.medals=d.medals;
+      if(sig&&sig!==computeLocalSig('career',raw)){
+        SecurityGuard.tamperCount++;
+      }else{
+        const d=JSON.parse(raw);
+        if(d&&typeof d==='object'){
+          if(Number.isFinite(d.bestWave)&&d.bestWave>=0&&d.bestWave<=5000)career.bestWave=Math.floor(d.bestWave);
+          if(Number.isFinite(d.totalKills)&&d.totalKills>=0&&d.totalKills<=100000000)career.totalKills=Math.floor(d.totalKills);
+          if(Number.isFinite(d.games)&&d.games>=0&&d.games<=1000000)career.games=Math.floor(d.games);
+          if(typeof d.lastMap==='string'&&MAPS[d.lastMap])career.lastMap=d.lastMap;
+          if(['easy','normal','hard','apocalypse'].includes(d.lastDifficulty))career.lastDifficulty=d.lastDifficulty;
+          if(d.medals&&typeof d.medals==='object')career.medals=d.medals;
+        }
       }
     }
   }catch(e){}
@@ -5461,7 +5544,9 @@ function saveCareer(){
       lastDifficulty:['easy','normal','hard','apocalypse'].includes(career.lastDifficulty)?career.lastDifficulty:'normal',
       medals:career.medals&&typeof career.medals==='object'?career.medals:{}
     };
-    localStorage.setItem(SAVE_KEY,JSON.stringify(sanitized));
+    const js=JSON.stringify(sanitized);
+    localStorage.setItem(SAVE_KEY,js);
+    localStorage.setItem(SAVE_KEY+'_sig',computeLocalSig('career',js));
   }catch(e){toast('Não foi possível salvar o recorde neste navegador.','bad');}
   updateCareerLabel();
 }
@@ -6420,7 +6505,7 @@ function init(){
     if(typeof navigator!=='undefined'&&'serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
       let refreshing=false;
       navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;location.reload();}});
-      navigator.serviceWorker.register('./sw.js?v=19.27').then(reg=>{try{reg.update();}catch(_){}}).catch(()=>{});
+      navigator.serviceWorker.register('./sw.js?v=19.29').then(reg=>{try{reg.update();}catch(_){}}).catch(()=>{});
     }
   }catch(_){}
   document.querySelectorAll('.map-card').forEach(c=>c.classList.toggle('selected',c.dataset.map===$('mapSelect').value));
@@ -6431,7 +6516,7 @@ function init(){
 }
 
 // Pequena API para depuração/testes automatizados
-window.ZTD={G,UI,CFG,MAPS,TOWERS,ZOMBIES,WM,Powers,powerState,towers,zombies,projs,mines,bombs,hazards,allies,obstacles,portals,buildWave,placeTower,upgradeTower,sellTower,setTowerAim,setPortalExit,clearObstacle,stunZ,getTowerPortrait,select,refreshPanel,renderMapMedals,update,resetGame,validSpot,applyDamage,pathPos,PATH_LEN,endGame:()=>endGame(),POWERS,dispatch,CMDLOG,stateHash,seedRng,srand,rngState:()=>_s,achievements:()=>ACH,ps:()=>PS,psSave,renderAch,checkAch,saveGame,readSave,loadRank,renderRank,getPlayerName,setPlayerName,recordRankEntry,clearRanks,deleteRankEntry,OnlineAPI,SecurityGuard,detectDevice,applyPlatformMode,isMobile:()=>IS_MOBILE};
+window.ZTD={G,UI,CFG,MAPS,TOWERS,ZOMBIES,WM,Powers,powerState,towers,zombies,projs,mines,bombs,hazards,allies,obstacles,portals,buildWave,placeTower,upgradeTower,sellTower,setTowerAim,setPortalExit,clearObstacle,stunZ,getTowerPortrait,select,selectMap,refreshPanel,renderMapMedals,update,resetGame,validSpot,applyDamage,pathPos,PATH_LEN,endGame:()=>endGame(),POWERS,dispatch,CMDLOG,stateHash,seedRng,srand,rngState:()=>_s,achievements:()=>ACH,achLoad,ps:()=>PS,psSave,career:()=>career,loadCareer,saveCareer,computeLocalSig,renderAch,checkAch,saveGame,readSave,loadRank,renderRank,getPlayerName,setPlayerName,recordRankEntry,clearRanks,deleteRankEntry,OnlineAPI,SecurityGuard,detectDevice,applyPlatformMode,isMobile:()=>IS_MOBILE};
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

@@ -50,10 +50,13 @@ const SERVER_SECRET = loadOrCreateServerSecret();
 
 function defaultDb() {
   return {
-    version: 3,
+    version: 4,
     createdAt: Date.now(),
     leaderboard: [],
     cloudSaves: {},
+    users: {},
+    mpRooms: {},
+    mpScores: [],
     licenses: {},
     securityAudit: {
       blockedRequests: 0,
@@ -78,6 +81,9 @@ try {
       DB = Object.assign(defaultDb(), parsed);
       if (!Array.isArray(DB.leaderboard)) DB.leaderboard = [];
       if (!DB.cloudSaves || typeof DB.cloudSaves !== 'object') DB.cloudSaves = {};
+      if (!DB.users || typeof DB.users !== 'object') DB.users = {};
+      if (!DB.mpRooms || typeof DB.mpRooms !== 'object') DB.mpRooms = {};
+      if (!Array.isArray(DB.mpScores)) DB.mpScores = [];
       if (!DB.licenses || typeof DB.licenses !== 'object') DB.licenses = {};
       if (!DB.securityAudit || typeof DB.securityAudit !== 'object') {
         DB.securityAudit = defaultDb().securityAudit;
@@ -1044,7 +1050,411 @@ async function handleApi(req, res, urlObj) {
     return;
   }
 
+  // 8. GET / POST /api/auth/profile — Contas de usuários, conquistas e sincronização híbrida
+  if (pathname === '/api/auth/profile' && (req.method === 'GET' || req.method === 'POST')) {
+    if (req.method === 'GET') {
+      const auth = extractClientAuth(req, null);
+      const key = auth.valid ? auth.ownerHash : cleanName(urlObj.searchParams.get('player') || 'Comandante').toLowerCase();
+      const prof = DB.users[key] || null;
+      const safeProf = prof ? Object.assign({}, prof, { ownerHash: undefined }) : null;
+      sendJson(req, res, 200, { ok: true, profile: safeProf });
+      return;
+    }
+    try {
+      const body = await readJsonBody(req);
+      const auth = extractClientAuth(req, body);
+      const playerName = cleanName(body.player || body.displayName || 'Comandante');
+      const key = auth.valid ? auth.ownerHash : playerName.toLowerCase();
+      const prev = DB.users[key] || {};
+      if (prev.ownerHash && auth.valid && prev.ownerHash !== auth.ownerHash && !verifyAdminKey(req)) {
+        sendJson(req, res, 403, { ok: false, error: 'Perfil vinculado a outro titular.' });
+        return;
+      }
+      const bestWave = Math.max(prev.bestWave || 0, Math.min(5000, Math.floor(Number(body.bestWave) || 0)));
+      const totalKills = Math.max(prev.totalKills || 0, Math.min(100000000, Math.floor(Number(body.totalKills) || 0)));
+      const games = Math.max(prev.games || 0, Math.min(1000000, Math.floor(Number(body.games) || 0)));
+      const achievements = Object.assign({}, prev.achievements || {}, (body.achievements && typeof body.achievements === 'object') ? body.achievements : {});
+      const medals = Object.assign({}, prev.medals || {}, (body.medals && typeof body.medals === 'object') ? body.medals : {});
+      const profile = {
+        player: playerName,
+        ownerHash: auth.valid ? auth.ownerHash : (prev.ownerHash || null),
+        bestWave,
+        totalKills,
+        games,
+        achievements,
+        medals,
+        integritySig: String(body.integritySig || '').slice(0, 80),
+        updatedAt: Date.now()
+      };
+      DB.users[key] = profile;
+      persistDb();
+      sendJson(req, res, 200, { ok: true, profile: Object.assign({}, profile, { ownerHash: undefined }) });
+    } catch (err) {
+      sendJson(req, res, 400, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  // 9. MULTIPLAYER: GET / POST /api/mp/rooms — Listagem e criação de salas (Co-op / Versus / Daily)
+  if (pathname === '/api/mp/rooms' && (req.method === 'GET' || req.method === 'POST')) {
+    if (req.method === 'GET') {
+      const modeFilter = urlObj.searchParams.get('mode') || '';
+      const rooms = Object.values(DB.mpRooms)
+        .filter(r => r && r.isPublic && r.status !== 'closed' && (!modeFilter || r.mode === modeFilter))
+        .slice(-30)
+        .map(r => ({
+          roomId: r.roomId,
+          roomCode: r.roomCode,
+          name: r.name,
+          mode: r.mode,
+          map: r.map,
+          diff: r.diff,
+          maxPlayers: r.maxPlayers,
+          playersCount: Array.isArray(r.players) ? r.players.length : 1,
+          wave: r.wave || 0,
+          status: r.status
+        }));
+      sendJson(req, res, 200, { ok: true, rooms });
+      return;
+    }
+    try {
+      const body = await readJsonBody(req);
+      const auth = extractClientAuth(req, body);
+      const roomId = 'room_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex');
+      const roomCode = 'QZ' + encodeBase32Group(crypto.randomBytes(4), 4);
+      const mode = ['coop', 'versus', 'daily'].includes(body.mode) ? body.mode : 'coop';
+      const map = VALID_MAPS.has(body.map) ? body.map : 'four';
+      const diff = VALID_DIFFS.has(body.diff) ? body.diff : 'normal';
+      const maxPlayers = Math.max(2, Math.min(4, Number(body.maxPlayers) || 2));
+      const playerName = cleanName(body.playerName || 'Comandante');
+      const ownerHash = auth.valid ? auth.ownerHash : ('anon_' + crypto.randomBytes(4).toString('hex'));
+
+      const room = {
+        roomId,
+        roomCode,
+        name: cleanName(body.name || 'Operação Co-op'),
+        hostHash: ownerHash,
+        mode,
+        map,
+        diff,
+        maxPlayers,
+        seed: (crypto.randomBytes(4).readUInt32BE(0) >>> 0) || 20260101,
+        wave: 0,
+        tick: 0,
+        stateHash: 0,
+        status: 'waiting',
+        isPublic: body.isPublic !== false,
+        players: [{ name: playerName, ownerHash, slot: 0, ready: true, joinedAt: Date.now() }],
+        waveEvents: [],
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
+      DB.mpRooms[roomId] = room;
+      persistDb();
+      sendJson(req, res, 200, { ok: true, room: publicRoom(room) });
+    } catch (err) {
+      sendJson(req, res, 400, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  // 10. MULTIPLAYER: POST /api/mp/rooms/join — Entrar em uma sala existente
+  if (pathname === '/api/mp/rooms/join' && req.method === 'POST') {
+    try {
+      const body = await readJsonBody(req);
+      const auth = extractClientAuth(req, body);
+      const code = String(body.roomCode || '').trim().toUpperCase();
+      const id = cleanId(body.roomId || '');
+      const room = id && DB.mpRooms[id]
+        ? DB.mpRooms[id]
+        : Object.values(DB.mpRooms).find(r => r && r.roomCode === code);
+      if (!room) {
+        sendJson(req, res, 404, { ok: false, error: 'Sala multiplayer não encontrada.' });
+        return;
+      }
+      const ownerHash = auth.valid ? auth.ownerHash : ('anon_' + crypto.randomBytes(4).toString('hex'));
+      const playerName = cleanName(body.playerName || 'Comandante');
+      const existingPlayer = room.players.find(p => p.ownerHash === ownerHash);
+      if (!existingPlayer) {
+        if (room.players.length >= room.maxPlayers) {
+          sendJson(req, res, 400, { ok: false, error: 'A sala selecionada já está lotada.' });
+          return;
+        }
+        room.players.push({
+          name: playerName,
+          ownerHash,
+          slot: room.players.length,
+          ready: true,
+          joinedAt: Date.now()
+        });
+      }
+      if (room.players.length >= 2 && room.status === 'waiting') {
+        room.status = 'playing';
+      }
+      room.updatedAt = Date.now();
+      persistDb();
+      broadcastRoomWs(room.roomId, { type: 'room_state', room: publicRoom(room) });
+      sendJson(req, res, 200, { ok: true, room: publicRoom(room) });
+    } catch (err) {
+      sendJson(req, res, 400, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  // 11. MULTIPLAYER: POST /api/mp/matchmaking — Pareamento automático de jogadores
+  if (pathname === '/api/mp/matchmaking' && req.method === 'POST') {
+    try {
+      const body = await readJsonBody(req);
+      const auth = extractClientAuth(req, body);
+      const mode = ['coop', 'versus', 'daily'].includes(body.mode) ? body.mode : 'coop';
+      const map = VALID_MAPS.has(body.map) ? body.map : 'four';
+      const diff = VALID_DIFFS.has(body.diff) ? body.diff : 'normal';
+      const playerName = cleanName(body.playerName || 'Comandante');
+      const ownerHash = auth.valid ? auth.ownerHash : ('anon_' + crypto.randomBytes(4).toString('hex'));
+
+      let room = Object.values(DB.mpRooms).find(r =>
+        r && r.isPublic && r.status === 'waiting' && r.mode === mode &&
+        r.map === map && r.diff === diff && r.players.length < r.maxPlayers
+      );
+
+      if (room) {
+        if (!room.players.some(p => p.ownerHash === ownerHash)) {
+          room.players.push({ name: playerName, ownerHash, slot: room.players.length, ready: true, joinedAt: Date.now() });
+        }
+        if (room.players.length >= 2) room.status = 'playing';
+        room.updatedAt = Date.now();
+      } else {
+        const roomId = 'room_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex');
+        const roomCode = 'QZ' + encodeBase32Group(crypto.randomBytes(4), 4);
+        room = {
+          roomId,
+          roomCode,
+          name: 'Esquadrão ' + roomCode,
+          hostHash: ownerHash,
+          mode,
+          map,
+          diff,
+          maxPlayers: 2,
+          seed: (crypto.randomBytes(4).readUInt32BE(0) >>> 0) || 20260101,
+          wave: 0,
+          tick: 0,
+          stateHash: 0,
+          status: 'waiting',
+          isPublic: true,
+          players: [{ name: playerName, ownerHash, slot: 0, ready: true, joinedAt: Date.now() }],
+          waveEvents: [],
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        };
+        DB.mpRooms[roomId] = room;
+      }
+      persistDb();
+      broadcastRoomWs(room.roomId, { type: 'room_state', room: publicRoom(room) });
+      sendJson(req, res, 200, { ok: true, matched: room.players.length >= 2, room: publicRoom(room) });
+    } catch (err) {
+      sendJson(req, res, 400, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  // 12. MULTIPLAYER: POST /api/mp/sync — Sincronização de ondas e validação de comandos no servidor
+  if (pathname === '/api/mp/sync' && req.method === 'POST') {
+    try {
+      const body = await readJsonBody(req);
+      const roomId = cleanId(body.roomId || '');
+      const room = DB.mpRooms[roomId];
+      if (!room) {
+        sendJson(req, res, 404, { ok: false, error: 'Sala multiplayer inexistente.' });
+        return;
+      }
+      const wave = Math.max(0, Math.min(5000, Math.floor(Number(body.wave) || 0)));
+      const tick = Math.max(0, Math.floor(Number(body.tick) || 0));
+      const stateHash = Number(body.stateHash) >>> 0;
+      const cmds = Array.isArray(body.commands) ? body.commands.slice(0, 60) : [];
+
+      for (const c of cmds) {
+        const check = validateMultiplayerCommand(c);
+        if (!check.valid) {
+          recordViolation(ip);
+          DB.securityAudit.antiCheatRejections = (DB.securityAudit.antiCheatRejections || 0) + 1;
+          sendJson(req, res, 400, { ok: false, error: check.reason });
+          return;
+        }
+      }
+
+      room.wave = Math.max(room.wave || 0, wave);
+      room.tick = Math.max(room.tick || 0, tick);
+      room.stateHash = stateHash;
+      room.updatedAt = Date.now();
+      if (cmds.length > 0) {
+        room.waveEvents = (room.waveEvents || []).concat(cmds.map(c => Object.assign({}, c, { syncedAt: Date.now() }))).slice(-250);
+      }
+      persistDb();
+
+      const syncEvent = {
+        type: 'wave_sync',
+        roomId: room.roomId,
+        wave: room.wave,
+        tick: room.tick,
+        stateHash: room.stateHash,
+        commands: cmds
+      };
+      broadcastRoomWs(room.roomId, syncEvent);
+      sendJson(req, res, 200, Object.assign({ ok: true }, syncEvent));
+    } catch (err) {
+      sendJson(req, res, 400, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  // 13. MULTIPLAYER: GET / POST /api/mp/scores — Placares cooperativos e competitivos
+  if (pathname === '/api/mp/scores' && (req.method === 'GET' || req.method === 'POST')) {
+    if (req.method === 'GET') {
+      const mode = urlObj.searchParams.get('mode') || '';
+      const list = (DB.mpScores || [])
+        .filter(s => !mode || s.mode === mode)
+        .sort((a, b) => (b.wave - a.wave) || (b.kills - a.kills))
+        .slice(0, 50);
+      sendJson(req, res, 200, { ok: true, scores: list });
+      return;
+    }
+    try {
+      const body = await readJsonBody(req);
+      const wave = Math.max(0, Math.min(5000, Math.floor(Number(body.wave) || 0)));
+      const kills = Math.max(0, Math.min(10000000, Math.floor(Number(body.kills) || 0)));
+      const durationSec = Math.max(0, Math.min(86400 * 7, Math.floor(Number(body.durationSec) || 0)));
+      if (wave > 10 && kills < wave * 3) {
+        DB.securityAudit.antiCheatRejections = (DB.securityAudit.antiCheatRejections || 0) + 1;
+        sendJson(req, res, 400, { ok: false, error: 'Placar multiplayer inconsistente (anti-cheat).' });
+        return;
+      }
+      const entry = {
+        matchId: 'mp_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex'),
+        roomId: cleanId(body.roomId || ''),
+        mode: ['coop', 'versus', 'daily'].includes(body.mode) ? body.mode : 'coop',
+        map: VALID_MAPS.has(body.map) ? body.map : 'four',
+        diff: VALID_DIFFS.has(body.diff) ? body.diff : 'normal',
+        teamNames: cleanName(body.teamNames || 'Esquadrão Alfa'),
+        wave,
+        kills,
+        durationSec,
+        date: Date.now()
+      };
+      DB.mpScores.push(entry);
+      DB.mpScores = DB.mpScores.sort((a, b) => (b.wave - a.wave) || (b.kills - a.kills)).slice(0, 150);
+      persistDb();
+      sendJson(req, res, 200, { ok: true, score: entry, scores: DB.mpScores.slice(0, 30) });
+    } catch (err) {
+      sendJson(req, res, 400, { ok: false, error: err.message });
+    }
+    return;
+  }
+
   sendJson(req, res, 404, { ok: false, error: 'Endpoint não encontrado' });
+}
+
+/* ============================================================================
+ * 5B. VALIDAÇÃO SERVER-SIDE MULTIPLAYER & WEBSOCKET NATIVO RFC 6455
+ * ============================================================================ */
+
+const VALID_MP_CMDS = new Set([
+  'place', 'up', 'paragon', 'ability', 'sell',
+  'prio', 'aim', 'portal_exit', 'clearObs', 'wave', 'power', 'auto'
+]);
+
+function validateMultiplayerCommand(cmd) {
+  if (!cmd || typeof cmd !== 'object') return { valid: false, reason: 'Comando inválido.' };
+  if (!VALID_MP_CMDS.has(cmd.type)) return { valid: false, reason: 'Ação não reconhecida pelo servidor.' };
+  if (cmd.type === 'place') {
+    const x = Number(cmd.x), y = Number(cmd.y);
+    if (!Number.isFinite(x) || !Number.isFinite(y) || x < 8 || x > 952 || y < 8 || y > 632) {
+      return { valid: false, reason: 'Coordenadas de construção inválidas.' };
+    }
+  }
+  return { valid: true };
+}
+
+function publicRoom(room) {
+  if (!room) return null;
+  return {
+    roomId: room.roomId,
+    roomCode: room.roomCode,
+    name: room.name,
+    mode: room.mode,
+    map: room.map,
+    diff: room.diff,
+    maxPlayers: room.maxPlayers,
+    seed: room.seed,
+    wave: room.wave,
+    tick: room.tick,
+    stateHash: room.stateHash,
+    status: room.status,
+    players: (room.players || []).map(p => ({ name: p.name, slot: p.slot, ready: !!p.ready }))
+  };
+}
+
+const wsClients = new Set();
+
+function encodeWsFrame(str) {
+  const payload = Buffer.from(String(str), 'utf8');
+  const len = payload.length;
+  let header;
+  if (len < 126) {
+    header = Buffer.alloc(2);
+    header[0] = 0x81;
+    header[1] = len;
+  } else if (len < 65536) {
+    header = Buffer.alloc(4);
+    header[0] = 0x81;
+    header[1] = 126;
+    header.writeUInt16BE(len, 2);
+  } else {
+    header = Buffer.alloc(10);
+    header[0] = 0x81;
+    header[1] = 127;
+    header.writeBigUInt64BE(BigInt(len), 2);
+  }
+  return Buffer.concat([header, payload]);
+}
+
+function decodeWsFrame(buf) {
+  if (!buf || buf.length < 2) return null;
+  const opcode = buf[0] & 0x0f;
+  if (opcode === 0x08) return { close: true };
+  if (opcode !== 0x01) return null;
+  const masked = (buf[1] & 0x80) !== 0;
+  let len = buf[1] & 0x7f;
+  let offset = 2;
+  if (len === 126) {
+    if (buf.length < 4) return null;
+    len = buf.readUInt16BE(2);
+    offset = 4;
+  } else if (len === 127) {
+    return null;
+  }
+  const totalLen = offset + (masked ? 4 : 0) + len;
+  if (buf.length < totalLen || len > 32768) return null;
+  const data = Buffer.alloc(len);
+  if (masked) {
+    const mask = buf.slice(offset, offset + 4);
+    offset += 4;
+    for (let i = 0; i < len; i++) {
+      data[i] = buf[offset + i] ^ mask[i & 3];
+    }
+  } else {
+    buf.copy(data, 0, offset, offset + len);
+  }
+  return { text: data.toString('utf8') };
+}
+
+function broadcastRoomWs(roomId, msgObj) {
+  if (!roomId || wsClients.size === 0) return;
+  const frame = encodeWsFrame(JSON.stringify(msgObj));
+  for (const client of wsClients) {
+    if (client.roomId === roomId && !client.socket.destroyed) {
+      try { client.socket.write(frame); } catch (_) {}
+    }
+  }
 }
 
 /* ============================================================================
@@ -1059,6 +1469,7 @@ const MIME_TYPES = {
   '.webmanifest': 'application/manifest+json; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.jpg': 'image/jpeg',
   '.ico': 'image/x-icon'
 };
 
@@ -1074,6 +1485,15 @@ const ALLOWED_FILES = new Set([
   '/assets/icon.ico'
 ]);
 
+function isAllowedStaticPath(reqPath) {
+  if (ALLOWED_FILES.has(reqPath)) return true;
+  if (/^\/modules\/[a-z0-9_-]+\.js$/i.test(reqPath)) return true;
+  if (/^\/assets\/towers\/[a-z0-9_-]+\.svg$/i.test(reqPath)) return true;
+  if (/^\/assets\/upgrades\/[a-z0-9_-]+\.svg$/i.test(reqPath)) return true;
+  if (/^\/docs\/images\/[a-z0-9_-]+\.(png|jpg|svg)$/i.test(reqPath)) return true;
+  return false;
+}
+
 function serveStatic(req, res, urlObj) {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.writeHead(405, Object.assign({}, SECURITY_HEADERS, { 'Content-Type': 'text/plain; charset=utf-8' }));
@@ -1085,7 +1505,7 @@ function serveStatic(req, res, urlObj) {
   if (reqPath === '/' || reqPath === '') reqPath = '/index.html';
 
   // Bloqueio estrito contra Path Traversal e acesso a arquivos internos (server.js, db.json, .env, etc.)
-  if (reqPath.includes('..') || reqPath.includes('\0') || !ALLOWED_FILES.has(reqPath)) {
+  if (reqPath.includes('..') || reqPath.includes('\0') || !isAllowedStaticPath(reqPath)) {
     res.writeHead(404, Object.assign({}, SECURITY_HEADERS, { 'Content-Type': 'text/plain; charset=utf-8' }));
     res.end('404 - Recurso não autorizado ou inexistente');
     return;
@@ -1156,6 +1576,78 @@ const server = http.createServer((req, res) => {
   }
 });
 
+// Handshake e comunicação WebSocket Nativo RFC 6455 (/ws) para sincronização multiplayer em tempo real
+server.on('upgrade', (req, socket) => {
+  try {
+    const urlObj = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+    if (urlObj.pathname !== '/ws') {
+      socket.destroy();
+      return;
+    }
+    const key = req.headers['sec-websocket-key'];
+    if (!key || typeof key !== 'string') {
+      socket.destroy();
+      return;
+    }
+    const accept = crypto
+      .createHash('sha1')
+      .update(key.trim() + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')
+      .digest('base64');
+
+    socket.write(
+      'HTTP/1.1 101 Switching Protocols\r\n' +
+      'Upgrade: websocket\r\n' +
+      'Connection: Upgrade\r\n' +
+      `Sec-WebSocket-Accept: ${accept}\r\n\r\n`
+    );
+
+    const client = { socket, roomId: null, connectedAt: Date.now() };
+    wsClients.add(client);
+
+    socket.on('data', (buf) => {
+      const frame = decodeWsFrame(buf);
+      if (!frame) return;
+      if (frame.close) {
+        wsClients.delete(client);
+        socket.end();
+        return;
+      }
+      if (frame.text) {
+        try {
+          const msg = JSON.parse(frame.text);
+          if (!msg || typeof msg !== 'object') return;
+          if (msg.type === 'ping') {
+            socket.write(encodeWsFrame(JSON.stringify({ type: 'pong', ts: Date.now() })));
+          } else if (msg.type === 'join_room' && msg.roomId) {
+            client.roomId = cleanId(msg.roomId);
+            const room = DB.mpRooms[client.roomId];
+            if (room) {
+              socket.write(encodeWsFrame(JSON.stringify({ type: 'room_state', room: publicRoom(room) })));
+            }
+          } else if (msg.type === 'wave_sync' && client.roomId) {
+            const cmds = Array.isArray(msg.commands) ? msg.commands.slice(0, 30) : [];
+            if (cmds.every(c => validateMultiplayerCommand(c).valid)) {
+              broadcastRoomWs(client.roomId, {
+                type: 'wave_sync',
+                roomId: client.roomId,
+                wave: Number(msg.wave) || 0,
+                tick: Number(msg.tick) || 0,
+                stateHash: Number(msg.stateHash) >>> 0,
+                commands: cmds
+              });
+            }
+          }
+        } catch (_) {}
+      }
+    });
+
+    socket.on('close', () => wsClients.delete(client));
+    socket.on('error', () => wsClients.delete(client));
+  } catch (_) {
+    try { socket.destroy(); } catch (__) {}
+  }
+});
+
 // Proteção contra ataques Slowloris e conexões penduradas
 server.headersTimeout = 10000;
 server.requestTimeout = 15000;
@@ -1170,6 +1662,7 @@ if (require.main === module) {
     console.log(` 🌐 Acesse no navegador: http://localhost:${PORT}`);
     console.log(` 📡 API Ranking Online:  http://localhost:${PORT}/api/leaderboard`);
     console.log(` 💾 API Cloud Save:      http://localhost:${PORT}/api/cloud-save`);
+    console.log(` 🤝 API Multiplayer/WS:  http://localhost:${PORT}/api/mp/rooms | ws://localhost:${PORT}/ws`);
     console.log('==========================================================');
   });
 }
@@ -1183,5 +1676,6 @@ module.exports = {
   generateLicenseKey,
   verifyLicenseKey,
   issueRunTicket,
-  verifyRunTicket
+  verifyRunTicket,
+  validateMultiplayerCommand
 };

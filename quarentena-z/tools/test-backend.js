@@ -182,5 +182,97 @@ function mockReq(method, urlPath, body, customHeaders = {}) {
   const badTicketRes = await mockReq('POST', '/api/leaderboard', forgedTicketRun, { 'x-client-token': tokenA });
   assert.strictEqual(badTicketRes.status, 400, 'Ticket de partida adulterado deve ser bloqueado');
 
-  console.log('TEST-BACKEND SECURITY PASS (100% — Steam-Grade DRM, HMAC-SHA256, Ticket Autoritativo, Anti-Cheat, CSP e Propriedade verificados)');
+  // 11. Whitelist de Módulos e Assets Visuais (Torre e Upgrades SVG)
+  const modVault = await mockReq('GET', '/modules/security-vault.js');
+  assert.strictEqual(modVault.status, 200, 'Módulo security-vault.js deve ser servido com 200 OK');
+  const svgDino = await mockReq('GET', '/assets/towers/dino.svg');
+  assert.strictEqual(svgDino.status, 200, 'Sprite SVG da torre dino deve ser servido com 200 OK');
+  const svgUp = await mockReq('GET', '/assets/upgrades/path0-lv1.svg');
+  assert.strictEqual(svgUp.status, 200, 'Ícone circular SVG de upgrade deve ser servido com 200 OK');
+
+  // 12. Contas de Usuários e Conquistas em Nuvem (/api/auth/profile)
+  const profRes = await mockReq('POST', '/api/auth/profile', {
+    player: 'Comandante_Alpha',
+    bestWave: 45,
+    totalKills: 3200,
+    games: 12,
+    achievements: { first_blood: Date.now(), wave40: Date.now() },
+    medals: { four: { normal: true, hard: true } }
+  }, { 'x-client-token': tokenA });
+  assert.strictEqual(profRes.status, 200);
+  assert.strictEqual(profRes.json.ok, true);
+  assert.strictEqual(profRes.json.profile.bestWave, 45);
+
+  // 13. Esquema Multiplayer: Criação de Sala, Pareamento (Matchmaking) e Sincronização de Ondas
+  const mpCreate = await mockReq('POST', '/api/mp/rooms', {
+    name: 'Sala Tática Alfa',
+    mode: 'coop',
+    map: 'metro',
+    diff: 'hard',
+    maxPlayers: 2,
+    playerName: 'Alpha'
+  }, { 'x-client-token': tokenA });
+  assert.strictEqual(mpCreate.status, 200);
+  assert.strictEqual(mpCreate.json.ok, true);
+  const room = mpCreate.json.room;
+  assert(room.roomId && room.roomCode, 'Deve gerar roomId e roomCode');
+
+  const mpJoin = await mockReq('POST', '/api/mp/rooms/join', {
+    roomCode: room.roomCode,
+    playerName: 'Bravo'
+  }, { 'x-client-token': tokenB });
+  assert.strictEqual(mpJoin.status, 200);
+  assert.strictEqual(mpJoin.json.room.players.length, 2, 'Sala deve ter 2 jogadores pareados');
+  assert.strictEqual(mpJoin.json.room.status, 'playing', 'Sala deve iniciar ao parear 2 jogadores');
+
+  // 14. Validação Server-Side de Comandos Multiplayer (/api/mp/sync)
+  const validSync = await mockReq('POST', '/api/mp/sync', {
+    roomId: room.roomId,
+    wave: 5,
+    tick: 1200,
+    stateHash: 987654321,
+    commands: [{ type: 'place', key: 'dino', x: 320, y: 240 }]
+  }, { 'x-client-token': tokenA });
+  assert.strictEqual(validSync.status, 200);
+  assert.strictEqual(validSync.json.wave, 5);
+
+  const invalidSync = await mockReq('POST', '/api/mp/sync', {
+    roomId: room.roomId,
+    wave: 5,
+    tick: 1210,
+    commands: [{ type: 'place', key: 'dino', x: -9999, y: 99999 }]
+  }, { 'x-client-token': tokenB, 'x-forwarded-for': '10.0.0.99' });
+  assert.strictEqual(invalidSync.status, 400, 'Coordenadas fora do mapa devem ser bloqueadas pelo servidor');
+
+  // 15. Placar Multiplayer Cooperativo & Módulo AppSec Digital Signature
+  const mpScore = await mockReq('POST', '/api/mp/scores', {
+    roomId: room.roomId,
+    mode: 'coop',
+    map: 'metro',
+    diff: 'hard',
+    teamNames: 'Alpha & Bravo',
+    wave: 40,
+    kills: 2850,
+    durationSec: 1120
+  }, { 'x-client-token': tokenA });
+  assert.strictEqual(mpScore.status, 200);
+  assert.strictEqual(mpScore.json.ok, true);
+
+  require('../modules/security-vault.js');
+  const sec = global.QZ_SECURITY;
+  assert(sec, 'Módulo QZ_SECURITY deve estar carregado');
+  const sig1 = sec.computeDigitalSignature('career', { bestWave: 40, totalKills: 2500 });
+  assert(sec.verifyDigitalSignature('career', { bestWave: 40, totalKills: 2500 }, sig1), 'Assinatura digital deve validar dados íntegros');
+  assert(!sec.verifyDigitalSignature('career', { bestWave: 999, totalKills: 2500 }, sig1), 'Assinatura digital deve detectar e bloquear adulteração');
+
+  const vault = sec.createAntiCheatVault();
+  const mockG = { money: 650, life: 100, kills: 12 };
+  const mockWM = { num: 3 };
+  vault.sync(mockG.money, mockG.life, mockWM.num, mockG.kills, 1.0);
+  mockG.money = 999999; // Tentativa de edição via console
+  const vCheck = vault.verifyAndRestore(mockG, mockWM);
+  assert.strictEqual(vCheck.tampered, true, 'Deve detectar adulteração de saldo via console');
+  assert.strictEqual(mockG.money, 650, 'Deve restaurar o saldo legítimo do cofre fechado');
+
+  console.log('TEST-BACKEND SECURITY PASS (100% — Steam-Grade DRM, HMAC-SHA256, Multiplayer, Cloud DB, Anti-Cheat Vault, Assinatura Digital e CSP verificados)');
 })();

@@ -1,11 +1,11 @@
 // =========================================================
 // QUARENTENA Z - BTD6 TOWERS, BOSSES & OBSTACLES MODULE
 // - Torre Direcional (dartgun / Arma de Dardos/Dados)
-// - Torre com Invocações & Dinossauro (dino)
+// - Torre com Invocações & Dinossauro (dino / Domador Jurássico)
 // - Usina de Minas Terrestres com Stun (minefactory)
 // - Torre de Portal Tático (portal / Habilidade Ativa)
-// - Boss de Alta Velocidade (speedboss)
-// - Obstáculos Destrutíveis por Mapa
+// - Boss de Alta Velocidade (speedboss / Carnífice Voraz)
+// - Obstáculos Destrutíveis Temáticos nos 18 Mapas
 // =========================================================
 (function (root) {
   'use strict';
@@ -25,23 +25,96 @@
     { name: 'Tecnologia & Alcance', accent: '#a855f7', crown: '🛰️' }
   ];
 
-  // Obstáculos destrutíveis determinísticos para mapas (removíveis com moedas)
+  // Limites e parâmetros de balanceamento tático das 4 novas torres
+  const NEW_TOWER_BALANCE = Object.freeze({
+    dino: {
+      baseCost: 520,
+      maxCleaveTargets: 4,
+      biteBaseCd: 0.85,
+      allyMaxCount: 3,
+      paragonAllyMaxCount: 5,
+      abilityCost: 165,
+      abilityCd: 28
+    },
+    dartgun: {
+      baseCost: 340,
+      basePierce: 2,
+      baseRate: 5.6,
+      baseRange: 280
+    },
+    minefactory: {
+      baseCost: 430,
+      maxMinesOnTrackPerTower: 18,
+      baseMaxStacks: 4,
+      bossStunFactor: 0.55,
+      speedBossStunFactor: 0.85
+    },
+    portal: {
+      baseCost: 580,
+      abilityCost: 150,
+      abilityCd: 24,
+      maxTeleportedZombies: 10,
+      baseWarpBack: 190
+    }
+  });
+
+  // Obstáculos destrutíveis determinísticos e temáticos para os 18 mapas (removíveis com moedas)
   const MAP_OBSTACLE_PRESETS = {
+    four: [
+      { dx: 320, dy: 230, r: 18, cost: 200, name: 'Blindado Abandonado', kind: 'wagon' },
+      { dx: 490, dy: 370, r: 18, cost: 240, name: 'Contentor Militar', kind: 'crate' },
+      { dx: 660, dy: 250, r: 18, cost: 270, name: 'Barricada Urbana', kind: 'debris' }
+    ],
+    forest: [
+      { dx: 315, dy: 225, r: 18, cost: 190, name: 'Tronco Mutante Caído', kind: 'debris' },
+      { dx: 510, dy: 380, r: 18, cost: 230, name: 'Rocha Coberta de Musgo', kind: 'crate' },
+      { dx: 675, dy: 245, r: 18, cost: 260, name: 'Caminhão Florestal', kind: 'wagon' }
+    ],
+    industrial: [
+      { dx: 330, dy: 235, r: 18, cost: 210, name: 'Caldeira Enferrujada', kind: 'crate' },
+      { dx: 495, dy: 365, r: 18, cost: 250, name: 'Empilhadeira Tombada', kind: 'wagon' },
+      { dx: 665, dy: 255, r: 18, cost: 280, name: 'Escória Siderúrgica', kind: 'debris' }
+    ],
     metro: [
-      { dx: 310, dy: 210, r: 22, cost: 220, name: 'Vagão Descarrilado', kind: 'wagon' },
-      { dx: 520, dy: 390, r: 21, cost: 260, name: 'Barricada de Concreto', kind: 'debris' },
-      { dx: 690, dy: 230, r: 20, cost: 300, name: 'Gerador Subterrâneo', kind: 'crate' }
+      { dx: 310, dy: 240, r: 18, cost: 220, name: 'Vagão Descarrilado', kind: 'wagon' },
+      { dx: 480, dy: 360, r: 18, cost: 250, name: 'Barricada Subterrânea', kind: 'debris' },
+      { dx: 650, dy: 260, r: 18, cost: 280, name: 'Gerador de Linha', kind: 'crate' }
+    ],
+    highway: [
+      { dx: 325, dy: 220, r: 18, cost: 220, name: 'Carreta Incendiada', kind: 'wagon' },
+      { dx: 500, dy: 375, r: 18, cost: 260, name: 'Bloco de Pedágio', kind: 'debris' },
+      { dx: 670, dy: 250, r: 18, cost: 290, name: 'Carga de Suprimentos', kind: 'crate' }
+    ],
+    laboratorio: [
+      { dx: 320, dy: 230, r: 18, cost: 230, name: 'Câmara Criogênica Quebrada', kind: 'crate' },
+      { dx: 490, dy: 370, r: 18, cost: 260, name: 'Reator Bioquímico', kind: 'wagon' },
+      { dx: 660, dy: 250, r: 18, cost: 300, name: 'Entulho de Contenção', kind: 'debris' }
+    ],
+    artico: [
+      { dx: 320, dy: 230, r: 18, cost: 210, name: 'Bloco Glacial Denso', kind: 'debris' },
+      { dx: 490, dy: 370, r: 18, cost: 250, name: 'Trator de Neve Congelado', kind: 'wagon' },
+      { dx: 660, dy: 250, r: 18, cost: 280, name: 'Cápsula Polar', kind: 'crate' }
+    ],
+    pantano: [
+      { dx: 320, dy: 230, r: 18, cost: 200, name: 'Raízes Petrifícadas', kind: 'debris' },
+      { dx: 490, dy: 370, r: 18, cost: 240, name: 'Barcaça Afundada', kind: 'wagon' },
+      { dx: 660, dy: 250, r: 18, cost: 270, name: 'Barril Tóxico', kind: 'crate' }
+    ],
+    cratera: [
+      { dx: 320, dy: 230, r: 18, cost: 230, name: 'Fragmento de Meteoro', kind: 'debris' },
+      { dx: 490, dy: 370, r: 18, cost: 260, name: 'Sonda Militar Caída', kind: 'crate' },
+      { dx: 660, dy: 250, r: 18, cost: 295, name: 'Blindado Derretido', kind: 'wagon' }
     ],
     default: [
-      { dx: 330, dy: 220, r: 20, cost: 200, name: 'Destroços Blindados', kind: 'debris' },
-      { dx: 540, dy: 410, r: 20, cost: 240, name: 'Contentor Militar', kind: 'crate' },
-      { dx: 680, dy: 240, r: 20, cost: 280, name: 'Ruína de Contenção', kind: 'wagon' }
+      { dx: 320, dy: 230, r: 18, cost: 200, name: 'Destroços Blindados', kind: 'debris' },
+      { dx: 490, dy: 370, r: 18, cost: 240, name: 'Contentor Militar', kind: 'crate' },
+      { dx: 660, dy: 250, r: 18, cost: 270, name: 'Barricada Pesada', kind: 'wagon' }
     ]
   };
 
   function getTowerSkinInfo(tower) {
     if (!tower) return { tier: 0, dominantPath: -1, palette: SKIN_PALETTES[0], pathSkin: null, portraitIcon: '🗼' };
-    const lv = tower.levels || [0, 0, 0];
+    const lv = tower.levels || tower.pathLevels || [0, 0, 0];
     const maxLv = Math.max(lv[0] || 0, lv[1] || 0, lv[2] || 0);
     let dominantPath = -1;
     if (maxLv > 0) {
@@ -64,6 +137,7 @@
   root.QZ_BTD6_TOWERS = {
     SKIN_PALETTES,
     PATH_SKINS,
+    NEW_TOWER_BALANCE,
     MAP_OBSTACLE_PRESETS,
     getTowerSkinInfo
   };
