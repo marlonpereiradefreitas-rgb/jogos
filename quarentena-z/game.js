@@ -279,7 +279,7 @@ TOWERS.cryogen = Object.assign({}, TOWERS.ice, {name:'Torre de Estase',cost:480,
 TOWERS.nanomed = Object.assign({}, TOWERS.engineer, {name:'Estação Nano-Médica',cost:560,kind:'tesla',dtype:'Suporte Médico',prio:'first',role:'support',detectCamo:true,canAir:true,short:'Purifica torres, concede +15% cadência e repara +1 vida da base/onda.',base:{dmg:14,rate:1.25,range:155,chain:3,chainR:58,slow:.18,slowT:1.1,auraRate:.15,auraDmg:.08,purify:1,healBase:1},ups:TOWERS.engineer.ups});
 // Novas Torres e Habilidades Estilo Bloons TD 6:
 TOWERS.dartgun = Object.assign({}, TOWERS.gunner, {name:'Metralhadora Direcional',cost:340,kind:'dartgun',dtype:'Direcional',prio:'first',detectCamo:true,canAir:true,short:'Mira travada em um ponto fixo do mapa, disparando apenas nessa linha até você mudá-la.',base:{dmg:13,rate:5.6,range:280,pspeed:780,pierce:2,armorPen:.12,spread:.05},ups:TOWERS.gunner.ups});
-TOWERS.dino = Object.assign({}, TOWERS.antitank, {name:'Domador Jurássico',cost:520,kind:'summoner',dtype:'Invocação',prio:'strong',short:'Comanda um Dinossauro em combate direto e invoca aliados na pista contra a horda.',base:{dmg:34,rate:.92,range:155,pspeed:540,pierce:2,dinoDmg:52,allyHp:180,stun:.25,armorPen:.25},ups:TOWERS.antitank.ups});
+TOWERS.dino = Object.assign({}, TOWERS.antitank, {name:'Domador Jurássico',cost:520,kind:'summoner',dtype:'Invocação',prio:'strong',short:'Centro bio-tático que comanda um Dinossauro Alfa gigante (mais forte que a torre) e invoca raptores.',base:{dmg:32,rate:.95,range:165,pspeed:560,pierce:2,dinoDmg:68,allyHp:210,stun:.32,armorPen:.35},ups:TOWERS.antitank.ups});
 TOWERS.minefactory = Object.assign({}, TOWERS.mortar, {name:'Usina de Minas',cost:430,kind:'minefactory',dtype:'Explosivo/Stun',prio:'first',detectCamo:true,short:'Lança minas terrestres acumuláveis na pista que explodem e atordoam hordas e chefes.',base:{dmg:92,rate:.62,range:150,splash:54,stun:.75,maxStacks:4,armorPen:.35},ups:TOWERS.mortar.ups});
 TOWERS.portal = Object.assign({}, TOWERS.engineer, {name:'Torre de Portal Tático',cost:580,kind:'portal',dtype:'Dimensional',prio:'first',role:'support',detectCamo:true,canAir:true,short:'Dispara pulsos dimensionais. Habilidade abre portal que recua os zumbis na pista.',base:{dmg:26,rate:1.45,range:165,pspeed:820,pierce:2,warpBack:190,slow:.24,slowT:1.4,auraRange:.08},ups:TOWERS.engineer.ups});
 // ============================================================
@@ -1980,7 +1980,7 @@ class Tower {
     this.exitY=Math.round(_pp.y);
     if(key==='dino'){
       pathPos(np.d,_pp);
-      this._dino={x:_pp.x,y:_pp.y,homeX:_pp.x,homeY:_pp.y,angle:0,cd:0,lunge:0,biteT:0,roarT:0,walkT:0,moving:false,atkCount:0};
+      this._dino={x:_pp.x,y:_pp.y,homeX:_pp.x,homeY:_pp.y,angle:0,cd:0,lunge:0,biteT:0,roarT:0,tailT:0,stompT:0,pounceT:0,walkT:0,moving:false,atkCount:0};
       this.spawnCD=3.0;
     }
     this.recalc();
@@ -2124,11 +2124,14 @@ class Tower {
   updateDino(h,rate){
     const dn=this._dino;
     if(!dn)return;
-    if(dn.lunge>0)dn.lunge=Math.max(0,dn.lunge-h*5);
-    if(dn.biteT>0)dn.biteT=Math.max(0,dn.biteT-h*3.8);
+    if(dn.lunge>0)dn.lunge=Math.max(0,dn.lunge-h*4.8);
+    if(dn.biteT>0)dn.biteT=Math.max(0,dn.biteT-h*3.4);
     if(dn.roarT>0)dn.roarT=Math.max(0,dn.roarT-h);
+    if(dn.tailT>0)dn.tailT=Math.max(0,dn.tailT-h*3.2);
+    if(dn.stompT>0)dn.stompT=Math.max(0,dn.stompT-h*3.6);
+    if(dn.pounceT>0)dn.pounceT=Math.max(0,dn.pounceT-h*4.0);
     dn.moving=false;
-    const s=this.s, r=s.range*(1+(this._auraRange||0))*1.18;
+    const s=this.s, r=s.range*(1+(this._auraRange||0))*1.22;
     let best=null, bd=r;
     for(const z of zombies){
       if(z.dead||z.reached||z.D.flying)continue;
@@ -2138,56 +2141,64 @@ class Tower {
     if(best){
       const dx=best.x-dn.x, dy=best.y-dn.y, d=Math.hypot(dx,dy)||1;
       dn.angle=Math.atan2(dy,dx);
-      const moveSpd=135+this.tier*14;
-      if(d>18){
-        dn.x+=dx/d*Math.min(d,moveSpd*h);
-        dn.y+=dy/d*Math.min(d,moveSpd*h);
+      const moveSpd=152+this.tier*16;
+      if(d>24){
+        // Bote predatório quando se aproxima do alvo
+        if(d>38&&d<92&&(!dn.pounceT||dn.pounceT<=0)&&(dn.cd||0)<=0.15){
+          dn.pounceT=0.85;
+        }
+        const boost=dn.pounceT>0?1.35:1;
+        dn.x+=dx/d*Math.min(d,moveSpd*boost*h);
+        dn.y+=dy/d*Math.min(d,moveSpd*boost*h);
         dn.moving=true;
-        dn.walkT=(dn.walkT||0)+h*14;
-        if(Math.random()<h*11){
+        dn.walkT=(dn.walkT||0)+h*(dn.pounceT>0?19:14);
+        if(Math.random()<h*12){
           FX.footprint(dn.x,dn.y,'#57412a','#a8967a');
-          if(this.tier>=2)FX.part(dn.x+rand(-5,5),dn.y-4,rand(-15,15),rand(-22,-6),rand(.18,.35),this.paragon?'#ef4444':'#f97316',2.4,0);
+          if(this.tier>=2)FX.part(dn.x+rand(-6,6),dn.y-4,rand(-18,18),rand(-24,-6),rand(.18,.36),this.paragon?'#fde047':'#f97316',2.6,0);
         }
       }
       dn.cd=(dn.cd||0)-h;
-      if(d<=28&&dn.cd<=0){
+      if(d<=34&&dn.cd<=0){
         const dMult=1+(this._auraDmg||0);
-        const biteDmg=(s.dinoDmg||52)*dMult*(this.paragon?2.1:1);
-        applyDamage(best,biteDmg,'phys',{armorPen:s.armorPen||.3,bigMult:s.bigMult||1.25,owner:this});
+        // Dinossauro significativamente mais forte que o disparo base da torre
+        const biteDmg=(s.dinoDmg||68)*dMult*(this.paragon?2.25:1.15);
+        applyDamage(best,biteDmg,'phys',{armorPen:s.armorPen||.35,bigMult:s.bigMult||1.35,owner:this});
         if(!best.dead){
           if(s.stun)stunZ(best,s.stun);
           if(s.burnDps)ignite(best,s.burnDps,s.burnT||3);
         }
         dn.atkCount=(dn.atkCount||0)+1;
-        // Golpe de cauda e rugido sísmico em área a partir do nível 3 (ou a cada 3 mordidas) com limite justo de alvos
+        dn.tailT=(dn.atkCount%2===0)?1:0.4;
+        // Golpe de cauda, pisão e rugido sísmico em área a partir do nível 3 (ou a cada 3 mordidas) com limite justo de alvos
         if(this.tier>=3||this.paragon||(dn.atkCount%3===0&&this.tier>=1)){
           let hitTargets=0;
           const maxCleave=this.paragon?7:4;
           for(const o of zombies){
             if(hitTargets>=maxCleave)break;
             if(o===best||o.dead||o.reached)continue;
-            if(dist(o.x,o.y,dn.x,dn.y)<=42){
-              applyDamage(o,biteDmg*0.55,'phys',{armorPen:s.armorPen||.3,owner:this});
-              if(!o.dead&&s.stun)stunZ(o,s.stun*0.6);
+            if(dist(o.x,o.y,dn.x,dn.y)<=52){
+              applyDamage(o,biteDmg*0.62,'phys',{armorPen:s.armorPen||.35,owner:this});
+              if(!o.dead&&s.stun)stunZ(o,s.stun*0.65);
               hitTargets++;
             }
           }
-          dn.roarT=0.55;
-          FX.ring(dn.x,dn.y,5,44,.32,'#f97316',3);
-          FX.ring(dn.x,dn.y,10,30,.24,'#fde047',2);
+          dn.roarT=0.65;
+          dn.stompT=1.0;
+          FX.ring(dn.x,dn.y,6,52,.34,'#f97316',3.2);
+          FX.ring(dn.x,dn.y,12,34,.25,'#fde047',2.2);
         }
-        FX.spark(best.x,best.y-8,'#fb923c',5);
+        FX.spark(best.x,best.y-8,'#fb923c',6);
         dn.lunge=1;
         dn.biteT=1;
-        dn.cd=1/Math.max(0.4,rate*1.15);
+        dn.cd=1/Math.max(0.42,rate*1.18);
       }
     } else {
       // Retorna suavemente para o ponto de guarda próximo à pista
       const dx=dn.homeX-dn.x, dy=dn.homeY-dn.y, d=Math.hypot(dx,dy);
       if(d>4){
         dn.angle=Math.atan2(dy,dx);
-        dn.x+=dx/d*Math.min(d,90*h);
-        dn.y+=dy/d*Math.min(d,90*h);
+        dn.x+=dx/d*Math.min(d,96*h);
+        dn.y+=dy/d*Math.min(d,96*h);
         dn.moving=true;
         dn.walkT=(dn.walkT||0)+h*10;
         if(Math.random()<h*6)FX.footprint(dn.x,dn.y,'#57412a',null);
@@ -4324,41 +4335,63 @@ function drawTowerSprite(key,x,y,ang,rec,lvl,spec,tm,tw,pathIdx,tier){
       });
       break;}
     case 'dino':{
-      // TORRE COM INVOCAÇÕES (Domador Jurássico): Posto de comando tático com antena, painel holográfico e LEDs de invocação
+      // TORRE DOMADOR JURÁSSICO: Centro de Comando Bio-Tático com Reator de Âmbar, Radar Neural, Holograma 3D e Canhão Bio-Sônico
       const ledOn=Math.min(1,(tw||0)*1.6);
       const ledCol=ledOn>0.2?'#34d399':((tier||0)>=3?ac:'#10b981');
-      // Base octogonal blindada futurista do posto de comando
-      poly([[-11,-7],[11,-7],[13,0],[11,7],[-11,7],[-13,0]],'#0f172a','#334155',1.1);
-      poly([[-9,-5],[9,-5],[10,0],[9,5],[-9,5],[-10,0]],'#1e293b',ledCol,.9);
-      // 4 Faixas de LED táticas nos cantos (acendem intensamente ao invocar)
-      for(const [lx,ly] of [[-8,-4.5],[5,-4.5],[-8,2.5],[5,2.5]]){
-        R(lx,ly,3.5,2,ledOn>0.15?'#a7f3d0':ledCol);
+      const warnCol=((tier||0)>=4)?'#fbbf24':'#f59e0b';
+      // 1. Plataforma Octogonal Blindada Pesada com 4 estabilizadores hidráulicos nos cantos
+      for(const [px,py] of [[-12,-7],[10,-7],[-12,5],[10,5]]){
+        R(px,py,3.2,3.2,'#334155');
+        R(px+0.6,py+0.6,2,2,ledCol);
       }
-      if(ledOn>0.08){
+      poly([[-12,-8],[12,-8],[14,0],[12,8],[-12,8],[-14,0]],'#090e1a','#475569',1.3);
+      poly([[-10,-6],[10,-6],[11.5,0],[10,6],[-10,6],[-11.5,0]],'#1e293b',ledCol,1.0);
+      // Faixas táticas de contenção (âmbar/preto) na borda frontal e traseira
+      for(let i=0;i<4;i++){
+        R(-8+i*4.4,-7.4,2.2,1.5,warnCol);
+        R(-8+i*4.4,5.9,2.2,1.5,warnCol);
+      }
+      // Pulso de sincronia neural ao invocar ou comandar ataque
+      if(ledOn>0.06){
         ctx.save();
-        ctx.strokeStyle='rgba(52,211,153,'+(0.35+ledOn*0.55)+')';
-        ctx.lineWidth=2.2;
-        ctx.beginPath();ctx.arc(0,0,13+ledOn*3,0,6.283);ctx.stroke();
+        ctx.strokeStyle='rgba(52,211,153,'+(0.4+ledOn*0.55)+')';
+        ctx.lineWidth=2.4;
+        ctx.beginPath();ctx.arc(0,0,14+ledOn*4,0,6.283);ctx.stroke();
         ctx.restore();
       }
-      // Canhão de pulso neural direcional + emissor sônico
+      // 2. Câmara Central de Âmbar / Incubadora de DNA com anel giratório
+      circ(0,0,6.8,'#064e3b','#34d399',1.1);
+      ctx.save();ctx.rotate(tm*2.2);
+      R(-5.5,-1,11,2,'rgba(52,211,153,0.45)');
+      R(-1,-5.5,2,11,'rgba(52,211,153,0.45)');
+      ctx.restore();
+      circ(0,0,3.8,ledOn>0.15?'#fef08a':'#f59e0b','#ffffff',0.9);
+      // 3. Torreta Dupla de Pulso Bio-Sônico + Emissor Neural Direcional
       rot(()=>{
-        const L=12+lvl*2;
-        R(-3-rc,-4.2,9,8.4,'#0f172a');
-        R(2-rc,-3.2,L,2.2,'#334155');
-        R(2-rc,1.0,L,2.2,'#334155');
-        R(3-rc,-0.8,L-1,1.6,ledOn>0.15?'#fef08a':ledCol);
-        poly([[L+1-rc,-4],[L+5-rc,0],[L+1-rc,4]],ledCol,'#ffffff',.7);
+        const L=13+lvl*2.2;
+        // Mira laser bio-neural
+        ctx.strokeStyle='rgba(52,211,153,0.45)';ctx.lineWidth=1.1;
+        ctx.beginPath();ctx.moveTo(L-rc,0);ctx.lineTo(L+14-rc,0);ctx.stroke();
+        // Culatra blindada e trilhos duplos
+        R(-4-rc,-4.8,10,9.6,'#0f172a');
+        R(-2-rc,-3.8,6,7.6,'#1e293b');
+        R(3-rc,-3.6,L,2.4,'#334155');
+        R(3-rc,1.2,L,2.4,'#334155');
+        // Núcleo condutor central energizado
+        R(4-rc,-1.0,L-1,2.0,ledOn>0.15?'#fef08a':ledCol);
+        // Bobinas de pulso sônico na ponta do canhão
+        poly([[L+1-rc,-4.5],[L+6-rc,0],[L+1-rc,4.5]],ledCol,'#ffffff',0.8);
       });
-      // Painel Holográfico Tático translúcido no posto de comando
-      R(-8,-10,8,5,'rgba(6,78,59,0.88)');
-      ctx.strokeStyle='#34d399';ctx.lineWidth=0.9;ctx.strokeRect(-8,-10,8,5);
-      R(-6.8,-8.8,5.5,1,'#a7f3d0');R(-6.8,-7,4,1,'#38bdf8');
-      // Domo central de controle neural + antena de transmissão
-      circ(0,-2,5.2,'#064e3b',ledCol,1.1);
-      circ(0,-2,3,ledOn>0.15?'#fef08a':ac);
-      R(4,-14,2,10,'#64748b');
-      circ(5,-15,2.4+(ledOn*1.4),ledOn>0.15?'#34d399':'#f97316','#ffffff',.9);
+      // 4. Painel Holográfico Tático 3D projetando telemetria do T-Rex
+      R(-10,-12,10,6,'rgba(6,78,59,0.92)');
+      ctx.strokeStyle='#34d399';ctx.lineWidth=1.0;ctx.strokeRect(-10,-12,10,6);
+      R(-8.8,-10.6,7.2,1.1,'#a7f3d0');
+      R(-8.8,-8.6,5.2,1.1,'#38bdf8');
+      // Antena Parabólica de Link Neural no topo
+      R(5,-15,2.2,11,'#64748b');
+      ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1.3;
+      ctx.beginPath();ctx.arc(6,-15,4.2,-2.4,-0.7);ctx.stroke();
+      circ(6,-16,2.5+(ledOn*1.4),ledOn>0.15?'#34d399':'#f97316','#ffffff',0.9);
       break;}
     case 'minefactory':{
       // USINA DE MINAS TERRESTRES: Unidade industrial militar compacta com rampa ejetora de minas metálicas
@@ -4429,127 +4462,235 @@ const TIER_GLOW=['','#7fd0ff','#3ee0a0','#ffb020','#ff6a3a','#d070ff'];
 function drawDinoCompanion(t){
   const dn=t._dino;
   if(!dn)return;
+  const poly=(pts,fill,stroke,lw)=>{
+    ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);
+    for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);
+    ctx.closePath();
+    if(fill){ctx.fillStyle=fill;ctx.fill();}
+    if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||1;ctx.stroke();}
+  };
+  const circ=(cx,cy,r,fill,stroke,lw)=>{
+    ctx.beginPath();ctx.arc(cx,cy,r,0,6.283);
+    if(fill){ctx.fillStyle=fill;ctx.fill();}
+    if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||1;ctx.stroke();}
+  };
   ctx.save();
   // Linha de vínculo bio-neural quando a torre está selecionada
   if(G.selected===t){
-    ctx.strokeStyle='rgba(52,211,153,.55)';ctx.lineWidth=1.4;ctx.setLineDash([4,4]);
+    ctx.strokeStyle='rgba(52,211,153,.65)';ctx.lineWidth=1.6;ctx.setLineDash([5,4]);
     ctx.beginPath();ctx.moveTo(t.x,t.y);ctx.lineTo(dn.x,dn.y);ctx.stroke();ctx.setLineDash([]);
   }
   ctx.translate(Math.round(dn.x),Math.round(dn.y));
   const tr=t.paragon?6:(t.tier||0);
-  const sc=1+Math.min(0.48,tr*0.08)+(t.paragon?0.22:0);
+  // Escala imponente: o Dinossauro é visivelmente MAIOR e mais robusto que a torre que o invoca!
+  const sc=1.38+Math.min(0.56,tr*0.10)+(t.paragon?0.28:0);
   const face=Math.cos(dn.angle)>=0?1:-1;
-  // Ondas de rugido sísmico quando ativo (dn.roarT > 0)
-  if(dn.roarT>0){
-    const rp=1-dn.roarT/0.6;
+
+  // Ondas de choque do Rugido Sísmico e Pisão quando ativos
+  if(dn.roarT>0||dn.stompT>0){
+    const rp=1-Math.max(dn.roarT||0,dn.stompT||0)/0.65;
     ctx.save();
-    ctx.strokeStyle='rgba(249,115,22,'+Math.min(0.85,dn.roarT*1.4)+')';
-    ctx.lineWidth=2.5;
-    ctx.beginPath();ctx.ellipse(0,2,14+rp*26,7+rp*13,0,0,6.283);ctx.stroke();
-    ctx.strokeStyle='rgba(253,224,71,'+Math.min(0.75,dn.roarT*1.2)+')';
-    ctx.lineWidth=1.6;
-    ctx.beginPath();ctx.ellipse(0,-4,8+rp*18,4+rp*9,0,0,6.283);ctx.stroke();
+    ctx.strokeStyle=t.paragon?'rgba(251,191,36,0.85)':'rgba(249,115,22,'+Math.min(0.85,(dn.roarT||0.4)*1.4)+')';
+    ctx.lineWidth=2.8;
+    ctx.beginPath();ctx.ellipse(0,4,18+rp*34,9+rp*17,0,0,6.283);ctx.stroke();
+    ctx.strokeStyle='rgba(253,224,71,'+Math.min(0.75,(dn.roarT||0.4)*1.2)+')';
+    ctx.lineWidth=1.8;
+    ctx.beginPath();ctx.ellipse(0,-4,10+rp*24,5+rp*12,0,0,6.283);ctx.stroke();
     ctx.restore();
   }
-  // Sombra no solo
-  ctx.fillStyle='rgba(0,0,0,.42)';ctx.beginPath();ctx.ellipse(0,7,12*sc,4.8*sc,0,0,6.283);ctx.fill();
+
+  // Sombra projetada ampla e halo de predador alfa no solo
+  ctx.fillStyle='rgba(0,0,0,.46)';
+  ctx.beginPath();ctx.ellipse(0,8.5,14.5*sc,5.6*sc,0,0,6.283);ctx.fill();
+  if(tr>=3||t.paragon){
+    ctx.strokeStyle=t.paragon?'rgba(251,191,36,0.45)':'rgba(249,115,22,0.32)';
+    ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.ellipse(0,8.5,16*sc,6.4*sc,0,0,6.283);ctx.stroke();
+  }
+
   ctx.scale(face*sc,sc);
-  const walkPhase=dn.moving?(dn.walkT||G.simT*10):G.simT*3;
-  const stride=dn.moving?Math.sin(walkPhase)*3.2:0;
-  const bob=dn.moving?Math.abs(Math.cos(walkPhase))*1.8:Math.sin(G.simT*5)*0.8;
+  const walkPhase=dn.moving?(dn.walkT||G.simT*11):G.simT*3.2;
+  const stride=dn.moving?Math.sin(walkPhase)*4.2:Math.sin(walkPhase)*0.4;
+  const kneeLift=dn.moving?Math.max(0,Math.cos(walkPhase))*2.2:0;
+  const kneeLiftOpp=dn.moving?Math.max(0,-Math.cos(walkPhase))*2.2:0;
+  const breath=Math.sin(G.simT*4.5)*0.6;
+  const pounceLift=(dn.pounceT||0)*4.5;
+  const bob=(dn.moving?Math.abs(Math.cos(walkPhase))*2.0:Math.sin(G.simT*4.5)*0.8)+pounceLift;
   const bite=dn.biteT||0;
   const roar=dn.roarT>0?Math.min(1,dn.roarT*2):0;
-  ctx.translate((dn.lunge||0)*5,-bob);
+  const tailWhip=dn.tailT||0;
 
-  // Paleta dinâmica por evolução (Tier 0-1: Bio-Raptor, Tier 2-3: Alossauro Blindado, Tier 4-5/Ascendida: Cyber T-Rex Alfa)
-  const colDark=t.paragon?'#991b1b':tr>=4?'#b91c1c':tr>=2?'#c2410c':'#14532d';
-  const colMid=t.paragon?'#dc2626':tr>=4?'#ef4444':tr>=2?'#ea580c':'#16a34a';
-  const colLight=t.paragon?'#f87171':tr>=4?'#fb923c':tr>=2?'#fb923c':'#22c55e';
-  const colCrest=t.paragon?'#fde047':tr>=4?'#38bdf8':tr>=2?'#facc15':'#a3e635';
+  ctx.translate((dn.lunge||0)*6.5,-bob);
+  if(dn.moving||dn.lunge>0){
+    ctx.rotate(dn.lunge>0?0.08:0.04);
+  }
 
-  // Cauda articulada com balanço fluido
-  const tailWag=Math.sin(walkPhase)*2.2;
+  // Paleta rica por evolução (Tier 0-1: Raptor/Alossauro Verde-Selva, Tier 2-3: Tirano Magma, Tier 4-5: Cyber T-Rex Rubro, Ascendida: Apex Mecha-Rex Dourado)
+  const colShadow=t.paragon?'#451a03':tr>=4?'#450a0a':tr>=2?'#431407':'#052e16';
+  const colDark=t.paragon?'#92400e':tr>=4?'#991b1b':tr>=2?'#9a3412':'#14532d';
+  const colMid=t.paragon?'#d97706':tr>=4?'#dc2626':tr>=2?'#ea580c':'#15803d';
+  const colLight=t.paragon?'#fbbf24':tr>=4?'#f87171':tr>=2?'#fb923c':'#22c55e';
+  const colBelly=t.paragon?'#fef3c7':tr>=4?'#fecaca':tr>=2?'#fed7aa':'#bbf7d0';
+  const colCrest=t.paragon?'#38bdf8':tr>=4?'#fde047':tr>=2?'#facc15':'#a3e635';
+  const colArmor=t.paragon?'#0f172a':tr>=4?'#1e293b':'#334155';
+  const colGlow=t.paragon?'#38bdf8':tr>=4?'#38bdf8':tr>=2?'#facc15':'#34d399';
+
+  // 1. CAUDA LONGA ARTICULADA EM CURVA S (com chicotada de combate e placas dorsais)
+  const tw1=Math.sin(walkPhase-0.5)*2.4+(tailWhip*5);
+  const tw2=Math.sin(walkPhase-1.1)*3.8+(tailWhip*8);
   ctx.fillStyle=colDark;
   ctx.beginPath();
-  ctx.moveTo(-4,-4);
-  ctx.quadraticCurveTo(-12,-7+tailWag*.5,-19,-9+tailWag);
-  ctx.lineTo(-14,-2+tailWag*.4);
+  ctx.moveTo(-5,-9);
+  ctx.quadraticCurveTo(-15,-11+tw1*0.5,-25,-12+tw2);
+  ctx.quadraticCurveTo(-16,-4+tw1*0.4,-4,-3);
+  ctx.closePath();
+  ctx.fill();
+  // Sub-camada ventral clara da cauda
+  ctx.fillStyle=colMid;
+  ctx.beginPath();
+  ctx.moveTo(-5,-6.5);
+  ctx.quadraticCurveTo(-14,-7.5+tw1*0.4,-22,-10+tw2*0.85);
+  ctx.lineTo(-14,-4+tw1*0.3);
   ctx.closePath();
   ctx.fill();
 
-  // Perna traseira esquerda (fundo) com animação de passada
+  // 2. PERNA TRASEIRA ESQUERDA (FUNDO — 3 segmentos: coxa, canela e garra tridáctila)
+  ctx.save();
+  ctx.translate(-3.5-stride*0.75,-4-kneeLiftOpp);
+  ctx.fillStyle=colShadow;
+  ctx.beginPath();ctx.ellipse(0,1,4.2,5.5,0.2,0,6.283);ctx.fill();
+  R(-2,4,3.4,5.5,colShadow);
+  // Pata com 3 garras curvas
+  poly([[-2.5,9],[3.8,9],[4.8,11],[-3,11]],'#0f172a');
+  poly([[3.5,9.2],[6.2,10.2],[3.5,11]],'#fef3c7');
+  ctx.restore();
+
+  // 3. TORSO MUSCULOSO DE T-REX ALFA (com respiração, escamas dorsais e ventre segmentado)
   ctx.fillStyle=colDark;
-  R(-4-stride*0.7,-1,3.8,6.5,colDark);
-  R(-3.5-stride*0.7,4.5,4.8,2,'#0f172a');
-
-  // Torso musculoso e placas de armadura tática
+  ctx.beginPath();ctx.ellipse(-1,-8.5,12.5,7.2+breath*0.4,-0.16,0,6.283);ctx.fill();
   ctx.fillStyle=colMid;
-  ctx.beginPath();ctx.ellipse(0,-6.5,9.5,5.8,-0.18,0,6.283);ctx.fill();
-  ctx.fillStyle=colLight;
-  ctx.beginPath();ctx.ellipse(1,-5,6.5,3.2,-0.15,0,6.283);ctx.fill();
+  ctx.beginPath();ctx.ellipse(0,-8.2,11.2,6.2+breath*0.35,-0.16,0,6.283);ctx.fill();
+  // Ventre escamoso claro
+  ctx.fillStyle=colBelly;
+  ctx.beginPath();ctx.ellipse(1.5,-5.2,8.2,2.8,-0.12,0,6.283);ctx.fill();
+  // Listras de predador alfa no dorso
+  ctx.fillStyle=colShadow;
+  for(let i=0;i<3;i++){
+    const bx=-6+i*3.8;
+    poly([[bx,-13.5],[bx+2.2,-13.8],[bx+1,-8.5],[bx-0.6,-8.8]],colShadow);
+  }
 
-  // Armadura tecnológica de sela / peitoral (evolui com o tier)
+  // 4. CRISTA DORSAL / PLACAS DE ENERGIA AO LONGO DA ESPINHA
+  for(let i=0;i<6;i++){
+    const sx=-14+i*3.8;
+    const sy=-11.5-Math.sin(i*0.5)*3.2+(i<2?tw1*0.25:0);
+    poly([[sx,-9.5],[sx+1.8,sy-3.2],[sx+3.2,-9.5]],colCrest,colShadow,0.6);
+  }
+
+  // 5. ARMADURA TECNOLÓGICA / SELA CIBERNÉTICA (evolui com o tier)
   if(tr>=2||t.paragon){
-    ctx.fillStyle='#1e293b';
-    ctx.beginPath();ctx.moveTo(-5,-10);ctx.lineTo(4,-10);ctx.lineTo(5,-4);ctx.lineTo(-4,-4);ctx.closePath();ctx.fill();
-    R(-3,-8.5,5,2,t.paragon?'#fde047':'#38bdf8');
+    poly([[-6,-12.5],[5,-13.5],[7,-6.5],[-5,-5.5]],colArmor,colGlow,1.0);
+    // Núcleo reator peitoral/lateral brilhante
+    circ(0.5,-9.2,2.6,'#090d16',colGlow,1.0);
+    circ(0.5,-9.2,1.4,colGlow);
+    if(tr>=4||t.paragon){
+      // Canhão dorsal / propulsor térmico Cyber-Rex
+      R(-5.5,-15.5,7.5,2.6,'#0f172a');
+      R(-4.5,-14.8,5.5,1.2,colGlow);
+    }
   } else {
-    // Coleira bio-neural com LED verde
-    R(1,-10,2.5,5,'#0f172a');
-    R(1.5,-8.5,1.5,2,'#34d399');
+    // Arnês tático bio-neural com LED esmeralda
+    poly([[2,-13],[5,-13],[6,-5.5],[3,-5.5]],'#0f172a','#34d399',0.8);
+    circ(4.2,-9.2,1.5,'#34d399');
   }
 
-  // Crista dorsal / lâminas de energia
-  for(let i=0;i<4;i++){
-    const sx=-7+i*3.2, sy=-11.5-i*0.6;
-    R(sx,sy,2.4,2.4,colCrest);
-  }
-
-  // Braços curtos com garras
-  R(4,-6+bite*1.5,3.5,2.2,colDark);
-  R(6.8,-5.5+bite*1.5,1.8,1.8,'#fef3c7');
-
-  // Perna direita (frente) com animação de passada oposta
-  R(-1+stride*0.7,-1,4,6.8,colMid);
-  R(-0.5+stride*0.7,4.8,5,2.2,'#1e293b');
-
-  // Cabeça e mandíbula articulada (abre na mordida e no rugido sísmico)
-  const jawAng=Math.max(bite*0.45,roar*0.55);
+  // 6. PERNA TRASEIRA DIREITA (FRENTE — coxa musculosa, articulação e garras de rapina)
   ctx.save();
-  ctx.translate(4,-12-(roar*2.5));
-  ctx.rotate(-jawAng*0.45);
-  // Crânio superior
-  ctx.fillStyle=colMid;
-  ctx.fillRect(0,-4.5,10,5);
-  if(tr>=4||t.paragon){
-    // Capacete blindado Cyber T-Rex
-    R(0,-5.2,7,2,'#334155');
-    R(2,-4.5,3,1.2,'#fde047');
-  }
-  // Presas superiores
-  ctx.fillStyle='#fef3c7';
-  ctx.fillRect(3,0.2,1.4,2.2);ctx.fillRect(5.8,0.2,1.4,2.2);ctx.fillRect(8.2,0.2,1.4,2.4);
-  // Olho feroz / visor LED
-  ctx.fillStyle=t.paragon?'#38bdf8':'#fef08a';
-  ctx.fillRect(4.5,-3.2,2.6,1.8);
-  ctx.restore();
-
-  // Mandíbula inferior articulada
-  ctx.save();
-  ctx.translate(4,-10.5-(roar*1.5));
-  ctx.rotate(jawAng*0.65);
+  ctx.translate(-0.5+stride*0.75,-4-kneeLift);
   ctx.fillStyle=colDark;
-  ctx.fillRect(0,0,9,2.8);
-  ctx.fillStyle='#fef3c7';
-  ctx.fillRect(4,-1.6,1.3,1.8);ctx.fillRect(7,-1.6,1.3,1.8);
+  ctx.beginPath();ctx.ellipse(0,0.5,4.8,6.0,-0.15,0,6.283);ctx.fill();
+  ctx.fillStyle=colMid;
+  ctx.beginPath();ctx.ellipse(0.4,0.2,3.6,4.6,-0.15,0,6.283);ctx.fill();
+  if(tr>=3||t.paragon){
+    // Joelheira blindada
+    R(-1.8,2.2,4.2,2.8,colArmor);
+    R(-0.8,3.0,2.2,1.2,colGlow);
+  }
+  R(-1.5,4.2,3.8,5.5,colDark);
+  // Pata frontal com garra falciforme afiada
+  poly([[-2,9.2],[4.5,9.2],[5.8,11.4],[-2.8,11.4]],'#1e293b');
+  poly([[4.2,9.2],[7.2,10.4],[4.2,11.4]],'#fef3c7');
+  poly([[2.0,9.5],[4.2,10.8],[2.0,11.4]],'#e2e8f0');
   ctx.restore();
 
-  // Arco de corte / impacto de mordida quando atacando
-  if(bite>0.15){
-    ctx.strokeStyle=t.paragon?'#fde047':'#fb923c';
-    ctx.lineWidth=2;
+  // 7. BRAÇO DIANTEIRO ARTICULADO COM GARRAS AFIADAS
+  ctx.save();
+  ctx.translate(6.5,-7.5+bite*1.2);
+  ctx.rotate(bite*0.5-0.2);
+  R(-1,-1,5.2,2.6,colDark);
+  poly([[3.8,-1.2],[6.8,-0.2],[3.8,0.8]],'#fef3c7');
+  poly([[3.6,0.4],[6.4,1.6],[3.6,2.2]],'#fef3c7');
+  ctx.restore();
+
+  // 8. PESCOÇO MUSCULOSO E CABEÇA ESCULPIDA DE T-REX COM MANDÍBULA DUPLA ARTICULADA
+  const jawAng=Math.max(bite*0.55,roar*0.68);
+  // Pescoço forte
+  poly([[3,-13.5],[9,-17.5],[10,-9.5],[4,-7.5]],colMid);
+
+  // Crânio Superior Esculpido
+  ctx.save();
+  ctx.translate(6.5,-15.5-(roar*2.6));
+  ctx.rotate(-jawAng*0.48);
+  // Formato anatômico do crânio do T-Rex (focinho alto e arcada ocular pronunciada)
+  poly([[-1,-4.5],[4,-6.2],[12.5,-4.8],[13.8,-0.5],[12,1.2],[0,1.2]],colMid,colShadow,0.8);
+  poly([[0,-3.8],[4,-5.2],[11.5,-4.0],[11.5,-1.2],[0,-1.2]],colLight);
+
+  if(tr>=3||t.paragon){
+    // Capacete / Visor Blindado Cyber T-Rex
+    poly([[-0.5,-5.5],[5,-6.8],[9.5,-5.2],[7,-1.8],[-0.5,-2.2]],colArmor,colGlow,0.8);
+  }
+
+  // Fileira de Presas Superiores Serrilhadas
+  ctx.fillStyle='#fef3c7';
+  for(const tx of [3.2,5.4,7.6,9.8,11.6]){
+    poly([[tx,0.8],[tx+0.9,3.6],[tx+1.8,0.8]],'#fef3c7');
+  }
+
+  // Olho Feroz de Predador / Visor Laser
+  ctx.fillStyle=t.paragon?'#38bdf8':tr>=4?'#fde047':'#fef08a';
+  poly([[3.5,-4.2],[7.2,-4.6],[6.8,-2.4],[3.5,-2.4]],ctx.fillStyle);
+  // Pupila vertical reptiliana
+  R(5.2,-4.4,1.0,1.9,'#090d16');
+  // Narina
+  R(11.2,-3.6,1.2,1.0,colShadow);
+  ctx.restore();
+
+  // Mandíbula Inferior Articulada + Língua
+  ctx.save();
+  ctx.translate(6.8,-12.2-(roar*1.4));
+  ctx.rotate(jawAng*0.72);
+  if(jawAng>0.12){
+    // Língua carmesim visível quando a boca abre
+    poly([[1,-0.5],[8,-1.2],[6,0.8],[1,0.5]],'#ef4444');
+  }
+  poly([[0,0],[11.5,0],[10.5,3.2],[1,3.5]],colDark,colShadow,0.7);
+  // Presas Inferiores
+  for(const tx of [3.8,6.2,8.5,10.2]){
+    poly([[tx,0.2],[tx+0.8,-2.3],[tx+1.6,0.2]],'#fef3c7');
+  }
+  ctx.restore();
+
+  // 9. EFEITO CINEMÁTICO DE RASGO DE MORDIDA & GARRAS
+  if(bite>0.12){
+    ctx.strokeStyle=t.paragon?'#38bdf8':'#fde047';
+    ctx.lineWidth=2.4;
     ctx.beginPath();
-    ctx.arc(13,-10,6+bite*3,-0.9,0.9);
+    ctx.arc(16,-12,7+bite*4,-0.95,0.95);
+    ctx.stroke();
+    ctx.strokeStyle='#ef4444';
+    ctx.lineWidth=1.5;
+    ctx.beginPath();
+    ctx.arc(18,-12,5+bite*3,-0.75,0.75);
     ctx.stroke();
   }
   ctx.restore();
@@ -4722,24 +4863,33 @@ function drawFX(){
     }
     ctx.restore();
   }
-  // Aliados bio-raptores invocados na pista com animação de caminhada e mordida
+  // Aliados Bio-Raptores invocados na pista com animação fluida de corrida, cauda em S, garras falciformes e mordida
   for(const a of allies){
     ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y));
-    ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(0,3,7,2.8,0,0,6.283);ctx.fill();
-    const st=Math.sin(a.walkT||G.simT*12)*2.2;
-    ctx.scale(a.face||1,1);
-    // Cauda e pernas ágeis
+    ctx.fillStyle='rgba(0,0,0,.38)';ctx.beginPath();ctx.ellipse(0,4,9,3.4,0,0,6.283);ctx.fill();
+    const wph=a.walkT||G.simT*14;
+    const st=Math.sin(wph)*2.8;
+    const bob=Math.abs(Math.cos(wph))*1.2;
+    ctx.scale((a.face||1)*1.18,1.18);
+    ctx.translate(0,-bob);
+    // Cauda longa equilibradora de Velociraptor
     ctx.fillStyle='#14532d';
-    ctx.beginPath();ctx.moveTo(-2,-4);ctx.lineTo(-10,-7+st*.4);ctx.lineTo(-7,-2);ctx.closePath();ctx.fill();
-    R(-2-st*.5,-1,2.5,4,'#14532d');R(1+st*.5,-1,2.5,4,'#166534');
-    // Corpo e dorso blindado
-    ctx.fillStyle='#16a34a';ctx.beginPath();ctx.ellipse(0,-5,5.5,3.5,-0.15,0,6.283);ctx.fill();
-    R(-2,-8,4,1.8,'#0f172a');R(-1,-7.6,2,1,'#34d399');
-    // Cabeça, visor LED e mordida
-    const bt=(a.biteT||0)*2;
-    R(2+bt*.5,-10,5.5,4,'#22c55e');
-    R(4+bt*.5,-9.2,2,1.4,'#fef08a');
-    R(5+bt*.5,-6,2,1.5,'#fef3c7');
+    ctx.beginPath();ctx.moveTo(-3,-5);ctx.quadraticCurveTo(-11,-7+st*0.4,-16,-9+st*0.7);ctx.lineTo(-11,-3+st*0.3);ctx.closePath();ctx.fill();
+    // Pernas ágeis com garra falciforme
+    R(-3-st*0.6,-2,2.6,5,'#052e16');
+    R(0.5+st*0.6,-2,2.8,5.2,'#15803d');
+    R(1+st*0.6,2.8,3.6,1.4,'#fef3c7');
+    // Torso aerodinâmico, ventre claro e sela bio-neural
+    ctx.fillStyle='#16a34a';ctx.beginPath();ctx.ellipse(0,-5.8,7.2,4.2,-0.16,0,6.283);ctx.fill();
+    ctx.fillStyle='#86efac';ctx.beginPath();ctx.ellipse(1,-4.2,4.8,2.0,-0.12,0,6.283);ctx.fill();
+    R(-2.5,-9.2,4.8,2.4,'#0f172a');R(-1.2,-8.6,2.4,1.2,'#34d399');
+    // Crista de predador, crânio alongado e mandíbula de mordida
+    const bt=(a.biteT||0)*2.4;
+    R(1,-12.5,2,2,'#a3e635');R(3.2,-13,2,2,'#a3e635');
+    R(2.5+bt*0.5,-11.5,7,4.2,'#22c55e');
+    R(5.5+bt*0.5,-10.6,2.2,1.5,'#fef08a');
+    R(3.5+bt*0.5,-7.2+bt*0.3,6,1.8,'#14532d');
+    R(6.5+bt*0.5,-7.4,1.4,1.6,'#fef3c7');
     ctx.restore();
   }
   for(const b of bombs){
@@ -4979,26 +5129,39 @@ function getTowerPortrait(t){
   }
   const hasCompanion=(key==='dino'||key==='minefactory');
   drawTowerSprite(key,hasCompanion?38:60,48,-.38,0,lv,sp,0.8,key==='dino'?(tr>=1?0.85:0.35):0,pi,tr);
-  // No Domador Jurássico, desenha o Dinossauro evoluído ao lado da torre dentro do retrato
+  // No Domador Jurássico, desenha o Dinossauro Alfa gigante e esculpido ao lado da torre dentro do retrato
   if(key==='dino'){
-    ctx.save();ctx.translate(86,56);
-    const sc=1.08+Math.min(0.28,tr*0.05);
+    ctx.save();ctx.translate(82,62);
+    const sc=1.28+Math.min(0.32,tr*0.06);
     ctx.scale(-sc,sc);
-    const colDark=pg?'#991b1b':tr>=4?'#b91c1c':tr>=2?'#c2410c':'#14532d';
-    const colMid=pg?'#dc2626':tr>=4?'#ef4444':tr>=2?'#ea580c':'#16a34a';
-    const colLight=pg?'#f87171':tr>=4?'#fb923c':tr>=2?'#fb923c':'#22c55e';
-    const colCrest=pg?'#fde047':tr>=4?'#38bdf8':tr>=2?'#facc15':'#a3e635';
-    ctx.fillStyle=colDark;ctx.beginPath();ctx.moveTo(-4,-4);ctx.lineTo(-16,-9);ctx.lineTo(-12,-2);ctx.closePath();ctx.fill();
-    R(-4,-1,3.5,6,colDark);R(0,-1,3.8,6.5,colMid);
-    ctx.fillStyle=colMid;ctx.beginPath();ctx.ellipse(0,-6.5,9,5.5,-0.18,0,6.283);ctx.fill();
-    ctx.fillStyle=colLight;ctx.beginPath();ctx.ellipse(1,-5,6,3,-0.15,0,6.283);ctx.fill();
-    if(tr>=2||pg){R(-4,-9.5,7,4,'#1e293b');R(-2.5,-8.5,4,1.8,pg?'#fde047':'#38bdf8');}
-    for(let i=0;i<4;i++)R(-6+i*3,-11.5-i*0.5,2.2,2.2,colCrest);
-    ctx.fillStyle=colMid;ctx.fillRect(3,-16,10,5.2);
-    if(tr>=4||pg){R(3,-17,7,2,'#334155');R(5,-16.2,3,1.2,'#fde047');}
-    ctx.fillStyle='#fef3c7';ctx.fillRect(6,-10.8,1.4,2.2);ctx.fillRect(9,-10.8,1.4,2.2);ctx.fillRect(11.2,-10.8,1.4,2.2);
-    ctx.fillStyle=pg?'#38bdf8':'#fef08a';ctx.fillRect(7.5,-14.5,2.5,1.8);
-    ctx.fillStyle=colDark;ctx.fillRect(3,-9.5,8.5,2.6);
+    const colShadow=pg?'#451a03':tr>=4?'#450a0a':tr>=2?'#431407':'#052e16';
+    const colDark=pg?'#92400e':tr>=4?'#991b1b':tr>=2?'#9a3412':'#14532d';
+    const colMid=pg?'#d97706':tr>=4?'#dc2626':tr>=2?'#ea580c':'#15803d';
+    const colLight=pg?'#fbbf24':tr>=4?'#f87171':tr>=2?'#fb923c':'#22c55e';
+    const colCrest=pg?'#38bdf8':tr>=4?'#fde047':tr>=2?'#facc15':'#a3e635';
+    const colGlow=pg?'#38bdf8':tr>=4?'#38bdf8':tr>=2?'#facc15':'#34d399';
+    // Cauda longa curvada
+    ctx.fillStyle=colDark;ctx.beginPath();ctx.moveTo(-4,-8);ctx.quadraticCurveTo(-14,-11,-21,-13);ctx.lineTo(-14,-3);ctx.closePath();ctx.fill();
+    // Pernas musculosas e garras
+    R(-4,-4,3.8,8,colShadow);R(0,-4,4.2,8.5,colMid);
+    R(-1,4,5.5,2.2,'#0f172a');
+    // Torso robusto e crista dorsal
+    ctx.fillStyle=colDark;ctx.beginPath();ctx.ellipse(-1,-8,11.5,6.8,-0.16,0,6.283);ctx.fill();
+    ctx.fillStyle=colMid;ctx.beginPath();ctx.ellipse(0,-7.8,10,5.6,-0.16,0,6.283);ctx.fill();
+    ctx.fillStyle=colLight;ctx.beginPath();ctx.ellipse(1.5,-5.2,7,2.6,-0.12,0,6.283);ctx.fill();
+    if(tr>=2||pg){
+      R(-5,-11.5,9,5.5,'#1e293b');
+      R(-2,-9.5,4,2.2,colGlow);
+    }
+    for(let i=0;i<5;i++)R(-11+i*3.4,-13-i*0.4,2.4,2.6,colCrest);
+    // Crânio esculpido de T-Rex + presas + olho de predador
+    ctx.fillStyle=colMid;ctx.fillRect(3,-18.5,12,6.2);
+    if(tr>=3||pg){R(3,-19.8,8.5,2.4,'#1e293b');R(5,-19,4,1.2,colGlow);}
+    ctx.fillStyle='#fef3c7';
+    for(const tx of [6,8.5,11,13.2])ctx.fillRect(tx,-12.3,1.4,2.6);
+    ctx.fillStyle=pg?'#38bdf8':'#fef08a';ctx.fillRect(7.5,-16.8,3,2);
+    ctx.fillStyle='#090d16';ctx.fillRect(8.6,-16.8,1,2);
+    ctx.fillStyle=colDark;ctx.fillRect(3.5,-10.2,10.5,3);
     ctx.restore();
   } else if(key==='minefactory'){
     // Na Usina de Minas, desenha as minas metálicas táticas com luzes vermelho/amarelo ao lado

@@ -80,7 +80,8 @@ assert(fs.existsSync(path.join(assetsBase, 'upgrades', 'path2-lv5.svg')), 'Ícon
 Z.select(tDino);
 Z.refreshPanel();
 assert(typeof Z.getTowerPortrait(tDino) === 'string', 'Retrato dinâmico da torre deve ser gerado');
-assert(tDino._dino && typeof tDino._dino.roarT === 'number', 'Dinossauro deve possuir estados de caminhada, mordida e rugido sísmico');
+assert(Z.TOWERS.dino.base.dinoDmg > Z.TOWERS.dino.base.dmg, 'Dinossauro deve ser mais forte que o disparo base da torre');
+assert(tDino._dino && typeof tDino._dino.roarT === 'number' && typeof tDino._dino.tailT === 'number' && typeof tDino._dino.stompT === 'number' && typeof tDino._dino.pounceT === 'number', 'Dinossauro deve possuir estados completos de animação (caminhada, bote, mordida, cauda, pisão e rugido sísmico)');
 
 // Iniciar onda e simular combate com Dinossauro, Aliados, Minas com Stun e Portal Tático
 Z.dispatch({ type: 'wave' });
