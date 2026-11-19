@@ -6801,7 +6801,7 @@ function donateCoopCoins(toSlot,pct,remote,fromSlot,remoteAmount){
   target.money=(target.money||0)+amount;
   SecurityGuard.syncVault();
   if(COOP.active && COOP.isMultiplayer && window.QZ_NET_MP && typeof window.QZ_NET_MP.broadcastDonate==='function'){
-    window.QZ_NET_MP.broadcastDonate(target.slot,matched,amount,COOP.mySlot||0);
+    window.QZ_NET_MP.broadcastDonate(target.slot,matched,amount,COOP.mySlot||0,curBal);
   }
   OnlineAPI.req('/api/mp/donate',{
     method:'POST',
@@ -7116,9 +7116,11 @@ function initCoopNetworkListeners(){
     handleRemoteGameStart(msg);
   });
 
-  window.QZ_NET_MP.on('cmd_broadcast',c=>{
+  window.QZ_NET_MP.on('cmd_broadcast',raw=>{
+    const c=(raw&&raw.command)?raw.command:raw;
     if(!c||!c.type)return;
-    if(c.playerSlot===COOP.mySlot&&!c.force)return;
+    const fromSlot=(raw&&typeof raw.fromSlot==='number')?raw.fromSlot:(c.playerSlot!==undefined?c.playerSlot:-1);
+    if(fromSlot===COOP.mySlot&&!c.force)return;
     c.remote=true;
     const f=CMDS[c.type];
     if(f){

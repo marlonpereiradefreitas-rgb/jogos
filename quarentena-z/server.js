@@ -1581,8 +1581,12 @@ function validateCoinDonation(payload) {
   if (!payload || typeof payload !== 'object') {
     return { valid: false, reason: 'Payload de doação inválido.' };
   }
-  const balance = Number(payload.balance);
   const pct = Number(payload.pct);
+  const amount = Number(payload.amount);
+  let balance = Number(payload.balance);
+  if ((!Number.isFinite(balance) || balance < 1) && Number.isFinite(amount) && amount >= 1 && Number.isFinite(pct) && pct > 0) {
+    balance = Math.round(amount / pct);
+  }
   const fromSlot = Number(payload.fromSlot) | 0;
   const toSlot = Number(payload.toSlot) | 0;
 
@@ -1822,7 +1826,7 @@ const server = http.createServer((req, res) => {
         return;
       }
     }
-    if (urlObj.pathname.startsWith('/api/')) {
+    if (urlObj.pathname === '/health' || urlObj.pathname === '/ping' || urlObj.pathname.startsWith('/api/')) {
       handleApi(req, res, urlObj);
     } else {
       serveStatic(req, res, urlObj);
@@ -1882,38 +1886,49 @@ server.on('upgrade', (req, socket) => {
             const room = DB.mpRooms[client.roomId];
             if (room && Array.isArray(room.players)) {
               const slot = client.slot !== undefined ? client.slot : Number(msg.slot);
-              const p = room.players.find(pl => pl.slot === slot);
-              if (p) {
-                p.ready = msg.ready !== undefined ? !!msg.ready : true;
-                persistDb();
-                broadcastRoomWs(client.roomId, {
-                  type: 'player_ready',
-                  slot,
-                  ready: p.ready,
-                  room: publicRoom(room)
-                });
+              let p = room.players.find(pl => pl.slot === slot);
+              if (!p) {
+                p = { name: client.name || ('Jogador P' + (slot + 1)), slot, ready: true, joinedAt: Date.now() };
+                room.players.push(p);
               }
+              p.ready = msg.ready !== undefined ? !!msg.ready : true;
+              persistDb();
+              broadcastRoomWs(client.roomId, {
+                type: 'player_ready',
+                slot,
+                ready: p.ready,
+                room: publicRoom(room)
+              });
             }
           } else if (msg.type === 'join_room') {
-            const raw = String(msg.roomId || msg.roomCode || '').trim().toUpperCase();
-            const cleanCode = raw.replace(/[^2-9A-Z]/g, '');
+            const rawId = String(msg.roomId || '').trim();
+            const rawCode = String(msg.roomCode || '').trim().toUpperCase();
+            const cleanCode = rawCode.replace(/[^2-9A-Z]/g, '');
             const normalized = cleanCode.startsWith('QZ') ? ('QZ-' + cleanCode.slice(2)) : ('QZ-' + cleanCode);
-            const room = DB.mpRooms[raw] || Object.values(DB.mpRooms).find(r => r && (
-              r.roomCode === raw ||
-              r.roomCode === normalized ||
-              r.roomId === raw ||
-              r.roomCode.replace(/[^2-9A-Z]/g, '') === cleanCode
+            const room = (rawId && DB.mpRooms[rawId]) || Object.values(DB.mpRooms).find(r => r && (
+              (rawId && r.roomId === rawId) ||
+              (rawCode && r.roomCode === rawCode) ||
+              (rawCode && r.roomCode === normalized) ||
+              (cleanCode && r.roomCode.replace(/[^2-9A-Z]/g, '') === cleanCode)
             ));
             if (room) {
               client.roomId = room.roomId;
               client.roomCode = room.roomCode;
               client.slot = Number(msg.slot) || 0;
               client.name = cleanName(msg.playerName || 'Comandante');
+              if (Array.isArray(room.players)) {
+                let p = room.players.find(pl => pl.slot === client.slot);
+                if (!p) {
+                  p = { name: client.name, slot: client.slot, ready: false, joinedAt: Date.now() };
+                  room.players.push(p);
+                  persistDb();
+                }
+              }
               socket.write(encodeWsFrame(JSON.stringify({ type: 'room_state', room: publicRoom(room) })));
               broadcastRoomWs(room.roomId, {
                 type: 'player_joined',
                 slot: client.slot,
-                player: { name: client.name, slot: client.slot, ready: true },
+                player: { name: client.name, slot: client.slot, ready: false },
                 room: publicRoom(room)
               }, client);
             }

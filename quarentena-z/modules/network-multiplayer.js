@@ -300,16 +300,20 @@
     return sendWsMessage(packet);
   }
 
-  function broadcastDonate(toSlotOrObj, pct, amount, fromSlot) {
+  function broadcastDonate(toSlotOrObj, pct, amount, fromSlot, balance) {
     let packet;
     if (toSlotOrObj && typeof toSlotOrObj === 'object') {
       packet = Object.assign({ type: 'coop_donate' }, toSlotOrObj);
     } else {
+      const p = Number(pct) || 0.25;
+      const amt = Number(amount) || 0;
+      const bal = balance !== undefined ? Number(balance) : (p > 0 ? Math.round(amt / p) : amt);
       packet = {
         type: 'coop_donate',
         toSlot: Number(toSlotOrObj) || 0,
-        pct: Number(pct) || 0.25,
-        amount: Number(amount) || 0,
+        pct: p,
+        amount: amt,
+        balance: bal,
         fromSlot: fromSlot !== undefined ? fromSlot : (activeRoom ? activeRoom.mySlot : 0),
         ts: Date.now()
       };
