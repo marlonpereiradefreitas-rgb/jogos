@@ -115,7 +115,7 @@
       });
       return await res.json();
     } catch (_) {
-      return null;
+      return { ok: false, networkError: true, error: 'Sem conexão com o servidor (' + base + '). Confira se o servidor está ligado e o endereço está correto.' };
     }
   }
 
@@ -139,53 +139,98 @@
     return { valid: true };
   }
 
-  // --- Cliente WebSocket Assíncrono (RFC 6455) ---
+  // --- Cliente WebSocket Assíncrono (RFC 6455) com reconexão automática ---
+  let wsWanted = false;          // true enquanto o jogador deve permanecer conectado
+  let reconnectAttempts = 0;
+  let lastPongAt = 0;
+  let wasConnectedOnce = false;
+  let myPlayerName = 'Comandante';
+  let pendingQueue = [];
+
+  function buildWsUrl() {
+    const srv = getEffectiveServerUrl();
+    const wsProto = srv.startsWith('https:') ? 'wss:' : 'ws:';
+    const hostPart = srv.replace(/^https?:\/\//, '').replace(/\/+$/, '');
+    return `${wsProto}//${hostPart}/ws`;
+  }
+
+  function announceRoomOnSocket() {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    if (activeRoom && (activeRoom.roomId || activeRoom.roomCode)) {
+      try {
+        ws.send(JSON.stringify({
+          type: 'join_room',
+          roomId: activeRoom.roomId,
+          roomCode: activeRoom.roomCode,
+          slot: activeRoom.mySlot || 0,
+          playerName: myPlayerName,
+          token: clientToken
+        }));
+      } catch (_) {}
+    }
+  }
+
+  function scheduleReconnect() {
+    if (!wsWanted || reconnectTimer) return;
+    reconnectAttempts++;
+    const delay = Math.min(8000, 400 * Math.pow(2, Math.min(reconnectAttempts, 5)));
+    emit('reconnecting', { attempt: reconnectAttempts, delay });
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null;
+      if (wsWanted) connectWebSocket();
+    }, delay);
+  }
+
   function connectWebSocket(customWsUrl) {
     if (typeof WebSocket === 'undefined') return false;
+    wsWanted = true;
     if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
       return true;
     }
 
-    let url = customWsUrl;
-    if (!url) {
-      const srv = getEffectiveServerUrl();
-      const wsProto = srv.startsWith('https:') ? 'wss:' : 'ws:';
-      const hostPart = srv.replace(/^https?:\/\//, '');
-      url = `${wsProto}//${hostPart}/ws`;
-    }
+    const url = customWsUrl || buildWsUrl();
 
     try {
-      ws = new WebSocket(url);
-      ws.onopen = () => {
+      const sock = new WebSocket(url);
+      ws = sock;
+      sock.onopen = () => {
+        if (ws !== sock) return;
         wsConnected = true;
+        reconnectAttempts = 0;
+        lastPongAt = Date.now();
         if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
         if (heartbeatTimer) clearInterval(heartbeatTimer);
-        // Medição em tempo real de latência/ping a cada 4 segundos
+        // 1º: entrar na sala (antes de qualquer outra mensagem); 2º: esvaziar a fila; 3º: ping.
+        announceRoomOnSocket();
+        const queued = pendingQueue; pendingQueue = [];
+        for (const m of queued) { try { sock.send(JSON.stringify(m)); } catch (_) {} }
+        sendWsMessage({ type: 'ping', clientTs: Date.now() });
+        // Medição de latência a cada 4s + detecção de conexão morta (sem pong em 16s)
         heartbeatTimer = setInterval(() => {
+          if (Date.now() - lastPongAt > 16000) { try { sock.close(); } catch (_) {} return; }
           sendWsMessage({ type: 'ping', clientTs: Date.now() });
         }, 4000);
-        // Ping imediato para leitura instantânea de latência ao conectar
-        sendWsMessage({ type: 'ping', clientTs: Date.now() });
-        if (activeRoom && (activeRoom.roomId || activeRoom.roomCode)) {
-          sendWsMessage({
-            type: 'join_room',
-            roomId: activeRoom.roomId,
-            roomCode: activeRoom.roomCode,
-            slot: activeRoom.mySlot || 0,
-            token: clientToken
-          });
-        }
-        emit('connected', { url });
+        emit(wasConnectedOnce ? 'reconnected' : 'connected', { url });
+        wasConnectedOnce = true;
       };
 
-      ws.onmessage = (ev) => {
+      sock.onmessage = (ev) => {
         try {
           const msg = JSON.parse(ev.data);
           if (!msg || typeof msg !== 'object') return;
-          if (msg.type === 'pong' && (msg.clientTs || msg.ts)) {
-            const lat = Math.max(1, Date.now() - (msg.clientTs || msg.ts));
-            currentPing = lat;
-            emit('ping_pong', { ping: lat });
+          if (msg.type === 'pong') {
+            lastPongAt = Date.now();
+            if (msg.clientTs || msg.ts) {
+              const lat = Math.max(1, Date.now() - (msg.clientTs || msg.ts));
+              currentPing = lat;
+              emit('ping_pong', { ping: lat });
+            }
+          }
+          if ((msg.type === 'room_state' || msg.type === 'room_update' || msg.type === 'player_joined' ||
+               msg.type === 'player_ready' || msg.type === 'game_start') && msg.room && activeRoom) {
+            const keepSlot = activeRoom.mySlot;
+            activeRoom = Object.assign(activeRoom, msg.room);
+            activeRoom.mySlot = keepSlot;
           }
           if (msg.type) {
             emit(msg.type, msg);
@@ -194,32 +239,59 @@
         } catch (_) {}
       };
 
-      ws.onclose = () => {
+      sock.onclose = () => {
+        if (ws !== sock) return;
         wsConnected = false;
         if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
         emit('disconnected', {});
+        scheduleReconnect();
       };
 
-      ws.onerror = () => {
+      sock.onerror = () => {
+        // onclose sempre é disparado em seguida e cuida da reconexão
         wsConnected = false;
       };
       return true;
     } catch (_) {
       wsConnected = false;
+      scheduleReconnect();
       return false;
     }
   }
 
+  function disconnectWebSocket() {
+    wsWanted = false;
+    pendingQueue = [];
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+    if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+    const sock = ws;
+    ws = null;
+    wsConnected = false;
+    if (sock) { try { sock.close(); } catch (_) {} }
+  }
+
+  function leaveRoom() {
+    disconnectWebSocket();
+    activeRoom = null;
+  }
+
   function sendWsMessage(payload) {
-    if (!ws || !wsConnected || typeof WebSocket === 'undefined' || ws.readyState !== WebSocket.OPEN) {
-      return false;
+    if (typeof WebSocket === 'undefined') return false;
+    if (ws && wsConnected && ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(JSON.stringify(payload));
+        return true;
+      } catch (_) {
+        return false;
+      }
     }
-    try {
-      ws.send(JSON.stringify(payload));
+    // Ainda conectando/reconectando: guarda (exceto pings) para enviar assim que abrir
+    if (wsWanted && payload && payload.type !== 'ping') {
+      if (pendingQueue.length >= 60) pendingQueue.shift();
+      pendingQueue.push(payload);
       return true;
-    } catch (_) {
-      return false;
     }
+    return false;
   }
 
   // --- API Multiplayer: Salas, Pareamento (Matchmaking), Sincronização e Placares ---
@@ -250,11 +322,20 @@
     if (res && res.ok && res.room) {
       activeRoom = res.room;
       activeRoom.mySlot = 0;
-      connectWebSocket();
-      sendWsMessage({ type: 'join_room', roomId: activeRoom.roomId, roomCode: activeRoom.roomCode, slot: 0, playerName: o.playerName });
+      myPlayerName = o.playerName || myPlayerName;
+      attachToRoomSocket();
       emit('room_joined', activeRoom);
     }
     return res;
+  }
+
+  // Conecta (ou reaproveita) o WebSocket e entra na sala ativa.
+  function attachToRoomSocket() {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      announceRoomOnSocket();
+    } else {
+      connectWebSocket(); // o onopen envia o join_room da sala ativa
+    }
   }
 
   async function joinRoom(opts) {
@@ -267,8 +348,8 @@
     if (res && res.ok && res.room) {
       activeRoom = res.room;
       activeRoom.mySlot = res.slot !== undefined ? res.slot : (activeRoom.players ? activeRoom.players.length - 1 : 1);
-      connectWebSocket();
-      sendWsMessage({ type: 'join_room', roomId: activeRoom.roomId, roomCode: activeRoom.roomCode, slot: activeRoom.mySlot, playerName: o.playerName });
+      myPlayerName = o.playerName || myPlayerName;
+      attachToRoomSocket();
       emit('room_joined', activeRoom);
     }
     return res;
@@ -280,7 +361,6 @@
       roomId: activeRoom ? activeRoom.roomId : undefined,
       roomCode: activeRoom ? activeRoom.roomCode : undefined
     }, o);
-    sendWsMessage(Object.assign({ type: 'room_update' }, payload));
     return await apiReq('/api/mp/rooms/update', 'POST', payload);
   }
 
@@ -290,8 +370,13 @@
       roomId: activeRoom ? activeRoom.roomId : undefined,
       roomCode: activeRoom ? activeRoom.roomCode : undefined
     }, o);
-    sendWsMessage(Object.assign({ type: 'game_start' }, payload));
-    return await apiReq('/api/mp/rooms/start', 'POST', payload);
+    // Caminho principal: REST (o servidor dispara 'game_start' para todos na sala, uma única vez).
+    const res = await apiReq('/api/mp/rooms/start', 'POST', payload);
+    if (!res || !res.ok) {
+      // Fallback: pede o início pelo WebSocket (servidor deduplica início repetido).
+      sendWsMessage(Object.assign({ type: 'game_start' }, payload));
+    }
+    return res;
   }
 
   function broadcastCommand(cmd) {
@@ -450,8 +535,7 @@
     });
     if (res && res.ok && res.room) {
       activeRoom = res.room;
-      connectWebSocket();
-      sendWsMessage({ type: 'join_room', roomId: activeRoom.roomId, token: clientToken });
+      attachToRoomSocket();
       emit('room_joined', activeRoom);
     }
     return res;
@@ -507,6 +591,10 @@
     getCurrentPing,
     setPlayerReady,
     wakeServer,
+    leaveRoom,
+    disconnect: disconnectWebSocket,
+    getActiveRoom() { return activeRoom; },
+    isConnected() { return !!(ws && wsConnected); },
     getStatus() {
       return {
         wsConnected,

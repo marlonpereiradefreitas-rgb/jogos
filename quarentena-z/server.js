@@ -1335,12 +1335,8 @@ async function handleApi(req, res, urlObj) {
         sendJson(req, res, 404, { ok: false, error: 'Sala não encontrada.' });
         return;
       }
-      room.status = 'playing';
-      room.seed = (Number(body.seed) >>> 0) || room.seed || 20260101;
-      room.updatedAt = Date.now();
-      persistDb();
-      const startEv = { type: 'game_start', room: publicRoom(room) };
-      broadcastRoomWs(room.roomId, startEv);
+      launchRoomMatch(room, body);
+      const startEv = buildGameStartEvent(room);
       sendJson(req, res, 200, Object.assign({ ok: true }, startEv));
     } catch (err) {
       sendJson(req, res, 400, { ok: false, error: err.message });
@@ -1649,8 +1645,47 @@ function publicRoom(room) {
     tick: room.tick,
     stateHash: room.stateHash,
     status: room.status,
+    startedAt: room.startedAt || 0,
     players: (room.players || []).map(p => ({ name: p.name, slot: p.slot, ready: !!p.ready }))
   };
+}
+
+function buildGameStartEvent(room) {
+  const pr = publicRoom(room);
+  return {
+    type: 'game_start',
+    seed: pr.seed,
+    map: pr.map,
+    diff: pr.diff,
+    division: pr.division,
+    maxPlayers: pr.maxPlayers,
+    startedAt: pr.startedAt,
+    room: pr
+  };
+}
+
+/**
+ * Início de partida único e idempotente: tanto o caminho REST quanto o WebSocket
+ * chamam esta função; se a sala já foi lançada há poucos segundos, o segundo
+ * pedido NÃO dispara novo broadcast (evita iniciar a partida duas vezes).
+ */
+function launchRoomMatch(room, params) {
+  const p = params || {};
+  const now = Date.now();
+  if (room.startedAt && now - room.startedAt < 8000) {
+    return { duplicate: true, event: buildGameStartEvent(room) };
+  }
+  room.status = 'playing';
+  room.startedAt = now;
+  room.seed = (Number(p.seed) >>> 0) || room.seed || 20260101;
+  if (p.map && VALID_MAPS.has(p.map)) room.map = p.map;
+  if (p.diff && VALID_DIFFS.has(p.diff)) room.diff = p.diff;
+  if (p.division === 'free' || p.division === 'sectors') room.division = p.division;
+  room.updatedAt = now;
+  persistDb();
+  const event = buildGameStartEvent(room);
+  broadcastRoomWs(room.roomId, event);
+  return { duplicate: false, event };
 }
 
 const wsClients = new Set();
@@ -1677,34 +1712,56 @@ function encodeWsFrame(str) {
   return Buffer.concat([header, payload]);
 }
 
-function decodeWsFrame(buf) {
-  if (!buf || buf.length < 2) return null;
-  const opcode = buf[0] & 0x0f;
-  if (opcode === 0x08) return { close: true };
-  if (opcode !== 0x01) return null;
-  const masked = (buf[1] & 0x80) !== 0;
-  let len = buf[1] & 0x7f;
-  let offset = 2;
-  if (len === 126) {
-    if (buf.length < 4) return null;
-    len = buf.readUInt16BE(2);
-    offset = 4;
-  } else if (len === 127) {
-    return null;
-  }
-  const totalLen = offset + (masked ? 4 : 0) + len;
-  if (buf.length < totalLen || len > 32768) return null;
-  const data = Buffer.alloc(len);
-  if (masked) {
-    const mask = buf.slice(offset, offset + 4);
-    offset += 4;
-    for (let i = 0; i < len; i++) {
-      data[i] = buf[offset + i] ^ mask[i & 3];
+const WS_MAX_PAYLOAD = 262144; // 256 KB por mensagem
+
+/**
+ * Extrai TODOS os frames completos do buffer acumulado do cliente (vários frames
+ * podem chegar colados no mesmo pacote TCP, ou um frame pode chegar dividido em
+ * vários pacotes). Retorna { frames, error }.
+ */
+function extractWsFrames(client) {
+  const frames = [];
+  let buf = client.rxBuf || Buffer.alloc(0);
+  while (buf.length >= 2) {
+    const b0 = buf[0];
+    const b1 = buf[1];
+    const fin = (b0 & 0x80) !== 0;
+    const opcode = b0 & 0x0f;
+    const masked = (b1 & 0x80) !== 0;
+    let len = b1 & 0x7f;
+    let offset = 2;
+    if (len === 126) {
+      if (buf.length < 4) break;
+      len = buf.readUInt16BE(2);
+      offset = 4;
+    } else if (len === 127) {
+      if (buf.length < 10) break;
+      const big = buf.readBigUInt64BE(2);
+      if (big > BigInt(WS_MAX_PAYLOAD)) { client.rxBuf = Buffer.alloc(0); return { frames, error: true }; }
+      len = Number(big);
+      offset = 10;
     }
-  } else {
-    buf.copy(data, 0, offset, offset + len);
+    if (len > WS_MAX_PAYLOAD) { client.rxBuf = Buffer.alloc(0); return { frames, error: true }; }
+    const total = offset + (masked ? 4 : 0) + len;
+    if (buf.length < total) break;
+    const data = Buffer.alloc(len);
+    if (masked) {
+      const mask = buf.subarray(offset, offset + 4);
+      const start = offset + 4;
+      for (let i = 0; i < len; i++) data[i] = buf[start + i] ^ mask[i & 3];
+    } else {
+      buf.copy(data, 0, offset, offset + len);
+    }
+    frames.push({ fin, opcode, data });
+    buf = buf.subarray(total);
   }
-  return { text: data.toString('utf8') };
+  client.rxBuf = buf;
+  return { frames, error: false };
+}
+
+function encodeWsControlFrame(opcode, payload) {
+  const p = payload || Buffer.alloc(0);
+  return Buffer.concat([Buffer.from([0x80 | opcode, Math.min(125, p.length)]), p.subarray(0, 125)]);
 }
 
 function broadcastRoomWs(roomId, msgObj, excludeClient) {
@@ -1861,18 +1918,13 @@ server.on('upgrade', (req, socket) => {
       `Sec-WebSocket-Accept: ${accept}\r\n\r\n`
     );
 
-    const client = { socket, roomId: null, connectedAt: Date.now() };
+    const client = { socket, roomId: null, connectedAt: Date.now(), rxBuf: Buffer.alloc(0), fragments: [], lastSeen: Date.now() };
     wsClients.add(client);
+    try { socket.setNoDelay(true); socket.setKeepAlive(true, 20000); socket.setTimeout(0); } catch (_) {}
 
-    socket.on('data', (buf) => {
-      const frame = decodeWsFrame(buf);
-      if (!frame) return;
-      if (frame.close) {
-        wsClients.delete(client);
-        socket.end();
-        return;
-      }
-      if (frame.text) {
+    const processWsText = (frameText) => {
+      const frame = { text: frameText };
+      {
         try {
           const msg = JSON.parse(frame.text);
           if (!msg || typeof msg !== 'object') return;
@@ -1925,24 +1977,19 @@ server.on('upgrade', (req, socket) => {
                 }
               }
               socket.write(encodeWsFrame(JSON.stringify({ type: 'room_state', room: publicRoom(room) })));
+              const joinedP = (room.players || []).find(pl => pl.slot === client.slot);
               broadcastRoomWs(room.roomId, {
                 type: 'player_joined',
                 slot: client.slot,
-                player: { name: client.name, slot: client.slot, ready: false },
+                player: { name: (joinedP && joinedP.name) || client.name, slot: client.slot, ready: !!(joinedP && joinedP.ready) },
                 room: publicRoom(room)
               }, client);
+            } else {
+              socket.write(encodeWsFrame(JSON.stringify({ type: 'join_error', error: 'Sala não encontrada no servidor.' })));
             }
           } else if (msg.type === 'game_start' && client.roomId) {
             const room = DB.mpRooms[client.roomId];
-            if (room) {
-              room.status = 'playing';
-              if (msg.seed) room.seed = Number(msg.seed) >>> 0;
-              if (msg.map && VALID_MAPS.has(msg.map)) room.map = msg.map;
-              if (msg.diff && VALID_DIFFS.has(msg.diff)) room.diff = msg.diff;
-              if (msg.division) room.division = msg.division;
-              persistDb();
-              broadcastRoomWs(client.roomId, { type: 'game_start', room: publicRoom(room) });
-            }
+            if (room) launchRoomMatch(room, msg);
           } else if (msg.type === 'room_update' && client.roomId) {
             const room = DB.mpRooms[client.roomId];
             if (room) {
@@ -1975,7 +2022,7 @@ server.on('upgrade', (req, socket) => {
                 remainingBalance: check.remainingBalance,
                 ts: Date.now()
               };
-              broadcastRoomWs(client.roomId, ev);
+              broadcastRoomWs(client.roomId, ev, client);
             }
           } else if (msg.type === 'coop_ping' && client.roomId) {
             const x = Math.max(8, Math.min(952, Math.round(Number(msg.x) || 480)));
@@ -1988,7 +2035,7 @@ server.on('upgrade', (req, socket) => {
               fromSlot: client.slot || 0,
               ts: Date.now()
             };
-            broadcastRoomWs(client.roomId, pingEv);
+            broadcastRoomWs(client.roomId, pingEv, client);
           } else if (msg.type === 'coop_vote' && client.roomId) {
             const voteType = msg.voteType === 'speed' ? 'speed' : 'wave';
             const speedVal = [1, 2, 3].includes(Number(msg.speed)) ? Number(msg.speed) : 1;
@@ -2000,7 +2047,7 @@ server.on('upgrade', (req, socket) => {
               fromSlot: client.slot || 0,
               ts: Date.now()
             };
-            broadcastRoomWs(client.roomId, ev);
+            broadcastRoomWs(client.roomId, ev, client);
           } else if (msg.type === 'base_sync' && client.roomId) {
             const life = Math.max(0, Math.floor(Number(msg.life) || 0));
             broadcastRoomWs(client.roomId, { type: 'base_sync', life, fromSlot: client.slot || 0 }, client);
@@ -2018,6 +2065,38 @@ server.on('upgrade', (req, socket) => {
             }
           }
         } catch (_) {}
+      }
+    };
+
+    socket.on('data', (chunk) => {
+      client.lastSeen = Date.now();
+      client.rxBuf = Buffer.concat([client.rxBuf, chunk]);
+      if (client.rxBuf.length > WS_MAX_PAYLOAD * 2) { socket.destroy(); return; }
+      const res = extractWsFrames(client);
+      if (res.error) { socket.destroy(); return; }
+      for (const fr of res.frames) {
+        if (fr.opcode === 0x8) { // close
+          try { socket.write(encodeWsControlFrame(0x8, fr.data.subarray(0, 2))); } catch (_) {}
+          wsClients.delete(client);
+          socket.end();
+          return;
+        }
+        if (fr.opcode === 0x9) { // ping do cliente -> pong
+          try { socket.write(encodeWsControlFrame(0xA, fr.data)); } catch (_) {}
+          continue;
+        }
+        if (fr.opcode === 0xA) continue; // pong
+        if (fr.opcode === 0x1 || fr.opcode === 0x2) {
+          if (fr.fin) { client.fragments = []; processWsText(fr.data.toString('utf8')); }
+          else client.fragments = [fr.data];
+        } else if (fr.opcode === 0x0) { // continuação
+          client.fragments.push(fr.data);
+          if (fr.fin) {
+            const full = Buffer.concat(client.fragments);
+            client.fragments = [];
+            if (full.length <= WS_MAX_PAYLOAD) processWsText(full.toString('utf8'));
+          }
+        }
       }
     });
 
