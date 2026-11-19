@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: quarentena-z-online
+    runtime: node
+    plan: free
+    buildCommand: echo "Iniciando Quarentena Z"
+    startCommand: node quarentena-z/server.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: ALLOWED_ORIGINS
+        value: https://marlonpereiradefreitas-rgb.github.io

@@ -18,12 +18,29 @@ const zlib = require('zlib');
 const crypto = require('crypto');
 const os = require('os');
 
-const PORT = Number(process.env.PORT) || 8080;
+const PORT = Number(process.env.PORT) || 3000;
 const ROOT_DIR = __dirname;
 const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.join(ROOT_DIR, 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 const SECRET_FILE = path.join(DATA_DIR, '.server_secret');
 const ADMIN_KEY = process.env.ADMIN_KEY || '';
+
+// Configuração Cloud-Ready de CORS Dinâmico via ALLOWED_ORIGINS
+const ALLOWED_ORIGINS_RAW = process.env.ALLOWED_ORIGINS || 'https://marlonpereiradefreitas-rgb.github.io';
+const ALLOWED_ORIGINS_SET = new Set(
+  ALLOWED_ORIGINS_RAW.split(',').map(s => s.trim().replace(/\/+$/, '')).filter(Boolean)
+);
+
+// Alfabeto desambiguado para códigos curtos de sala (sem 0, O, 1, I para evitar confusão entre jogadores)
+const SAFE_ROOM_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+function generateShortRoomCode(length = 6) {
+  const bytes = crypto.randomBytes(length);
+  let code = '';
+  for (let i = 0; i < length; i++) {
+    code += SAFE_ROOM_ALPHABET[bytes[i] % SAFE_ROOM_ALPHABET.length];
+  }
+  return 'QZ-' + code;
+}
 
 // Detecta endereços IPv4 locais (LAN) para exibição e conexão direta entre 2 PCs
 function getLocalIps() {
@@ -574,16 +591,21 @@ const SECURITY_HEADERS = {
 function getCorsHeaders(req) {
   const origin = req.headers.origin;
   const host = req.headers.host || 'localhost';
-  const isLanOrLocal = /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/i.test(origin || '');
-  const isGithubPages = /^https:\/\/marlonpereiradefreitas-rgb\.github\.io$/i.test(origin || '');
-  // Permite conexões locais, LAN entre dois PCs, GitHub Pages e mesma origem
-  const allowedOrigin = (!origin || origin.includes(host) || isLanOrLocal || isGithubPages || origin === 'null')
+  const cleanOrigin = String(origin || '').trim().replace(/\/+$/, '');
+  const isLanOrLocal = /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/i.test(cleanOrigin);
+  const isGithubPages = /^https:\/\/([a-z0-9-]+\.)?github\.io$/i.test(cleanOrigin) || cleanOrigin === 'https://marlonpereiradefreitas-rgb.github.io';
+  const isExplicitAllowed = ALLOWED_ORIGINS_SET.has(cleanOrigin) || ALLOWED_ORIGINS_RAW === '*';
+  const isSameHost = origin && host && cleanOrigin.includes(host);
+
+  const allowedOrigin = (!origin || isExplicitAllowed || isGithubPages || isLanOrLocal || isSameHost || cleanOrigin === 'null')
     ? (origin || '*')
     : 'null';
+
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-Client-Token, X-License-Token, X-Admin-Key',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Token, X-License-Token, X-Admin-Key',
+    'Access-Control-Max-Age': '86400',
     'Vary': 'Origin'
   };
 }
@@ -647,6 +669,21 @@ async function handleApi(req, res, urlObj) {
     return;
   }
 
+  const pathname = urlObj.pathname;
+
+  // 0a. HEALTH CHECK LEVE PARA CLOUD (Render, Railway, Fly.io, Monitoramento): HTTP 200 rápido e sem rate limit
+  if ((pathname === '/health' || pathname === '/api/health') && req.method === 'GET') {
+    sendJson(req, res, 200, {
+      status: 'ok',
+      service: 'Quarentena Z Server',
+      version: '1.0.14',
+      uptime: Math.floor(process.uptime()),
+      roomsCount: Object.keys(DB.mpRooms || {}).length,
+      timestamp: Date.now()
+    });
+    return;
+  }
+
   const rawIp = String(req.headers['x-forwarded-for'] || (req.socket && req.socket.remoteAddress) || 'unknown');
   const ip = rawIp.split(',')[0].trim();
   const isMutation = req.method === 'POST' || req.method === 'PATCH' || req.method === 'DELETE';
@@ -656,8 +693,6 @@ async function handleApi(req, res, urlObj) {
     sendJson(req, res, 429, { ok: false, error: fw.reason });
     return;
   }
-
-  const pathname = urlObj.pathname;
 
   // 0. SERVER INFO & LAN IP: GET /api/server-info — Detecção de servidor e IP de rede local para conectar 2 PCs
   if (pathname === '/api/server-info' && req.method === 'GET') {
@@ -1838,11 +1873,37 @@ server.on('upgrade', (req, socket) => {
           const msg = JSON.parse(frame.text);
           if (!msg || typeof msg !== 'object') return;
           if (msg.type === 'ping') {
-            socket.write(encodeWsFrame(JSON.stringify({ type: 'pong', ts: Date.now() })));
+            socket.write(encodeWsFrame(JSON.stringify({
+              type: 'pong',
+              clientTs: msg.clientTs || msg.ts || Date.now(),
+              serverTs: Date.now()
+            })));
+          } else if (msg.type === 'player_ready' && client.roomId) {
+            const room = DB.mpRooms[client.roomId];
+            if (room && Array.isArray(room.players)) {
+              const slot = client.slot !== undefined ? client.slot : Number(msg.slot);
+              const p = room.players.find(pl => pl.slot === slot);
+              if (p) {
+                p.ready = msg.ready !== undefined ? !!msg.ready : true;
+                persistDb();
+                broadcastRoomWs(client.roomId, {
+                  type: 'player_ready',
+                  slot,
+                  ready: p.ready,
+                  room: publicRoom(room)
+                });
+              }
+            }
           } else if (msg.type === 'join_room') {
-            const raw = String(msg.roomId || msg.roomCode || '').trim();
-            const normalized = raw.startsWith('QZ-') ? raw : (raw.startsWith('QZ') ? ('QZ-' + raw.slice(2)) : ('QZ-' + raw));
-            const room = DB.mpRooms[raw] || Object.values(DB.mpRooms).find(r => r && (r.roomCode === raw.toUpperCase() || r.roomCode === normalized.toUpperCase() || r.roomId === raw));
+            const raw = String(msg.roomId || msg.roomCode || '').trim().toUpperCase();
+            const cleanCode = raw.replace(/[^2-9A-Z]/g, '');
+            const normalized = cleanCode.startsWith('QZ') ? ('QZ-' + cleanCode.slice(2)) : ('QZ-' + cleanCode);
+            const room = DB.mpRooms[raw] || Object.values(DB.mpRooms).find(r => r && (
+              r.roomCode === raw ||
+              r.roomCode === normalized ||
+              r.roomId === raw ||
+              r.roomCode.replace(/[^2-9A-Z]/g, '') === cleanCode
+            ));
             if (room) {
               client.roomId = room.roomId;
               client.roomCode = room.roomCode;
@@ -1861,6 +1922,9 @@ server.on('upgrade', (req, socket) => {
             if (room) {
               room.status = 'playing';
               if (msg.seed) room.seed = Number(msg.seed) >>> 0;
+              if (msg.map && VALID_MAPS.has(msg.map)) room.map = msg.map;
+              if (msg.diff && VALID_DIFFS.has(msg.diff)) room.diff = msg.diff;
+              if (msg.division) room.division = msg.division;
               persistDb();
               broadcastRoomWs(client.roomId, { type: 'game_start', room: publicRoom(room) });
             }
@@ -1966,6 +2030,27 @@ server.headersTimeout = 10000;
 server.requestTimeout = 15000;
 server.keepAliveTimeout = 5000;
 server.maxHeadersCount = 60;
+
+// Limpeza automática de salas vazias/inativas a cada 10 minutos (previne vazamentos de memória e inchaço no db.json)
+function cleanupStaleRooms() {
+  const now = Date.now();
+  let changed = false;
+  const ONE_HOUR = 60 * 60 * 1000;
+  const THREE_HOURS = 3 * ONE_HOUR;
+  for (const [id, r] of Object.entries(DB.mpRooms || {})) {
+    if (!r) { delete DB.mpRooms[id]; changed = true; continue; }
+    const age = now - (r.updatedAt || r.createdAt || 0);
+    if (age > THREE_HOURS || (r.status === 'waiting' && age > ONE_HOUR)) {
+      delete DB.mpRooms[id];
+      changed = true;
+    }
+  }
+  if (changed) persistDb();
+}
+try {
+  const timer = setInterval(cleanupStaleRooms, 10 * 60 * 1000);
+  if (timer && typeof timer.unref === 'function') timer.unref();
+} catch (_) {}
 
 if (require.main === module) {
   const localIps = getLocalIps();

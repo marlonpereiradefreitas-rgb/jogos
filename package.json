@@ -1,0 +1,16 @@
+{
+  "name": "quarentena-z-monorepo",
+  "version": "1.0.14",
+  "description": "Quarentena Z - Tower Defense Sci-Fi Co-op Multiplayer",
+  "main": "quarentena-z/server.js",
+  "scripts": {
+    "start": "node quarentena-z/server.js",
+    "server": "node quarentena-z/server.js",
+    "test": "node quarentena-z/tools/test-backend.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

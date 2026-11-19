@@ -1,17 +1,18 @@
 {
   "name": "quarentena-z",
   "productName": "Quarentena Z",
-  "version": "1.0.7",
+  "version": "1.0.14",
   "author": "Quarentena Z Studio",
   "description": "Quarentena Z - tower defense de zumbis",
-  "main": "electron/main.js",
+  "main": "server.js",
   "scripts": {
-    "start": "electron .",
+    "start": "node server.js",
+    "server": "node server.js",
+    "web": "node server.js",
+    "desktop": "electron .",
     "desktop:dev": "electron .",
     "desktop:build": "electron-builder",
     "dist": "electron-builder --win --dir",
-    "server": "node server.js",
-    "web": "node server.js",
     "test:backend": "node tools/test-backend.js"
   },
   "engines": {

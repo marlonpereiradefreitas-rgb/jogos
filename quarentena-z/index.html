@@ -758,23 +758,39 @@
       <p class="coop-desc-sub">Conecte dois computadores usando o código exclusivo da sala para defender Vale Cinzento em equipe com Vida Compartilhada, Doação Percentual de Moedas (25/50/100%) e Protocolo de Ascensão!</p>
     </div>
 
-    <!-- Indicador de Status do Servidor e Conexão LAN -->
+    <!-- Feedback Tático de Inicialização e Cold Start (Render / Nuvem) -->
+    <div id="coopColdStartNotice" class="coop-coldstart-notice hidden">
+      <div class="coop-radar-circle sm"></div>
+      <div class="coop-coldstart-info">
+        <strong id="coopColdStartTitle">CONECTANDO AO SERVIDOR TÁTICO...</strong>
+        <p id="coopColdStartText">Estabelecendo enlace de rede seguro com o backend de operações.</p>
+      </div>
+    </div>
+
+    <!-- Indicador de Status do Servidor e Conexão LAN/Online -->
     <div class="coop-server-bar">
       <div class="coop-server-left">
         <span class="coop-status-dot online" id="coopServerDot"></span>
         <span id="coopServerStatusLabel">SERVIDOR DE JOGO ONLINE</span>
         <span id="coopServerAddressTag" class="coop-ip-tag" title="Endereço de rede do servidor">DETECTANDO IP...</span>
+        <span id="coopPingBadge" class="coop-ping-badge" title="Latência da conexão em tempo real">📡 --ms</span>
       </div>
-      <button type="button" id="btnToggleServerConfig" class="coop-link-btn" title="Configurar IP ou endereço do servidor para conexão entre dois computadores">⚙ CONFIGURAR IP DO SERVIDOR</button>
+      <button type="button" id="btnToggleServerConfig" class="coop-link-btn" title="Configurar IP ou endereço do servidor para conexão entre dois computadores">⚙ CONFIGURAR SERVIDOR</button>
     </div>
     <div id="coopServerConfigDrawer" class="coop-server-drawer hidden">
       <div class="coop-server-input-row">
-        <label for="coopServerInput">ENDEREÇO DO SERVIDOR (HOST):</label>
-        <input id="coopServerInput" type="text" placeholder="http://192.168.0.100:8080 ou http://localhost:8080" autocomplete="off" spellcheck="false">
+        <label for="coopServerInput">ENDEREÇO DO SERVIDOR (HOST / NUVEM):</label>
+        <input id="coopServerInput" type="text" placeholder="https://quarentena-z-online.onrender.com ou http://192.168.0.100:3000" autocomplete="off" spellcheck="false">
         <button type="button" id="btnSaveServerUrl" class="coop-sm-btn primary">SALVAR</button>
         <button type="button" id="btnResetServerUrl" class="coop-sm-btn">PADRÃO</button>
       </div>
-      <small class="coop-hint">💡 Para jogar entre dois PCs na mesma rede (Wi-Fi/Cabo): no 2º PC, digite o endereço do 1º PC acima e clique em SALVAR.</small>
+      <div class="coop-server-quick-presets">
+        <span>PRESETS RÁPIDOS:</span>
+        <button type="button" class="coop-preset-btn" id="btnPresetRender">🌐 Servidor Online (Render)</button>
+        <button type="button" class="coop-preset-btn" id="btnPresetLan">🤝 Rede Local (LAN / 2º PC)</button>
+        <button type="button" class="coop-preset-btn" id="btnPresetLocalhost">🏠 Localhost (Porta 3000)</button>
+      </div>
+      <small class="coop-hint">💡 Para jogar entre dois PCs em redes diferentes com o frontend no GitHub Pages, use o <b>Servidor Online (Render)</b>. Para jogar na mesma rede Wi-Fi/cabo, use a <b>Rede Local (LAN)</b> com o IP do 1º PC.</small>
     </div>
 
     <!-- Abas Táticas: Criar Sala (Host) vs Entrar com Código (Aliado) -->
@@ -798,35 +814,53 @@
 
       <div class="coop-roster-header">
         <span>ESQUADRÃO EM TEMPO REAL (<span id="coopPlayersCountLabel">1/2</span>)</span>
-        <span id="coopSquadStatusBadge" class="coop-squad-badge waiting">📡 AGUARDANDO ALIADO...</span>
+        <div class="coop-roster-controls">
+          <button type="button" id="btnCoopToggleReadyHost" class="coop-ready-toggle-btn ready">✓ VOCÊ ESTÁ PRONTO</button>
+          <span id="coopSquadStatusBadge" class="coop-squad-badge waiting">📡 AGUARDANDO ALIADO...</span>
+        </div>
       </div>
       <div id="coopSlotsPreview" class="coop-slots-preview"></div>
 
-      <div class="coop-config-grid">
-        <label>TAMANHO DO ESQUADRÃO
-          <select id="coopPlayersSelect">
-            <option value="2" selected>2 Jogadores (Dupla Tática)</option>
-            <option value="3">3 Jogadores (Trio de Contenção)</option>
-            <option value="4">4 Jogadores (Esquadrão Completo)</option>
-          </select>
-        </label>
-        <label>MAPA DA OPERAÇÃO (18 ZONAS)
-          <select id="coopMapSelect"></select>
-        </label>
-        <label>NÍVEL DE AMEAÇA
-          <select id="coopDiffSelect">
-            <option value="easy">Fácil (Sobrevivência Inicial)</option>
-            <option value="normal" selected>Normal (Padrão de Vale Cinzento)</option>
-            <option value="hard">Difícil (Horda Implacável)</option>
-            <option value="apoc">Apocalipse (Contaminação Máxima)</option>
-          </select>
-        </label>
-        <label>DIVISÃO DE TERRITÓRIO
-          <select id="coopDivisionSelect">
-            <option value="sectors" selected>Setores Divididos (Cada um defende sua área)</option>
-            <option value="free">Mapa Livre (Construção Compartilhada)</option>
-          </select>
-        </label>
+      <!-- Pré-visualização e Configuração da Operação (Mapa, Ameaça, Território) -->
+      <div class="coop-mission-box">
+        <div class="coop-mission-preview-col">
+          <div class="coop-map-thumb-wrap">
+            <img id="coopMapThumbImg" class="coop-map-thumb-img" alt="Miniatura da Zona de Operação" src="assets/map_metro.png">
+            <div id="coopMapThumbPlaceholder" class="coop-thumb-placeholder">MAPA SELECIONADO</div>
+            <span id="coopMapDiffBadge" class="map-diff-badge diff-normal">NORMAL</span>
+          </div>
+          <div class="coop-mission-meta">
+            <strong id="coopMissionName">ZONA METRÔ SUBTERRÂNEO</strong>
+            <small id="coopMissionDesc">Túneis escuros e trilhos abandonados com pontos estratégicos de defesa.</small>
+          </div>
+        </div>
+
+        <div class="coop-config-grid">
+          <label>TAMANHO DO ESQUADRÃO
+            <select id="coopPlayersSelect">
+              <option value="2" selected>2 Jogadores (Dupla Tática)</option>
+              <option value="3">3 Jogadores (Trio de Contenção)</option>
+              <option value="4">4 Jogadores (Esquadrão Completo)</option>
+            </select>
+          </label>
+          <label>MAPA DA OPERAÇÃO (18 ZONAS)
+            <select id="coopMapSelect"></select>
+          </label>
+          <label>NÍVEL DE AMEAÇA
+            <select id="coopDiffSelect">
+              <option value="easy">Fácil (Sobrevivência Inicial)</option>
+              <option value="normal" selected>Normal (Padrão de Vale Cinzento)</option>
+              <option value="hard">Difícil (Horda Implacável)</option>
+              <option value="apoc">Apocalipse (Contaminação Máxima)</option>
+            </select>
+          </label>
+          <label>DIVISÃO DE TERRITÓRIO
+            <select id="coopDivisionSelect">
+              <option value="sectors" selected>Setores Divididos (Defesa coordenada por área)</option>
+              <option value="free">Mapa Livre (Construção compartilhada)</option>
+            </select>
+          </label>
+        </div>
       </div>
 
       <div class="hc-actions">
@@ -839,7 +873,7 @@
     <div id="coopJoinPanel" class="coop-tab-panel hidden">
       <div class="coop-join-section">
         <div class="coop-join-card">
-          <span class="coop-sub-kicker">CONECTAR AO ESQUADRÃO</span>
+          <span class="coop-sub-kicker">CONEXÃO AO ESQUADRÃO</span>
           <h3>INSIRA O CÓDIGO DA SALA DO HOST</h3>
           <div class="coop-input-group">
             <input id="coopJoinInput" type="text" maxlength="9" placeholder="QZ-8K4M9X" autocomplete="off" spellcheck="false">
@@ -853,11 +887,19 @@
             <span class="coop-status-dot online"></span>
             <strong id="coopJoinedRoomTitle">SALA TÁTICA CONECTADA</strong>
             <span id="coopJoinedCodeTag" class="coop-tag">QZ-000000</span>
+            <button type="button" id="btnCoopToggleReadyGuest" class="coop-ready-toggle-btn ready">✓ MARCAR COMO PRONTO</button>
           </div>
-          <div id="coopJoinedDetails" class="coop-joined-details"></div>
+
+          <div class="coop-joined-mission-summary">
+            <div class="coop-joined-map-wrap">
+              <img id="coopGuestMapThumb" class="coop-map-thumb-img" alt="Mapa" src="assets/map_metro.png">
+            </div>
+            <div id="coopJoinedDetails" class="coop-joined-details"></div>
+          </div>
+
           <div class="coop-waiting-pulse">
             <div class="coop-radar-circle"></div>
-            <span>Aguardando o Líder da Sala (Host) clicar em Iniciar Operação...</span>
+            <span>Aguardando o Líder da Sala (Host) clicar em <b>Iniciar Operação</b>...</span>
           </div>
         </div>
       </div>
