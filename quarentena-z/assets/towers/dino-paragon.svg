@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 84" width="120" height="84">
   <defs>
     <radialGradient id="bg_dino_5" cx="50%" cy="50%" r="60%">
-      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.5800000000000001"/>
+      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.62"/>
       <stop offset="100%" stop-color="#090d16" stop-opacity="0.98"/>
     </radialGradient>
   </defs>
@@ -54,5 +54,5 @@
           <polygon points="-19,-25 -13,-25 -14,-21 -19,-21" fill="#38bdf8"/>
           <rect x="-16.5" y="-25" width="1.4" height="3.8" fill="#090d16"/>
         </g>
-  <polygon points="60,6 64,14 72,14 66,19 68,27 60,22 52,27 54,19 48,14 56,14" fill="#fde047" stroke="#090d16" stroke-width="1"/>
+  <polygon points="60,5 64,13 72,13 66,18 68,26 60,21 52,26 54,18 48,13 56,13" fill="#fde047" stroke="#090d16" stroke-width="1"/>
 </svg>

@@ -3854,6 +3854,7 @@ function drawTowerSprite(key,x,y,ang,rec,lvl,spec,tm,tw,pathIdx,tier){
   ctx.save(); ctx.translate(Math.round(x),Math.round(y));
   const poly=(pts,fill,stroke,lw)=>{ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||.9;ctx.stroke();}};
   const circ=(cx,cy,r,fill,stroke,lw)=>{ctx.beginPath();ctx.arc(cx,cy,r,0,6.283);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||1;ctx.stroke();}};
+  const flash=(fx,fy,c1,c2)=>{if(rec>0.22){const fr=(rec-0.2)*5.2;poly([[fx,fy-2.4*fr],[fx+7.2*fr,fy],[fx,fy+2.4*fr]],c1||'#fb923c');circ(fx+1.5,fy,1.9*fr,c2||'#fef08a');}};
   const pCol=(pathIdx>=0&&PATH_SKIN_ACCENT[pathIdx])?PATH_SKIN_ACCENT[pathIdx]:null;
   const ac=(tier>=2&&pCol)?pCol:(TOWER_ACCENT[key]||'#38bdf8');
   const band=spec>=0?SPEC_COL[spec]:(pCol||LVL_COL[Math.min(3,(lvl||1)-1)]);
@@ -3861,59 +3862,64 @@ function drawTowerSprite(key,x,y,ang,rec,lvl,spec,tm,tw,pathIdx,tier){
   const _bk=lvl+'|'+spec+'|'+ac+'|'+(isSup?1:0)+'|'+(tier||0);
   let _bc=BASE_CACHE[_bk];
   if(!_bc){
-    _bc=BASE_CACHE[_bk]=document.createElement('canvas');_bc.width=52;_bc.height=46;
-    const _old=ctx;ctx=_bc.getContext('2d');ctx.translate(26,20);
-    // Sombra suave no solo
-    ctx.fillStyle='rgba(0,0,0,.45)';ctx.beginPath();ctx.ellipse(0,9,19,8.5,0,0,6.283);ctx.fill();
-    // Sapatas hidráulicas de canto
-    for(const [sx,sy] of [[-13,-6],[13,-6],[-14,7],[14,7]]){
-      poly([[sx-3,sy-2],[sx+3,sy-2],[sx+4,sy+3],[sx-4,sy+3]],'#1e293b','#090d16',.8);
-      R(sx-1,sy-1,2,2,ac);
+    _bc=BASE_CACHE[_bk]=document.createElement('canvas');_bc.width=54;_bc.height=48;
+    const _old=ctx;ctx=_bc.getContext('2d');ctx.translate(27,21);
+    // Sombra projetada suave no solo
+    ctx.fillStyle='rgba(0,0,0,.52)';ctx.beginPath();ctx.ellipse(0,9.5,20,9,0,0,6.283);ctx.fill();
+    // Sapatas hidráulicas de ancoragem nos 4 cantos com LED de status
+    for(const [sx,sy] of [[-13.5,-6],[13.5,-6],[-14.5,7.2],[14.5,7.2]]){
+      poly([[sx-3.4,sy-2.2],[sx+3.4,sy-2.2],[sx+4.2,sy+3.2],[sx-4.2,sy+3.2]],'#1e293b','#060911',.9);
+      R(sx-2.2,sy-1.4,4.4,1.2,'#475569');
+      R(sx-1.1,sy+.2,2.2,1.8,ac);
     }
-    // Plataforma octogonal blindada 2.5D (chanfro inferior + topo metálico)
-    poly([[-16,2],[-11,-5],[11,-5],[16,2],[16,10],[11,15],[-11,15],[-16,10]],'#0f172a','#060911',1);
+    // Plataforma octogonal blindada 2.5D (chanfro inferior profundo + topo metálico escovado)
+    poly([[-16.5,2],[-11.5,-5.5],[11.5,-5.5],[16.5,2],[16.5,10.5],[11.5,15.5],[-11.5,15.5],[-16.5,10.5]],'#090e1a','#04070d',1.1);
     const baseGrd=ctx.createLinearGradient(-15,-6,15,12);
-    baseGrd.addColorStop(0,isSup?'#1e3a4c':'#334155');
-    baseGrd.addColorStop(.5,isSup?'#0f2435':'#1e293b');
-    baseGrd.addColorStop(1,'#0f172a');
-    poly([[-15,1],[-10,-6],[10,-6],[15,1],[10,9],[-10,9]],baseGrd,'#475569',.9);
-    // Anel giratório rebaixado e aro neon de energia
-    ctx.beginPath();ctx.ellipse(0,1,11,7.5,0,0,6.283);ctx.fillStyle='#090d16';ctx.fill();
-    ctx.strokeStyle=ac;ctx.lineWidth=1.3;ctx.stroke();
-    // Detalhes de nível (chevrons luminosos na frente do pedestal)
+    baseGrd.addColorStop(0,isSup?'#24465c':'#3b4b61');
+    baseGrd.addColorStop(.5,isSup?'#122b3d':'#1e293b');
+    baseGrd.addColorStop(1,'#0b1120');
+    poly([[-15.2,1],[-10.4,-6.2],[10.4,-6.2],[15.2,1],[10.4,9.4],[-10.4,9.4]],baseGrd,'#64748b',.95);
+    // Reflexo especular superior no chanfro frontal
+    ctx.strokeStyle='rgba(226,232,240,.38)';ctx.lineWidth=.9;
+    ctx.beginPath();ctx.moveTo(-10,-5.6);ctx.lineTo(10,-5.6);ctx.stroke();
+    // Anel giratório rebaixado + trilho de rolamento e aro neon de energia
+    ctx.beginPath();ctx.ellipse(0,1,11.4,7.8,0,0,6.283);ctx.fillStyle='#070b14';ctx.fill();
+    ctx.strokeStyle=ac;ctx.lineWidth=1.4;ctx.stroke();
+    ctx.beginPath();ctx.ellipse(0,1,8.8,5.8,0,0,6.283);ctx.strokeStyle='rgba(148,163,184,.32)';ctx.lineWidth=.8;ctx.stroke();
+    // Chevrons luminosos de nível na face frontal do pedestal
     for(let i=0;i<lvl;i++){
       const lx=-9+i*5.5;
-      R(lx,12,4,3,'#090d16');
-      R(lx+.5,12.5,3,2,i===3&&spec>=0?SPEC_COL[spec]:ac);
+      R(lx,11.8,4.2,3.2,'#060911');
+      R(lx+.6,12.3,3,2.2,i===3&&spec>=0?SPEC_COL[spec]:ac);
     }
     ctx=_old;
   }
-  ctx.drawImage(_bc,-26,-20);
+  ctx.drawImage(_bc,-27,-21);
   ctx.translate(0,-3);
 
   // Escudos laterais e acessórios tecnológicos conforme o nível/tier da torre (evolução visual de skin)
   const tr=tier||0;
   if(lvl>=2||tr>=1){
-    poly([[-16,-2],[-12,-6],[-11,4],[-15,6]],'#334155','#0f172a',.8);
-    poly([[16,-2],[12,-6],[11,4],[15,6]],'#334155','#0f172a',.8);
-    R(-14,-1,1.5,4,ac);R(12.5,-1,1.5,4,ac);
+    poly([[-16.5,-2],[-12,-6.5],[-11,4.5],[-15.5,6.5]],'#334155','#0f172a',.85);
+    poly([[16.5,-2],[12,-6.5],[11,4.5],[15.5,6.5]],'#334155','#0f172a',.85);
+    R(-14.2,-1.2,1.6,4.4,ac);R(12.6,-1.2,1.6,4.4,ac);
   }
   if(tr>=2){
-    // Placas de blindagem pesada nos flancos
-    poly([[-18,0],[-14,-5],[-13,5],[-17,8]],'#1e293b',ac,.85);
-    poly([[18,0],[14,-5],[13,5],[17,8]],'#1e293b',ac,.85);
+    // Placas de blindagem reativa pesada nos flancos
+    poly([[-18.5,0],[-14,-5.5],[-13,5.5],[-17.5,8.5]],'#1e293b',ac,.9);
+    poly([[18.5,0],[14,-5.5],[13,5.5],[17.5,8.5]],'#1e293b',ac,.9);
   }
   if(tr>=3){
     // Estabilizadores tecnológicos e condutores de energia do caminho dominante
-    R(-16,-8,4,3,ac);R(12,-8,4,3,ac);
-    circ(-14,6,1.8,ac,'#090d16',.6);circ(14,6,1.8,ac,'#090d16',.6);
+    R(-16.5,-8.5,4.4,3.2,ac);R(12.1,-8.5,4.4,3.2,ac);
+    circ(-14.2,6.2,2,ac,'#090d16',.7);circ(14.2,6.2,2,ac,'#090d16',.7);
   }
   if(lvl>=4||tr>=4){
-    ctx.strokeStyle=ac;ctx.lineWidth=1.5;ctx.globalAlpha=.82;
-    ctx.beginPath();ctx.arc(0,1,17.5,0,6.283);ctx.stroke();ctx.globalAlpha=1;
+    ctx.strokeStyle=ac;ctx.lineWidth=1.5;ctx.globalAlpha=.85;
+    ctx.beginPath();ctx.arc(0,1,17.8,0,6.283);ctx.stroke();ctx.globalAlpha=1;
     // Módulos capacitores traseiros de alta potência (Tier 4+)
-    R(-12,-11,4,4,'#0f172a');R(-11,-10,2,2,ac);
-    R(8,-11,4,4,'#0f172a');R(9,-10,2,2,ac);
+    R(-12.5,-11.5,4.4,4.4,'#0f172a');R(-11.3,-10.3,2.2,2.2,ac);
+    R(8.1,-11.5,4.4,4.4,'#0f172a');R(9.3,-10.3,2.2,2.2,ac);
   }
 
   const rot=(fn)=>{ctx.save();ctx.rotate(ang);fn();ctx.restore();};
@@ -3921,417 +3927,461 @@ function drawTowerSprite(key,x,y,ang,rec,lvl,spec,tm,tw,pathIdx,tier){
 
   switch(key){
     case 'gunner':{
-      // Cúpula blindada + caixa de munição lateral + metralhadora rotativa dupla/tripla
-      circ(0,0,8.5,'#3f4d3b','#141a12',1);
-      circ(0,-1,6,'#5c6e56');
+      // Cúpula blindada + tambor de munição em latão + metralhadora rotativa dupla/tripla com camisa ventilada
+      circ(0,0,8.8,'#374733','#11170f',1.1);
+      circ(0,-1,6.4,'#53664d','#243020',.8);
       rot(()=>{
-        const L=13+lvl*2;
-        // Caixa de munição lateral em latão
-        R(-5,-8,7,4,'#785c2a');R(-4,-7,5,2,'#eab308');
-        // Canos gêmeos / Gatling com camisa perfurada
-        R(2-rc,-4,L,2.6,'#1f2937');R(2-rc,1.4,L,2.6,'#1f2937');
-        R(3-rc,-3,L-4,6,'#374151');
-        for(let i=0;i<3;i++)R(5-rc+i*3.2,-2,1.6,4,'#111827');
-        if(lvl>=3)R(2-rc,-1,L+2,2,'#4b5563');
-        // Quebra-chamas
-        R(2-rc+L,-4.5,3,3.2,'#6b7280');R(2-rc+L,1.2,3,3.2,'#6b7280');
-        // Escudo frontal da torreta
-        poly([[-6,-5],[3,-6],[5,0],[3,6],[-6,5]],'#4d5e47','#1a2418',.9);
-        R(-4,-2,5,4,band);
+        const L=13.5+lvl*2;
+        // Caixa de munição lateral blindada + fita de cartuchos dourados
+        R(-5.5,-8.8,7.5,4.4,'#5c451d');R(-4.5,-7.8,5.5,2.2,'#facc15');
+        for(let i=0;i<3;i++)R(-4+i*1.8,-5,1.2,2.2,'#eab308');
+        // Canos gêmeos / Gatling com camisa térmica perfurada e trilho especular
+        R(2-rc,-4.3,L,2.7,'#1e293b');R(2-rc,1.6,L,2.7,'#1e293b');
+        R(2-rc,-3.9,L,0.9,'#64748b');R(2-rc,2.0,L,0.9,'#64748b');
+        R(3-rc,-3.1,L-4,6.2,'#334155');
+        for(let i=0;i<3;i++)R(4.8-rc+i*3.2,-2.1,1.7,4.2,'#0f172a');
+        if(lvl>=3||tr>=3)R(2-rc,-1.1,L+2.2,2.2,'#94a3b8');
+        // Quebra-chamas duplo chanfrado
+        R(2-rc+L,-4.7,3.2,3.4,'#64748b');R(2-rc+L,1.3,3.2,3.4,'#64748b');
+        flash(5-rc+L,0,'#fb923c','#fef08a');
+        // Escudo frontal angulado da torreta + visor tático
+        poly([[-6.5,-5.5],[3.5,-6.5],[5.5,0],[3.5,6.5],[-6.5,5.5]],'#4a5c44','#162014',1);
+        poly([[-4.8,-4],[2,-4.5],[3.5,0],[2,4.5],[-4.8,4]],'#62785b');
+        R(-4.2,-2,5.2,4,band);R(-3.2,-1,3.2,1.4,'#ffffff');
       });
       break;}
     case 'sniper':{
-      // Base camuflada + bipé + cano longo canelado + luneta térmica ciano + laser
-      circ(0,0,8,'#2e3f2e','#0f1710',1);
+      // Base camuflada de elite + bipé retrátil + cano flutuante canelado + luneta térmica HD + mira laser
+      circ(0,0,8.4,'#283828','#0d140d',1.1);
+      circ(0,-0.8,5.8,'#3f543d');
       rot(()=>{
-        const L=22+lvl*3;
-        // Bipé dianteiro
-        ctx.strokeStyle='#1f2937';ctx.lineWidth=1.6;
-        ctx.beginPath();ctx.moveTo(10-rc,0);ctx.lineTo(14-rc,-6);ctx.moveTo(10-rc,0);ctx.lineTo(14-rc,6);ctx.stroke();
-        // Feixe laser sutil de mira
-        ctx.strokeStyle='rgba(239,68,68,.55)';ctx.lineWidth=.9;
-        ctx.beginPath();ctx.moveTo(L-rc,0);ctx.lineTo(L+14-rc,0);ctx.stroke();
-        // Cano longo de precisão + freio de boca
-        R(2-rc,-1.8,L,3.6,'#1e293b');R(2-rc,-1,L,1.2,'#64748b');
-        R(2-rc+L,-3,3.5,6,'#334155');
-        // Corpo do rifle e coronha tática
-        poly([[-8,-4.5],[5,-4.5],[7,0],[5,4.5],[-8,4.5]],'#3f523a','#141e12',.9);
-        // Luneta térmica iluminada
-        R(-2-rc*0.4,-6.5,10,3.5,'#0f172a');
-        R(6-rc*0.4,-6,2.5,2.5,'#38bdf8');R(-3-rc*0.4,-6,2,2.5,'#38bdf8');
-        circ(0,0,2.5,band);
+        const L=22.5+lvl*3;
+        // Bipé dianteiro articulado com sapatas
+        ctx.strokeStyle='#334155';ctx.lineWidth=1.7;
+        ctx.beginPath();ctx.moveTo(10-rc,0);ctx.lineTo(14.5-rc,-6.5);ctx.moveTo(10-rc,0);ctx.lineTo(14.5-rc,6.5);ctx.stroke();
+        circ(14.5-rc,-6.5,1.4,'#475569');circ(14.5-rc,6.5,1.4,'#475569');
+        // Feixe laser de precisão
+        ctx.strokeStyle='rgba(239,68,68,.65)';ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(L-rc,0);ctx.lineTo(L+16-rc,0);ctx.stroke();
+        // Cano longo canelado + camisa perfurada + freio de boca multi-câmara
+        R(2-rc,-2,L,4,'#1e293b');R(2-rc,-1.1,L,1.3,'#94a3b8');
+        R(3-rc,-2.8,9,5.6,'#334155');
+        R(2-rc+L,-3.3,4,6.6,'#334155');R(3.5-rc+L,-3.6,1.2,7.2,'#0f172a');
+        flash(6-rc+L,0,'#f97316','#fef08a');
+        // Chassi do rifle antimaterial
+        poly([[-8.5,-4.8],[5.5,-4.8],[7.5,0],[5.5,4.8],[-8.5,4.8]],'#3b4f37','#121a10',1);
+        // Luneta óptica térmica iluminada com lente ciano
+        R(-2.5-rc*0.4,-6.8,11,3.8,'#0f172a');
+        R(6.2-rc*0.4,-6.3,2.6,2.8,'#38bdf8');R(-3.2-rc*0.4,-6.3,2,2.8,'#ef4444');
+        circ(0,0,2.7,band,'#ffffff',.7);
       });
       break;}
     case 'mortar':{
-      // Poço de artilharia pesada + sacos de areia + tubo de morteiro de grosso calibre
-      for(const [bx,by] of [[-9,5],[-3,7],[4,7],[9,5]]){
-        ctx.fillStyle='#78684c';ctx.beginPath();ctx.ellipse(bx,by,4.5,2.6,0,0,6.283);ctx.fill();
+      // Trincheira de artilharia pesada + sacos de areia + obus de grosso calibre com anéis de latão
+      for(const [bx,by] of [[-9.5,5.2],[-3.2,7.4],[3.8,7.4],[9.5,5.2]]){
+        ctx.fillStyle='#78684c';ctx.strokeStyle='#3f3524';ctx.lineWidth=.8;
+        ctx.beginPath();ctx.ellipse(bx,by,4.8,2.7,0,0,6.283);ctx.fill();ctx.stroke();
       }
-      // Ogivas empilhadas ao lado
-      R(-13,-4,3,7,'#334155');R(-13,-5,3,2,'#eab308');
-      circ(0,0,9,'#272e2a','#0f1412',1);
+      // Munições de artilharia empilhadas ao lado
+      R(-13.5,-4.5,3.2,7.5,'#334155');R(-13.5,-5.8,3.2,2.2,'#facc15');
+      R(-10,-4.5,2.8,6.5,'#475569');R(-10,-5.5,2.8,1.8,'#ef4444');
+      circ(0,0,9.4,'#242c28','#0d1210',1.1);
       rot(()=>{
-        const L=12+lvl*2;
-        // Tubo de morteiro largo com anéis de latão
-        poly([[-5-rc,-6.5],[L-rc,-5.5],[L-rc,5.5],[-5-rc,6.5]],'#334155','#0f172a',1);
-        R(-3-rc,-4.5,L+1,2.5,'#64748b');
-        R(1-rc,-6,2,12,'#eab308');R(L-5-rc,-5.8,2,11.6,'#eab308');
-        // Boca escura do canhão
-        ctx.fillStyle='#090d14';ctx.beginPath();ctx.ellipse(L-rc,0,2.2,5,0,0,6.283);ctx.fill();
+        const L=12.5+lvl*2;
+        // Trilhos amortecedores hidráulicos
+        R(-4-rc,-7.8,11,2,'#64748b');R(-4-rc,5.8,11,2,'#64748b');
+        // Tubo de morteiro largo com sombreamento cilíndrico e anéis de reforço dourados
+        poly([[-5.5-rc,-6.8],[L-rc,-5.8],[L-rc,5.8],[-5.5-rc,6.8]],'#334155','#0f172a',1.1);
+        R(-3.5-rc,-4.6,L+1.5,2.8,'#64748b');
+        R(0.8-rc,-6.4,2.2,12.8,'#eab308');R(L-4.8-rc,-6,2.2,12,'#eab308');
+        // Boca profunda do obus
+        ctx.fillStyle='#090d14';ctx.strokeStyle='#94a3b8';ctx.lineWidth=.9;
+        ctx.beginPath();ctx.ellipse(L-rc,0,2.5,5.2,0,0,6.283);ctx.fill();ctx.stroke();
+        flash(L+2-rc,0,'#fb923c','#fef08a');
       });
       break;}
     case 'flame':{
-      // Tanques gêmeos pressurizados de napalm + bico incinerador com chama piloto
-      circ(0,0,8.5,'#451a14','#180806',1);
+      // Tanques gêmeos pressurizados de napalm + manômetro + bico incinerador pesado com chama piloto
+      circ(0,0,8.8,'#451a14','#180806',1.1);
       rot(()=>{
-        const L=12+lvl*2;
-        // Dois cilindros de combustível nas costas
-        R(-10,-7,8,5,'#dc2626');R(-9,-6,6,1.5,'#fca5a5');R(-7,-7,2,5,'#fbbf24');
-        R(-10,2,8,5,'#dc2626');R(-9,3,6,1.5,'#fca5a5');R(-7,2,2,5,'#fbbf24');
-        // Camisa térmica e bico lança-chamas
-        R(1-rc,-3.5,L,7,'#4b5563');R(2-rc,-2,L-2,4,'#1f2937');
-        R(1-rc+L,-4.5,3,9,'#f97316');
-        // Cúpula central
-        poly([[-5,-5],[4,-4],[4,4],[-5,5]],'#7f1d1d','#1f0909',.9);
-        R(-3,-2,5,4,band);
-        // Chama piloto pulsante na ponta
-        const fl=2.5+Math.sin(tm*16)*1.2;
-        circ(L+5-rc,0,fl,'#fb923c');circ(L+4.5-rc,0,fl*.55,'#fef08a');
+        const L=12.5+lvl*2;
+        // Cilindros duplos de combustível com reflexo e faixas de alerta
+        R(-10.5,-7.5,8.5,5.2,'#dc2626');R(-9.5,-6.6,6.5,1.6,'#fca5a5');R(-7.2,-7.5,2.2,5.2,'#fbbf24');
+        R(-10.5,2.3,8.5,5.2,'#dc2626');R(-9.5,3.2,6.5,1.6,'#fca5a5');R(-7.2,2.3,2.2,5.2,'#fbbf24');
+        // Camisa térmica ventilada e bocal difusor de plasma/fogo
+        R(1-rc,-3.8,L,7.6,'#374151');R(2-rc,-2.2,L-2,4.4,'#111827');
+        for(let i=0;i<3;i++)R(3.5-rc+i*3,-3.2,1.4,6.4,'#fb923c');
+        R(1-rc+L,-4.8,3.4,9.6,'#f97316');
+        // Cúpula blindada central + núcleo térmico
+        poly([[-5.5,-5.5],[4.5,-4.5],[4.5,4.5],[-5.5,5.5]],'#7f1d1d','#1f0909',1);
+        R(-3.2,-2.2,5.2,4.4,band);
+        // Chama piloto dinâmica na ponta
+        const fl=2.8+Math.sin(tm*16)*1.3+(rec*3);
+        circ(L+5.5-rc,0,fl,'#fb923c');circ(L+5-rc,0,fl*.58,'#fef08a');
       });
       break;}
     case 'tesla':{
-      // Bobina de Tesla de alta tensão com 3 anéis condutores + orbe de plasma e raios
-      circ(0,0,9,'#1e293b','#090d16',1);
-      circ(0,0,6.5,'#b45309','#78350f',.8); // bobina de cobre na base
-      // Coluna isolante e anéis de indução
-      R(-3.5,-19,7,18,'#334155');R(-1.5,-19,3,18,'#94a3b8');
-      for(const ry of [-6,-11,-16]){
-        ctx.fillStyle='#0f172a';ctx.strokeStyle='#38bdf8';ctx.lineWidth=1.2;
-        ctx.beginPath();ctx.ellipse(0,ry,9+ry*.15,2.6,0,0,6.283);ctx.fill();ctx.stroke();
+      // Bobina de Tesla Industrial com enrolamento de cobre, 3 anéis toroidais e esfera de plasma elétrico
+      circ(0,0,9.5,'#1e293b','#090d16',1.1);
+      circ(0,0,6.8,'#b45309','#78350f',.9);
+      // Capacitores laterais na base
+      R(-11,-2,3,5,'#0284c7');R(8,-2,3,5,'#0284c7');
+      // Coluna isolante vertical e anéis de indução
+      R(-3.8,-19.5,7.6,18.5,'#334155');R(-1.6,-19.5,3.2,18.5,'#cbd5e1');
+      for(const ry of [-6,-11.2,-16.4]){
+        ctx.fillStyle='#0f172a';ctx.strokeStyle='#38bdf8';ctx.lineWidth=1.3;
+        ctx.beginPath();ctx.ellipse(0,ry,9.4+ry*.15,2.7,0,0,6.283);ctx.fill();ctx.stroke();
       }
-      const pl=.65+.35*Math.sin(tm*9)+(tw||0)*2;
-      // Halo e Orbe de Plasma no topo
-      circ(0,-21,6.5+lvl*.5,'rgba(56,189,248,'+Math.min(.85,.35*pl)+')');
-      circ(0,-21,4+lvl*.3,'#38bdf8','#e0f2fe',1.2);
-      circ(-1,-22,1.6,'#ffffff');
+      const pl=.68+.35*Math.sin(tm*9)+(tw||0)*2;
+      // Halo e Orbe de Plasma de Alta Tensão no topo
+      circ(0,-21.5,7+lvl*.55,'rgba(56,189,248,'+Math.min(.88,.38*pl)+')');
+      circ(0,-21.5,4.3+lvl*.32,'#38bdf8','#e0f2fe',1.3);
+      circ(-1.2,-22.5,1.8,'#ffffff');
       // Arcos voltaicos animados
-      ctx.strokeStyle='#bae6fd';ctx.lineWidth=1.1;
-      for(let i=0;i<2;i++){
-        const a=tm*7+i*3.14;
-        ctx.beginPath();ctx.moveTo(0,-21);
-        ctx.lineTo(Math.cos(a)*6,-15+Math.sin(a*2)*2);
-        ctx.lineTo(Math.cos(a)*9,-8);ctx.stroke();
+      ctx.strokeStyle='#e0f2fe';ctx.lineWidth=1.2;
+      for(let i=0;i<3;i++){
+        const a=tm*7.5+i*2.09;
+        ctx.beginPath();ctx.moveTo(0,-21.5);
+        ctx.lineTo(Math.cos(a)*6.5,-15+Math.sin(a*2)*2);
+        ctx.lineTo(Math.cos(a)*9.5,-7.5);ctx.stroke();
       }
       break;}
     case 'ice':{
-      // Emissor Criogênico Hexagonal com aletas de geada e cristal diamante giratório
-      circ(0,0,9.5,'#0c4a6e','#082f49',1);
-      ctx.save();ctx.rotate(tm*1.2);
+      // Reator Criogênico Hexagonal com coroa de cristais giratórios e monolito de gelo facetado
+      circ(0,0,9.8,'#0c4a6e','#082f49',1.1);
+      circ(0,0,7,'#0284c7','#bae6fd',.9);
+      ctx.save();ctx.rotate(tm*1.25);
       for(let i=0;i<6;i++){
         ctx.rotate(Math.PI/3);
-        poly([[-2,-3],[0,-12-lvl],[2,-3]],'#38bdf8','#e0f2fe',.7);
+        poly([[-2.4,-3],[0,-12.5-lvl],[2.4,-3]],'#38bdf8','#e0f2fe',.8);
       }
       ctx.restore();
-      const gl=.75+.25*Math.sin(tm*4);
-      poly([[0,-21],[7,-9],[0,-1],[-7,-9]],'rgba(125,211,252,'+gl+')','#ffffff',1);
-      poly([[0,-21],[0,-1],[-7,-9]],'rgba(224,242,254,.85)');
+      const gl=.78+.22*Math.sin(tm*4.5);
+      poly([[0,-22],[7.5,-9.5],[0,-1],[-7.5,-9.5]],'rgba(125,211,252,'+gl+')','#ffffff',1.1);
+      poly([[0,-22],[0,-1],[-7.5,-9.5]],'rgba(224,242,254,.88)');
+      circ(0,-11,2.2,'#ffffff');
       break;}
     case 'poison':{
-      // Torre Bio-Química com tanque de vidro neon borbulhante e injetor duplo
-      circ(0,0,8.5,'#1a2e15','#0a1408',1);
+      // Torre Bio-Química com reator de vidro pressurizado borbulhante e pulverizador duplo
+      circ(0,0,8.8,'#1a2e15','#0a1408',1.1);
       rot(()=>{
-        const L=11+lvl*2;
-        R(2-rc,-3.5,L,2.8,'#273822');R(2-rc,.7,L,2.8,'#273822');
-        R(2-rc+L,-4,2.8,8,'#84cc16');
-        poly([[-7,-6],[4,-5],[5,0],[4,5],[-7,6]],'#2d4722','#111c0c',.9);
-        // Câmara de vidro com toxina brilhante
-        circ(-2,0,4.8,'#14260d','#a3e635',1);
-        circ(-2,0,3.6,'#84cc16');
-        const by=Math.sin(tm*6)*1.8;
-        circ(-3,by,1.2,'#ecfccb');circ(-0.5,-by,0.9,'#ecfccb');
+        const L=11.5+lvl*2;
+        // Mangueiras laterais de toxina
+        ctx.strokeStyle='#84cc16';ctx.lineWidth=1.4;
+        ctx.beginPath();ctx.moveTo(-2,-5);ctx.lineTo(6-rc,-4);ctx.moveTo(-2,5);ctx.lineTo(6-rc,4);ctx.stroke();
+        // Canos injetores duplos + bocal bio-hazard
+        R(2-rc,-3.8,L,3,'#273822');R(2-rc,.8,L,3,'#273822');
+        R(2-rc+L,-4.4,3.2,8.8,'#84cc16');
+        flash(5-rc+L,0,'#a3e635','#ecfccb');
+        poly([[-7.5,-6.2],[4.2,-5.2],[5.5,0],[4.2,5.2],[-7.5,6.2]],'#2d4722','#111c0c',1);
+        // Câmara de vidro com toxina neon e bolhas animadas
+        circ(-2,0,5.1,'#14260d','#a3e635',1.1);
+        circ(-2,0,3.8,'#84cc16');
+        const by=Math.sin(tm*6.5)*1.9;
+        circ(-3.1,by,1.3,'#ecfccb');circ(-0.6,-by,1,'#ecfccb');
       });
       break;}
     case 'antitank':{
-      // Caça-tanques blindado com blindagem reativa inclinada e canhão longo com freio de boca duplo
-      circ(0,0,10,'#292e24','#0f120d',1);
+      // Caça-tanques pesado com blindagem reativa ERA, amortecedores hidráulicos e canhão longo com freio em T
+      circ(0,0,10.4,'#292e24','#0f120d',1.2);
       rot(()=>{
-        const L=22+lvl*3;
-        // Cilindros hidráulicos de recuo
-        R(1-rc,-5.5,9,2.2,'#64748b');R(1-rc,3.3,9,2.2,'#64748b');
-        // Canhão principal pesado
-        R(2-rc,-3,L,6,'#1f241d');R(2-rc,-1.8,L,2,'#4b5345');
-        // Freio de boca duplo em T
-        R(L-1-rc,-6,3,12,'#374151');R(L+3-rc,-5,2.5,10,'#4b5563');
-        // Torreta chanfrada estilo tanque moderno
-        poly([[-10,-7],[4,-6],[7,0],[4,6],[-10,7]],'#3f4736','#141710',1);
-        poly([[-8,-5],[2,-4],[4,0],[2,4],[-8,5]],'#525c47');
-        R(-7,-2,6,4,band);
-        R(-9,-6.5,5,1.5,'#fbbf24');R(-9,5,5,1.5,'#fbbf24');
+        const L=22.5+lvl*3;
+        // Cilindros hidráulicos duplos de recuo com brilho metálico
+        R(1-rc,-6,9.5,2.4,'#64748b');R(1-rc,3.6,9.5,2.4,'#64748b');
+        R(2-rc,-5.5,7.5,1,'#cbd5e1');R(2-rc,4.1,7.5,1,'#cbd5e1');
+        // Canhão principal pesado + extrator de fumaça central
+        R(2-rc,-3.2,L,6.4,'#1f241d');R(2-rc,-1.8,L,2.2,'#6b7280');
+        R(9-rc,-4,6,8,'#374151');
+        // Freio de boca duplo em T de alto calibre
+        R(L-1-rc,-6.5,3.2,13,'#374151');R(L+3-rc,-5.4,2.8,10.8,'#4b5563');
+        flash(L+6-rc,0,'#f97316','#fef08a');
+        // Torreta chanfrada com blocos de blindagem reativa
+        poly([[-10.5,-7.5],[4.5,-6.5],[7.5,0],[4.5,6.5],[-10.5,7.5]],'#3f4736','#141710',1.1);
+        poly([[-8.2,-5.2],[2.2,-4.2],[4.5,0],[2.2,4.2],[-8.2,5.2]],'#57634c');
+        R(-7.2,-2.2,6.2,4.4,band);
+        R(-9.2,-7,5.5,1.6,'#fbbf24');R(-9.2,5.4,5.5,1.6,'#fbbf24');
       });
       break;}
     case 'archer':{
-      // Balista Composta Tática de Aço e Carbono
-      circ(0,0,8,'#422d1b','#1c120a',1);
+      // Balista Composta Tática de Carbono e Titânio com polias douradas e virote energético
+      circ(0,0,8.4,'#422d1b','#1c120a',1.1);
       rot(()=>{
-        const L=14+lvl*2;
-        // Braços curvos do arco composto
-        ctx.strokeStyle='#d97706';ctx.lineWidth=2.6;
-        ctx.beginPath();ctx.moveTo(4,-11);ctx.quadraticCurveTo(11,-6,7,0);ctx.quadraticCurveTo(11,6,4,11);ctx.stroke();
-        // Polias nas pontas
-        circ(4,-11,2,'#fbbf24','#111',.7);circ(4,11,2,'#fbbf24','#111',.7);
-        // Corda tensionada luminosa
-        ctx.strokeStyle='#bae6fd';ctx.lineWidth=1.1;
-        ctx.beginPath();ctx.moveTo(4,-11);ctx.lineTo(-3-rc,0);ctx.lineTo(4,11);ctx.stroke();
-        // Trilho central e flecha de aço
-        R(-6,-2,L,4,'#573b22');
-        R(-2-rc,-1,L+3,2,'#e2e8f0');
-        poly([[L+1-rc,-3],[L+6-rc,0],[L+1-rc,3]],'#38bdf8');
+        const L=14.5+lvl*2;
+        // Lâminas duplas recurvas do arco composto
+        ctx.strokeStyle='#d97706';ctx.lineWidth=2.8;
+        ctx.beginPath();ctx.moveTo(4.5,-11.5);ctx.quadraticCurveTo(11.5,-6,7.5,0);ctx.quadraticCurveTo(11.5,6,4.5,11.5);ctx.stroke();
+        // Polias mecânicas nas extremidades
+        circ(4.5,-11.5,2.3,'#fbbf24','#0f172a',.8);circ(4.5,11.5,2.3,'#fbbf24','#0f172a',.8);
+        // Corda tensionada a laser
+        ctx.strokeStyle='#bae6fd';ctx.lineWidth=1.2;
+        ctx.beginPath();ctx.moveTo(4.5,-11.5);ctx.lineTo(-3.5-rc,0);ctx.lineTo(4.5,11.5);ctx.stroke();
+        // Trilho central em fibra e flecha com ponta de plasma ciano
+        R(-6.5,-2.4,L,4.8,'#475569');R(-5.5,-1.2,L-2,2.4,'#1e293b');
+        R(-2.5-rc,-1,L+3.5,2,'#f8fafc');
+        poly([[L+1-rc,-3.4],[L+6.8-rc,0],[L+1-rc,3.4]],'#38bdf8','#ffffff',.7);
       });
       break;}
     case 'boomerang':{
-      // Lançador Magnético com Glaive / Chakram de 3 lâminas giratórias
-      circ(0,0,8.5,'#115e59','#042f2e',1);
-      circ(0,0,5.5,'#0f766e','#2dd4bf',1);
-      ctx.save();ctx.translate(0,-3);ctx.rotate(tm*7);
+      // Lançador Magnético Orbital com Glaive / Chakram de 3 lâminas douradas e núcleo turquesa
+      circ(0,0,8.8,'#115e59','#042f2e',1.1);
+      circ(0,0,5.8,'#0f766e','#2dd4bf',1);
+      ctx.save();ctx.translate(0,-3);ctx.rotate(tm*7.5);
       for(let i=0;i<3;i++){
         ctx.rotate(Math.PI*2/3);
-        poly([[0,-2],[11,-4],[8,1],[2,2]],'#fbbf24','#fef08a',.8);
+        poly([[0,-2.2],[11.8,-4.5],[8.5,1.4],[2,2.4]],'#fbbf24','#fef08a',.85);
       }
-      circ(0,0,3,'#2dd4bf','#fff',.8);
+      circ(0,0,3.3,'#2dd4bf','#ffffff',.9);
       ctx.restore();
       break;}
     case 'engineer':{
-      // Torre de Engenharia de Alta Tecnologia com braço servo e núcleo de plasma
-      circ(0,0,9,'#334155','#0f172a',1);
+      // Torre de Engenharia Robótica com braços servo-assistidos, emissor duplo e bobina de plasma
+      circ(0,0,9.2,'#334155','#0f172a',1.1);
       rot(()=>{
-        const L=11+lvl*2;
-        R(-8,-6,12,12,'#475569');R(-6,-4,8,8,'#1e293b');
-        // Braço emissor duplo
-        R(2-rc,-4,L,2.5,'#f59e0b');R(2-rc,1.5,L,2.5,'#f59e0b');
-        circ(L+2-rc,0,3.2,'#38bdf8','#fff',.9);
+        const L=11.5+lvl*2;
+        poly([[-8.5,-6.5],[3.5,-6.5],[5.5,0],[3.5,6.5],[-8.5,6.5]],'#475569','#0f172a',1);
+        R(-6.2,-4.2,8.4,8.4,'#1e293b');
+        // Braços servo-industriais amarelos com listras
+        R(2-rc,-4.3,L,2.7,'#f59e0b');R(2-rc,1.6,L,2.7,'#f59e0b');
+        R(5-rc,-4.3,2,2.7,'#0f172a');R(5-rc,1.6,2,2.7,'#0f172a');
+        circ(L+2.2-rc,0,3.4,'#38bdf8','#ffffff',.95);
+        flash(L+4-rc,0,'#38bdf8','#e0f2fe');
       });
-      // Bobina de plasma superior
-      circ(0,-4,4.2,'#0284c7','#bae6fd',1);
-      ctx.strokeStyle='rgba(56,189,248,.65)';ctx.lineWidth=1.2;
-      ctx.beginPath();ctx.arc(0,-4,7+Math.sin(tm*6)*1.5,0,6.283);ctx.stroke();
+      // Reator de plasma superior com pulso magnético
+      circ(0,-4,4.5,'#0284c7','#bae6fd',1.1);
+      ctx.strokeStyle='rgba(56,189,248,.7)';ctx.lineWidth=1.3;
+      ctx.beginPath();ctx.arc(0,-4,7.2+Math.sin(tm*6)*1.5,0,6.283);ctx.stroke();
       break;}
     case 'radar':{
-      // Sentinela Radar com canhão duplo e antena parabólica giratória
-      circ(0,0,9,'#1e293b','#090d16',1);
+      // Sentinela Radar Tática com canhão duplo de precisão e prato parabólico giratório com varredura
+      circ(0,0,9.2,'#1e293b','#090d16',1.1);
       rot(()=>{
-        const L=12+lvl*2;
-        R(2-rc,-3.2,L,2.2,'#0f172a');R(2-rc,1,L,2.2,'#0f172a');
-        R(2-rc+L,-3.6,2.5,7.2,'#38bdf8');
-        poly([[-6,-5],[4,-4],[4,4],[-6,5]],'#334155','#0f172a',.9);
+        const L=12.5+lvl*2;
+        R(2-rc,-3.5,L,2.4,'#0f172a');R(2-rc,1.1,L,2.4,'#0f172a');
+        R(2-rc+L,-4,2.8,8,'#38bdf8');
+        flash(5-rc+L,0,'#38bdf8','#e0f2fe');
+        poly([[-6.5,-5.5],[4.5,-4.5],[4.5,4.5],[-6.5,5.5]],'#334155','#0f172a',.95);
       });
-      // Prato de radar giratório no topo
-      ctx.save();ctx.translate(0,-6);ctx.rotate(tm*2.2);
-      ctx.fillStyle='#cbd5e1';ctx.strokeStyle='#38bdf8';ctx.lineWidth=1.2;
-      ctx.beginPath();ctx.ellipse(0,0,9,3.5,0,0,6.283);ctx.fill();ctx.stroke();
-      R(-1,-6,2,6,'#38bdf8');circ(0,-6,2,((tm*4)|0)%2?'#ef4444':'#38bdf8');
+      // Antena parabólica giratória no topo com LED de telemetria
+      ctx.save();ctx.translate(0,-6.2);ctx.rotate(tm*2.4);
+      ctx.fillStyle='#e2e8f0';ctx.strokeStyle='#38bdf8';ctx.lineWidth=1.3;
+      ctx.beginPath();ctx.ellipse(0,0,9.5,3.8,0,0,6.283);ctx.fill();ctx.stroke();
+      R(-1,-6.5,2,6.5,'#38bdf8');circ(0,-6.5,2.2,((tm*4)|0)%2?'#ef4444':'#38bdf8','#ffffff',.7);
       ctx.restore();
       break;}
     case 'shotgun':{
-      // Guarda de Escopeta de Cano Duplo Pesado com cartucheira vermelha
-      circ(0,0,8.5,'#452c1e','#1c110b',1);
+      // Escopeta Automática de Cano Duplo Pesado com escudo térmico e cartucheira vermelha/dourada
+      circ(0,0,8.8,'#452c1e','#1c110b',1.1);
       rot(()=>{
-        const L=11+lvl*2;
-        // Canos duplos largos com fita ventilada
-        R(1-rc,-4.2,L,3.6,'#1f2937');R(1-rc,.6,L,3.6,'#1f2937');
-        R(2-rc,-3.5,L-2,7,'#374151');
-        R(1-rc+L,-4.5,2.5,9,'#9ca3af');
-        poly([[-7,-5.5],[3,-5],[4,0],[3,5],[-7,5.5]],'#78350f','#291305',.9);
-        // Cartuchos vermelhos na lateral
-        for(let i=0;i<3;i++)R(-5+i*2.5,-6,1.8,2,'#ef4444');
+        const L=11.5+lvl*2;
+        // Canos duplos largos com fita ventilada superior
+        R(1-rc,-4.5,L,3.8,'#1f2937');R(1-rc,.7,L,3.8,'#1f2937');
+        R(2-rc,-3.6,L-2,7.2,'#374151');
+        for(let i=0;i<3;i++)R(3.5-rc+i*2.6,-1.2,1.4,2.4,'#111827');
+        R(1-rc+L,-4.8,2.8,9.6,'#cbd5e1');
+        flash(4-rc+L,0,'#fb923c','#fef08a');
+        poly([[-7.5,-5.8],[3.5,-5.2],[4.5,0],[3.5,5.2],[-7.5,5.8]],'#78350f','#291305',1);
+        // Cartuchos calibre 12 na lateral (vermelho + base de latão)
+        for(let i=0;i<3;i++){
+          R(-5.2+i*2.6,-6.5,1.9,2.2,'#ef4444');
+          R(-5.2+i*2.6,-4.8,1.9,.8,'#facc15');
+        }
       });
       break;}
     case 'drone':{
-      // Base Heliponto iluminada + Drone Quadricóptero Militar pairando acima
-      circ(0,0,9.5,'#0f172a','#38bdf8',1.2);
-      ctx.strokeStyle='rgba(56,189,248,.6)';ctx.lineWidth=1;
-      ctx.beginPath();ctx.arc(0,0,6,0,6.283);ctx.stroke();
-      // Drone pairando
-      const bob=Math.sin(tm*4.5)*2.2;
-      ctx.save();ctx.translate(0,-11+bob);
-      // 4 braços e rotores giratórios
-      ctx.strokeStyle='#475569';ctx.lineWidth=1.8;
-      ctx.beginPath();ctx.moveTo(-8,-6);ctx.lineTo(8,6);ctx.moveTo(-8,6);ctx.lineTo(8,-6);ctx.stroke();
-      for(const [rx,ry] of [[-8,-6],[8,-6],[-8,6],[8,6]]){
-        circ(rx,ry,4,'rgba(125,211,252,.32)','#bae6fd',.8);
-        circ(rx,ry,1.2,'#0f172a');
+      // Heliponto Tático Iluminado + Drone Quadricóptero Militar com rotores de alta rotação e torre laser
+      circ(0,0,9.8,'#0f172a','#38bdf8',1.25);
+      ctx.strokeStyle='rgba(56,189,248,.65)';ctx.lineWidth=1.1;
+      ctx.beginPath();ctx.arc(0,0,6.2,0,6.283);ctx.stroke();
+      // Marcação "H" no heliponto
+      R(-2.5,-2.5,1.2,5,'#38bdf8');R(1.3,-2.5,1.2,5,'#38bdf8');R(-2.5,-0.6,5,1.2,'#38bdf8');
+      // Drone pairando acima da base
+      const bob=Math.sin(tm*4.8)*2.3;
+      ctx.save();ctx.translate(0,-11.5+bob);
+      // 4 braços de fibra de carbono e rotores translúcidos
+      ctx.strokeStyle='#64748b';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(-8.5,-6.5);ctx.lineTo(8.5,6.5);ctx.moveTo(-8.5,6.5);ctx.lineTo(8.5,-6.5);ctx.stroke();
+      for(const [rx,ry] of [[-8.5,-6.5],[8.5,-6.5],[-8.5,6.5],[8.5,6.5]]){
+        circ(rx,ry,4.2,'rgba(125,211,252,.35)','#bae6fd',.85);
+        circ(rx,ry,1.3,'#0f172a');
       }
-      // Corpo central do drone + metralhadora direcional
-      rot(()=>{R(2-rc,-1.2,9+lvl,2.4,'#0f172a');R(9+lvl-rc,-1.8,2,3.6,'#38bdf8');});
-      poly([[-5,-3],[5,-3],[6,0],[5,3],[-5,3]],'#334155','#0f172a',.9);
-      circ(0,0,2.2,'#38bdf8');
+      // Corpo central do drone + canhão direcional
+      rot(()=>{
+        R(2-rc,-1.4,9.5+lvl,2.8,'#0f172a');R(9.5+lvl-rc,-2,2.2,4,'#38bdf8');
+        flash(12+lvl-rc,0,'#38bdf8','#ffffff');
+      });
+      poly([[-5.5,-3.2],[5.5,-3.2],[6.5,0],[5.5,3.2],[-5.5,3.2]],'#334155','#0f172a',.95);
+      circ(0,0,2.5,'#38bdf8','#ffffff',.7);
       ctx.restore();
       break;}
     case 'demolition':{
-      // Lançador Múltiplo de Foguetes / Demolição com faixas de alerta
-      circ(0,0,9.5,'#3b1d1d','#170909',1);
+      // Lançador Múltiplo de Mísseis (MLRS) com casulo blindado, listras hazard e 3 ogivas prontas
+      circ(0,0,9.8,'#3b1d1d','#170909',1.1);
       rot(()=>{
-        const L=13+lvl*2;
-        // Casulo duplo de foguetes
-        poly([[-7-rc,-7.5],[L-rc,-6.5],[L-rc,6.5],[-7-rc,7.5]],'#451a1a','#0f172a',1);
-        // Faixas de risco amarelo/preto
-        for(let i=0;i<3;i++)R(-5-rc+i*4,-7,2,14,'#fbbf24');
-        // Ogivas vermelhas prontas nos tubos
-        circ(L-rc,-3.2,2.2,'#ef4444','#fca5a5',.7);
-        circ(L-rc,0,2.2,'#ef4444','#fca5a5',.7);
-        circ(L-rc,3.2,2.2,'#ef4444','#fca5a5',.7);
+        const L=13.5+lvl*2;
+        // Casulo blindado de mísseis
+        poly([[-7.5-rc,-7.8],[L-rc,-6.8],[L-rc,6.8],[-7.5-rc,7.8]],'#451a1a','#0f172a',1.1);
+        R(-5.5-rc,-5.5,L,11,'#1e293b');
+        // Faixas de alerta amarelo/preto
+        for(let i=0;i<3;i++)R(-5-rc+i*4.2,-7.3,2,14.6,'#fbbf24');
+        // 3 ogivas táticas armadas nos tubos de lançamento
+        for(const oy of [-3.4,0,3.4]){
+          circ(L-rc,oy,2.3,'#ef4444','#fecaca',.8);
+          circ(L+0.6-rc,oy,0.9,'#ffffff');
+        }
+        flash(L+3-rc,0,'#f97316','#fef08a');
       });
       break;}
     case 'railgun':{
-      // Canhão Eletromagnético Sci-Fi com trilhos paralelos e núcleo de fusão violeta/ciano
-      circ(0,0,9.5,'#1e1b4b','#0f0d26',1);
+      // Canhão Eletromagnético Orbital com trilhos paralelos energizados, bobinas capacitivas e núcleo violeta
+      circ(0,0,9.8,'#1e1b4b','#0f0d26',1.1);
       rot(()=>{
-        const L=20+lvl*3;
-        // Canal de plasma brilhante entre os trilhos
-        ctx.fillStyle='rgba(192,132,252,'+(.55+.35*Math.sin(tm*10))+')';
-        ctx.fillRect(2-rc,-1.5,L,3);
-        // Trilhos aceleradores magnéticos paralelos
-        R(1-rc,-4.5,L+2,2.4,'#312e81');R(1-rc,2.1,L+2,2.4,'#312e81');
-        R(2-rc,-4,L,1.2,'#a855f7');R(2-rc,2.8,L,1.2,'#a855f7');
-        // Aletas de capacitores
-        for(const cx of [5,10,15])R(cx-rc,-6,1.8,12,'#c084fc');
-        // Corpo blindado traseiro
-        poly([[-9,-6],[3,-5],[5,0],[3,5],[-9,6]],'#1e1b4b','#6366f1',1);
-        circ(-2,0,3,'#e879f9','#ffffff',.8);
+        const L=20.5+lvl*3;
+        // Canal de plasma brilhante entre os trilhos magnéticos
+        ctx.fillStyle='rgba(192,132,252,'+(.6+.35*Math.sin(tm*10))+')';
+        ctx.fillRect(2-rc,-1.8,L,3.6);
+        // Trilhos aceleradores paralelos com chanfro luminoso
+        R(1-rc,-4.8,L+2.5,2.5,'#312e81');R(1-rc,2.3,L+2.5,2.5,'#312e81');
+        R(2-rc,-4.2,L+1,1.2,'#c084fc');R(2-rc,3.0,L+1,1.2,'#c084fc');
+        // Aletas de indução eletromagnética
+        for(const cx of [5,10,15])R(cx-rc,-6.4,2,12.8,'#e879f9');
+        flash(L+4-rc,0,'#c084fc','#ffffff');
+        // Culatra blindada de fusão
+        poly([[-9.5,-6.4],[3.5,-5.4],[5.5,0],[3.5,5.4],[-9.5,6.4]],'#1e1b4b','#818cf8',1.1);
+        circ(-2,0,3.3,'#e879f9','#ffffff',.9);
       });
       break;}
     case 'medstation':{
-      // Estação de Apoio Tático com domo branco/esmeralda e emissor de pulso
-      circ(0,0,9,'#ecfdf5','#065f46',1.1);
-      poly([[-7,-7],[7,-7],[8,5],[-8,5]],'#f8fafc','#0f172a',.9);
-      // Cruz médica tática verde-esmeralda
-      R(-1.5,-5,3,8,'#10b981');R(-4,-2.5,8,3,'#10b981');
-      // Antena emissora de energia
-      R(-1,-16,2,10,'#64748b');
-      const mp=3.5+Math.sin(tm*6)*1.2;
-      circ(0,-17,mp,'rgba(16,185,129,.45)');
-      circ(0,-17,2.4,'#10b981','#ffffff',.9);
+      // Estação Médica Tática com domo blindado branco/esmeralda, cruz luminosa e antena emissora de pulso
+      circ(0,0,9.4,'#ecfdf5','#065f46',1.2);
+      poly([[-7.5,-7.5],[7.5,-7.5],[8.5,5.5],[-8.5,5.5]],'#f8fafc','#0f172a',.95);
+      // Cruz médica tática verde-esmeralda com brilho
+      R(-1.6,-5.4,3.2,8.8,'#10b981');R(-4.4,-2.6,8.8,3.2,'#10b981');
+      // Antena emissora de bio-pulso
+      R(-1.1,-16.5,2.2,10.5,'#64748b');
+      const mp=3.8+Math.sin(tm*6)*1.3;
+      circ(0,-17.5,mp,'rgba(16,185,129,.48)');
+      circ(0,-17.5,2.5,'#10b981','#ffffff',.95);
       break;}
     case 'acid':{
-      // Canhão Corrosivo Pressurizado com câmara de ácido incandescente
-      circ(0,0,9,'#1a2e05','#0a1402',1);
+      // Canhão Corrosivo Pressurizado com tanque de ácido incandescente e bocal atomizador
+      circ(0,0,9.2,'#1a2e05','#0a1402',1.1);
       rot(()=>{
-        const L=12+lvl*2;
-        R(2-rc,-3,L,6,'#365314');
-        R(2-rc+L,-4,3.2,8,'#bef264');
-        poly([[-8,-6],[3,-5],[4,0],[3,5],[-8,6]],'#365314','#142406',.9);
-        // Tanque de ácido verde-limão brilhante
-        R(-6,-3.5,8,7,'#a3e635');R(-5,-2.5,6,2,'#ecfccb');
+        const L=12.5+lvl*2;
+        R(2-rc,-3.2,L,6.4,'#365314');R(2-rc,-1.4,L,2.8,'#4d7c0f');
+        R(2-rc+L,-4.2,3.4,8.4,'#bef264');
+        flash(5-rc+L,0,'#a3e635','#ecfccb');
+        poly([[-8.5,-6.4],[3.5,-5.4],[4.5,0],[3.5,5.4],[-8.5,6.4]],'#365314','#142406',1);
+        // Câmara de ácido verde-limão fluorescente
+        R(-6.4,-3.8,8.4,7.6,'#a3e635');R(-5.4,-2.8,6.4,2.2,'#ecfccb');
       });
       break;}
     case 'beacon':{
-      // NOVA TORRE DE SUPORTE: Farol de Comando (Aura Tática Dourada/Ciano)
-      circ(0,0,10,'#0f172a','#fbbf24',1.3);
+      // TORRE DE SUPORTE: Farol de Comando (Aura Tática Dourada/Ciano + Radar Orbital)
+      circ(0,0,10.2,'#0f172a','#fbbf24',1.35);
       // Anel holográfico giratório
       ctx.save();ctx.rotate(tm*1.8);
-      ctx.strokeStyle='rgba(251,191,36,.85)';ctx.lineWidth=1.4;ctx.setLineDash([5,4]);
-      ctx.beginPath();ctx.arc(0,0,12,0,6.283);ctx.stroke();ctx.setLineDash([]);
+      ctx.strokeStyle='rgba(251,191,36,.88)';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);
+      ctx.beginPath();ctx.arc(0,0,12.4,0,6.283);ctx.stroke();ctx.setLineDash([]);
       ctx.restore();
       rot(()=>{
-        const L=11+lvl*2;
-        R(2-rc,-1.5,L,3,'#1e293b');R(2-rc+L,-2.2,2.5,4.4,'#38bdf8');
+        const L=11.5+lvl*2;
+        R(2-rc,-1.6,L,3.2,'#1e293b');R(2-rc+L,-2.4,2.8,4.8,'#38bdf8');
       });
       // Torre de comando central e antenas gêmeas
-      poly([[-6,-6],[6,-6],[7,5],[-7,5]],'#1e293b','#fbbf24',1);
-      R(-5,-15,2,10,'#94a3b8');R(3,-15,2,10,'#94a3b8');
-      circ(0,-12,4.5,'rgba(56,189,248,'+(.45+.3*Math.sin(tm*5))+')');
-      circ(0,-12,2.6,'#fbbf24','#ffffff',1);
+      poly([[-6.4,-6.4],[6.4,-6.4],[7.4,5.4],[-7.4,5.4]],'#1e293b','#fbbf24',1.05);
+      R(-5.2,-15.5,2.2,10.5,'#94a3b8');R(3,-15.5,2.2,10.5,'#94a3b8');
+      circ(0,-12.5,4.8,'rgba(56,189,248,'+(.48+.3*Math.sin(tm*5))+')');
+      circ(0,-12.5,2.8,'#fbbf24','#ffffff',1);
       break;}
     case 'supplydepot':{
-      // NOVA TORRE DE SUPORTE: Base de Suprimentos (Bunker Logístico + Guindaste + Caixas de Ouro)
-      poly([[-11,-6],[11,-6],[12,7],[-12,7]],'#1e293b','#f59e0b',1.1);
-      R(-9,-4,18,9,'#0f172a');
-      // Caixas de suprimento / lingotes dourados
-      R(-7,-2,6,4,'#d97706');R(-6,-1,4,2,'#fde047');
-      R(1,-2,6,4,'#d97706');R(2,-1,4,2,'#fde047');
-      R(-3,2,6,4,'#eab308');
+      // TORRE DE SUPORTE: Base de Suprimentos (Bunker Logístico Blindado + Guindaste + Lingotes de Ouro)
+      poly([[-11.5,-6.5],[11.5,-6.5],[12.5,7.5],[-12.5,7.5]],'#1e293b','#f59e0b',1.15);
+      R(-9.5,-4.5,19,9.5,'#0f172a');
+      // Caixas de suprimento / lingotes dourados com brilho especular
+      R(-7.4,-2.4,6.4,4.2,'#d97706');R(-6.4,-1.4,4.4,2.2,'#fde047');
+      R(1,-2.4,6.4,4.2,'#d97706');R(2,-1.4,4.4,2.2,'#fde047');
+      R(-3.2,2,6.4,4,'#eab308');R(-2.2,2.6,4.4,1.6,'#fef08a');
       // Braço de guindaste / antena logística girando suavemente
       ctx.save();ctx.rotate(Math.sin(tm*1.6)*.6);
-      R(-1.5,-11,3,11,'#64748b');R(-1,-11,2,9,'#fbbf24');
-      circ(0,-11,2.5,'#2be3a1','#ffffff',.8);
+      R(-1.6,-11.5,3.2,11.5,'#64748b');R(-1,-11.5,2,9.5,'#fbbf24');
+      circ(0,-11.5,2.7,'#2be3a1','#ffffff',.85);
       ctx.restore();
       break;}
     case 'cryogen':{
-      // NOVA TORRE DE SUPORTE: Torre de Estase (Anéis Giroscópicos + Singularidade Violeta/Ciano)
-      circ(0,0,9.5,'#1e1b4b','#a855f7',1.2);
-      ctx.save();ctx.translate(0,-6);
+      // TORRE DE SUPORTE: Torre de Estase (Anéis Giroscópicos Duplos + Singularidade Criogênica)
+      circ(0,0,9.8,'#1e1b4b','#a855f7',1.25);
+      ctx.save();ctx.translate(0,-6.2);
       // Anel giroscópico 1
       ctx.save();ctx.rotate(tm*2.5);
-      ctx.strokeStyle='#c084fc';ctx.lineWidth=1.6;
-      ctx.beginPath();ctx.ellipse(0,0,10,4,0,0,6.283);ctx.stroke();
+      ctx.strokeStyle='#c084fc';ctx.lineWidth=1.7;
+      ctx.beginPath();ctx.ellipse(0,0,10.5,4.2,0,0,6.283);ctx.stroke();
       ctx.restore();
       // Anel giroscópico 2
       ctx.save();ctx.rotate(-tm*2.1);
-      ctx.strokeStyle='#38bdf8';ctx.lineWidth=1.4;
-      ctx.beginPath();ctx.ellipse(0,0,4,10,0,0,6.283);ctx.stroke();
+      ctx.strokeStyle='#38bdf8';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.ellipse(0,0,4.2,10.5,0,0,6.283);ctx.stroke();
       ctx.restore();
       // Núcleo de singularidade
-      const sp=3.5+Math.sin(tm*7)*1;
-      circ(0,0,sp+2,'rgba(168,85,247,.4)');
+      const sp=3.7+Math.sin(tm*7)*1;
+      circ(0,0,sp+2.2,'rgba(168,85,247,.42)');
       circ(0,0,sp,'#e879f9','#ffffff',1);
       ctx.restore();
       break;}
     case 'nanomed':{
-      // NOVA TORRE DE SUPORTE: Estação Nano-Médica (Domo Futurista + Drones Reparadores Orbitais)
-      circ(0,0,10,'#064e3b','#2be3a1',1.3);
-      circ(0,-2,7.5,'#ecfdf5','#10b981',1);
+      // TORRE DE SUPORTE: Estação Nano-Médica (Domo Futurista + Drones Reparadores Orbitais)
+      circ(0,0,10.2,'#064e3b','#2be3a1',1.35);
+      circ(0,-2,7.8,'#ecfdf5','#10b981',1.05);
       // Cruz holográfica neon brilhante
-      R(-1.5,-6,3,8,'#10b981');R(-4,-3.5,8,3,'#10b981');
-      // Dois nano-drones orbitando a estação
+      R(-1.6,-6.2,3.2,8.4,'#10b981');R(-4.2,-3.6,8.4,3.2,'#10b981');
+      // Dois nano-drones orbitando a estação com trilha luminosa
       for(let i=0;i<2;i++){
         const a=tm*3.6+i*Math.PI;
-        const dx=Math.cos(a)*12,dy=-4+Math.sin(a)*6;
-        circ(dx,dy,2.2,'#2be3a1','#ffffff',.8);
+        const dx=Math.cos(a)*12.4,dy=-4+Math.sin(a)*6.2;
+        circ(dx,dy,2.4,'#2be3a1','#ffffff',.85);
       }
-      circ(0,-14,3+Math.sin(tm*6)*.8,'rgba(43,227,161,.55)');
-      circ(0,-14,1.8,'#ffffff');
+      circ(0,-14.5,3.2+Math.sin(tm*6)*.85,'rgba(43,227,161,.58)');
+      circ(0,-14.5,2,'#ffffff');
       break;}
     case 'dartgun':{
-      // TORRE DIRECIONAL (Estilo Arma de Dados): Tripé tático militar + mira laser + painel luminoso
-      // Evolui de arma cinza-chumbo básica (T0-1) para canhão de energia com brilho azul no nível máximo (T4-5)
+      // TORRE DIRECIONAL: Tripé tático militar + canhão Gatling / plasma direcional + mira laser travada
       const isEnergy=(tier||0)>=4;
       const bodyCol=isEnergy?'#0c4a6e':((tier||0)>=2?'#1e293b':'#334155');
       const barrelCol=isEnergy?'#0284c7':((tier||0)>=2?'#475569':'#64748b');
       const glowCol=isEnergy?'#38bdf8':ac;
       // Tripé tático militar (3 hastes de aço com sapatas estabilizadoras)
-      ctx.strokeStyle='#1e293b';ctx.lineWidth=2.4;
-      for(const [tx,ty] of [[-12,-9],[-12,9],[11,0]]){
+      ctx.strokeStyle='#1e293b';ctx.lineWidth=2.5;
+      for(const [tx,ty] of [[-12.5,-9.2],[-12.5,9.2],[11.5,0]]){
         ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(tx,ty);ctx.stroke();
-        circ(tx,ty,2.2,'#334155',glowCol,.8);
+        circ(tx,ty,2.3,'#334155',glowCol,.85);
       }
-      circ(0,0,8.5,'#0f172a',glowCol,1.2);
+      circ(0,0,8.8,'#0f172a',glowCol,1.25);
       if(isEnergy){
-        // Brilho azul de energia no nível máximo
-        circ(0,0,12,'rgba(56,189,248,'+(0.25+0.15*Math.sin(tm*8))+')');
+        circ(0,0,12.5,'rgba(56,189,248,'+(0.28+0.15*Math.sin(tm*8))+')');
       }
       rot(()=>{
-        const L=16+lvl*2.5;
+        const L=16.5+lvl*2.5;
         // Feixe de mira laser direcional
-        ctx.strokeStyle=isEnergy?'rgba(56,189,248,.85)':'rgba(239,68,68,.65)';
-        ctx.lineWidth=isEnergy?1.5:1;
-        ctx.beginPath();ctx.moveTo(L-rc,0);ctx.lineTo(L+16-rc,0);ctx.stroke();
+        ctx.strokeStyle=isEnergy?'rgba(56,189,248,.88)':'rgba(239,68,68,.68)';
+        ctx.lineWidth=isEnergy?1.6:1.1;
+        ctx.beginPath();ctx.moveTo(L-rc,0);ctx.lineTo(L+17-rc,0);ctx.stroke();
         // Bloco receptor e canos rotativos / canhão de energia azul
-        R(-4-rc,-6.2,10,12.4,bodyCol);
-        R(2-rc,-4.5,L,2.4,barrelCol);
-        R(2-rc,-1.2,L+2,2.4,isEnergy?'#bae6fd':barrelCol);
-        R(2-rc,2.1,L,2.4,barrelCol);
+        R(-4.2-rc,-6.4,10.4,12.8,bodyCol);
+        R(2-rc,-4.7,L,2.5,barrelCol);
+        R(2-rc,-1.25,L+2.2,2.5,isEnergy?'#bae6fd':barrelCol);
+        R(2-rc,2.2,L,2.5,barrelCol);
         // Anéis de contenção magnética / bobinas de energia azul
-        R(8-rc,-5,2.5,10,glowCol);
-        if((tier||0)>=3||lvl>=3)R(14-rc,-5,2.5,10,isEnergy?'#e0f2fe':'#fde047');
+        R(8-rc,-5.2,2.6,10.4,glowCol);
+        if((tier||0)>=3||lvl>=3)R(14-rc,-5.2,2.6,10.4,isEnergy?'#e0f2fe':'#fde047');
         if(isEnergy){
-          circ(L+3-rc,0,3.2,'#38bdf8','#ffffff',.9);
+          circ(L+3.2-rc,0,3.4,'#38bdf8','#ffffff',.95);
         }
+        flash(L+4-rc,0,isEnergy?'#38bdf8':'#fb923c','#ffffff');
         // Escudo de operador + Painel Luminoso Tático
-        poly([[-9,-6],[3,-5],[5,0],[3,5],[-9,6]],bodyCol,glowCol,1);
-        // Painel luminoso retroiluminado na traseira
-        R(-8,-3.5,5.5,7,'#090d16');
-        R(-7.2,-2.7,4,5.4,isEnergy?'#38bdf8':'#22d3ee');
-        R(-6.8,-1.5,3,1,'#ffffff');
-        circ(0,0,2.8,band,'#ffffff',.8);
+        poly([[-9.2,-6.2],[3.2,-5.2],[5.2,0],[3.2,5.2],[-9.2,6.2]],bodyCol,glowCol,1.05);
+        R(-8.2,-3.6,5.6,7.2,'#090d16');
+        R(-7.4,-2.8,4.2,5.6,isEnergy?'#38bdf8':'#22d3ee');
+        R(-7,-1.5,3.2,1.1,'#ffffff');
+        circ(0,0,2.9,band,'#ffffff',.85);
       });
       break;}
     case 'dino':{
@@ -4339,19 +4389,16 @@ function drawTowerSprite(key,x,y,ang,rec,lvl,spec,tm,tw,pathIdx,tier){
       const ledOn=Math.min(1,(tw||0)*1.6);
       const ledCol=ledOn>0.2?'#34d399':((tier||0)>=3?ac:'#10b981');
       const warnCol=((tier||0)>=4)?'#fbbf24':'#f59e0b';
-      // 1. Plataforma Octogonal Blindada Pesada com 4 estabilizadores hidráulicos nos cantos
       for(const [px,py] of [[-12,-7],[10,-7],[-12,5],[10,5]]){
         R(px,py,3.2,3.2,'#334155');
         R(px+0.6,py+0.6,2,2,ledCol);
       }
       poly([[-12,-8],[12,-8],[14,0],[12,8],[-12,8],[-14,0]],'#090e1a','#475569',1.3);
       poly([[-10,-6],[10,-6],[11.5,0],[10,6],[-10,6],[-11.5,0]],'#1e293b',ledCol,1.0);
-      // Faixas táticas de contenção (âmbar/preto) na borda frontal e traseira
       for(let i=0;i<4;i++){
         R(-8+i*4.4,-7.4,2.2,1.5,warnCol);
         R(-8+i*4.4,5.9,2.2,1.5,warnCol);
       }
-      // Pulso de sincronia neural ao invocar ou comandar ataque
       if(ledOn>0.06){
         ctx.save();
         ctx.strokeStyle='rgba(52,211,153,'+(0.4+ledOn*0.55)+')';
@@ -4359,99 +4406,87 @@ function drawTowerSprite(key,x,y,ang,rec,lvl,spec,tm,tw,pathIdx,tier){
         ctx.beginPath();ctx.arc(0,0,14+ledOn*4,0,6.283);ctx.stroke();
         ctx.restore();
       }
-      // 2. Câmara Central de Âmbar / Incubadora de DNA com anel giratório
       circ(0,0,6.8,'#064e3b','#34d399',1.1);
       ctx.save();ctx.rotate(tm*2.2);
       R(-5.5,-1,11,2,'rgba(52,211,153,0.45)');
       R(-1,-5.5,2,11,'rgba(52,211,153,0.45)');
       ctx.restore();
       circ(0,0,3.8,ledOn>0.15?'#fef08a':'#f59e0b','#ffffff',0.9);
-      // 3. Torreta Dupla de Pulso Bio-Sônico + Emissor Neural Direcional
       rot(()=>{
         const L=13+lvl*2.2;
-        // Mira laser bio-neural
         ctx.strokeStyle='rgba(52,211,153,0.45)';ctx.lineWidth=1.1;
         ctx.beginPath();ctx.moveTo(L-rc,0);ctx.lineTo(L+14-rc,0);ctx.stroke();
-        // Culatra blindada e trilhos duplos
         R(-4-rc,-4.8,10,9.6,'#0f172a');
         R(-2-rc,-3.8,6,7.6,'#1e293b');
         R(3-rc,-3.6,L,2.4,'#334155');
         R(3-rc,1.2,L,2.4,'#334155');
-        // Núcleo condutor central energizado
         R(4-rc,-1.0,L-1,2.0,ledOn>0.15?'#fef08a':ledCol);
-        // Bobinas de pulso sônico na ponta do canhão
         poly([[L+1-rc,-4.5],[L+6-rc,0],[L+1-rc,4.5]],ledCol,'#ffffff',0.8);
+        flash(L+6-rc,0,'#34d399','#fef08a');
       });
-      // 4. Painel Holográfico Tático 3D projetando telemetria do T-Rex
       R(-10,-12,10,6,'rgba(6,78,59,0.92)');
       ctx.strokeStyle='#34d399';ctx.lineWidth=1.0;ctx.strokeRect(-10,-12,10,6);
       R(-8.8,-10.6,7.2,1.1,'#a7f3d0');
       R(-8.8,-8.6,5.2,1.1,'#38bdf8');
-      // Antena Parabólica de Link Neural no topo
       R(5,-15,2.2,11,'#64748b');
       ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1.3;
       ctx.beginPath();ctx.arc(6,-15,4.2,-2.4,-0.7);ctx.stroke();
       circ(6,-16,2.5+(ledOn*1.4),ledOn>0.15?'#34d399':'#f97316','#ffffff',0.9);
       break;}
     case 'minefactory':{
-      // USINA DE MINAS TERRESTRES: Unidade industrial militar compacta com rampa ejetora de minas metálicas
-      // Chassi blindado industrial compacto
-      poly([[-13,-8],[13,-8],[14,8],[-14,8]],'#1e293b','#475569',1.2);
-      R(-11,-6,22,12,'#0f172a');
-      // Faixas de alerta militar (amarelo/preto) nas bordas laterais
+      // USINA DE MINAS TERRESTRES: Unidade industrial militar compacta com rampa ejetora e tambor rotativo
+      poly([[-13.5,-8.2],[13.5,-8.2],[14.5,8.2],[-14.5,8.2]],'#1e293b','#475569',1.25);
+      R(-11.2,-6.2,22.4,12.4,'#0f172a');
       for(let i=0;i<4;i++){
-        R(-11+i*5.5,-7.5,2.8,1.8,'#facc15');
-        R(-11+i*5.5,5.7,2.8,1.8,'#facc15');
+        R(-11+i*5.5,-7.7,2.8,1.9,'#facc15');
+        R(-11+i*5.5,5.8,2.8,1.9,'#facc15');
       }
-      // Dutos duplos de exaustão térmica traseiros
-      circ(-9,-4,2.6,'#334155','#090d16',.8);
-      circ(-9,4,2.6,'#334155','#090d16',.8);
-      // Rampa / Calha Ejetora Direcional que lança minas sobre os ladrilhos da pista
+      circ(-9.2,-4.2,2.7,'#334155','#090d16',.85);
+      circ(-9.2,4.2,2.7,'#334155','#090d16',.85);
       rot(()=>{
-        const L=11+lvl*1.5;
-        // Calha metálica com trilhos laterais
-        R(2,-5,L,10,'#1e293b');
-        R(2,-5,L,1.8,'#64748b');
-        R(2,3.2,L,1.8,'#64748b');
-        // Pistão hidráulico ejetor animado pelo recuo (rec)
+        const L=11.5+lvl*1.5;
+        R(2,-5.2,L,10.4,'#1e293b');
+        R(2,-5.2,L,1.9,'#64748b');
+        R(2,3.3,L,1.9,'#64748b');
         const ej=Math.max(0,(0.8-rec)*6);
-        R(3+ej,-3,4,6,'#f59e0b');
-        // Mina tática visível na boca da calha pronta para ejeção
-        circ(L-1,-0.2,3.4,'#334155','#94a3b8',.8);
-        circ(L-1,-0.2,1.4,((tm*6)|0)%2?'#ef4444':'#facc15');
+        R(3+ej,-3.2,4.2,6.4,'#f59e0b');
+        circ(L-1,-0.2,3.6,'#334155','#94a3b8',.85);
+        circ(L-1,-0.2,1.5,((tm*6)|0)%2?'#ef4444':'#facc15');
       });
-      // Tambor central automatizado de montagem com núcleo de choque
       ctx.save();ctx.rotate(tm*2.8);
-      R(-6,-1.8,12,3.6,'#475569');R(-1.8,-6,3.6,12,'#475569');
+      R(-6.2,-1.9,12.4,3.8,'#475569');R(-1.9,-6.2,3.8,12.4,'#475569');
       ctx.restore();
-      circ(0,0,5.6,'#1e293b',ac,1.2);
+      circ(0,0,5.8,'#1e293b',ac,1.25);
       const blink=((tm*5)|0)%2;
-      circ(0,0,2.5,blink?'#ef4444':'#facc15','#ffffff',.8);
+      circ(0,0,2.6,blink?'#ef4444':'#facc15','#ffffff',.85);
       break;}
     case 'portal':{
-      // NOVA TORRE BTD6: Torre de Portal Tático com anéis dimensionais e núcleo de dobra
-      circ(0,0,10,'#1e1b4b','#c084fc',1.3);
+      // TORRE DE PORTAL TÁTICO: Pórtico Dimensional Quântico com anéis de dobra e horizonte de eventos
+      circ(0,0,10.4,'#1e1b4b','#c084fc',1.35);
       ctx.save();ctx.rotate(tm*2.4);
-      poly([[0,-12],[10,0],[0,12],[-10,0]],'rgba(192,132,252,.22)','#38bdf8',1.2);
+      poly([[0,-12.5],[10.5,0],[0,12.5],[-10.5,0]],'rgba(192,132,252,.24)','#38bdf8',1.25);
+      ctx.restore();
+      ctx.save();ctx.rotate(-tm*1.8);
+      poly([[-8.5,-8.5],[8.5,-8.5],[8.5,8.5],[-8.5,8.5]],'rgba(56,189,248,.12)','#c084fc',.9);
       ctx.restore();
       rot(()=>{
-        const L=11+lvl*2;
-        R(2-rc,-2,L,4,'#312e81');
-        circ(L+2-rc,0,3,'#38bdf8','#ffffff',.8);
+        const L=11.5+lvl*2;
+        R(2-rc,-2.2,L,4.4,'#312e81');R(3-rc,-1,L-1,2,'#a855f7');
+        circ(L+2.2-rc,0,3.2,'#38bdf8','#ffffff',.9);
       });
-      const wp=4+Math.sin(tm*7)*1.2;
-      circ(0,-3,wp+2,'rgba(56,189,248,.38)');
-      circ(0,-3,wp,'#c084fc','#ffffff',1.1);
+      const wp=4.2+Math.sin(tm*7)*1.25;
+      circ(0,-3,wp+2.2,'rgba(56,189,248,.42)');
+      circ(0,-3,wp,'#c084fc','#ffffff',1.15);
       break;}
   }
   // Insígnia de Skin Nível 5 (Coroa de Maestria dinâmica + nodos orbitais por caminho)
   if((tier||0)>=5){
-    ctx.strokeStyle='#fde047';ctx.lineWidth=1.2;
-    ctx.beginPath();ctx.arc(0,-16,4.5,0,6.283);ctx.stroke();
+    ctx.strokeStyle='#fde047';ctx.lineWidth=1.3;
+    ctx.beginPath();ctx.arc(0,-16.5,4.8,0,6.283);ctx.stroke();
     ctx.fillStyle=ac;
-    ctx.beginPath();ctx.arc(0,-16,3.2,0,6.283);ctx.fill();
+    ctx.beginPath();ctx.arc(0,-16.5,3.3,0,6.283);ctx.fill();
     ctx.strokeStyle='#ffffff';ctx.lineWidth=1;ctx.stroke();
-    R(-10,-15,3,3,'#fde047');R(7,-15,3,3,'#fde047');
+    R(-10.5,-15.5,3.2,3.2,'#fde047');R(7.3,-15.5,3.2,3.2,'#fde047');
   }
   ctx.restore();
 }

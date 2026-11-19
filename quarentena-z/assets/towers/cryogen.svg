@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 84" width="120" height="84">
   <defs>
     <radialGradient id="bg_cryogen_2" cx="50%" cy="50%" r="60%">
-      <stop offset="0%" stop-color="#c084fc" stop-opacity="0.4"/>
+      <stop offset="0%" stop-color="#c084fc" stop-opacity="0.44"/>
       <stop offset="100%" stop-color="#090d16" stop-opacity="0.98"/>
     </radialGradient>
   </defs>
@@ -13,16 +13,17 @@
   </g>
   <circle cx="60" cy="48" r="30" fill="none" stroke="#c084fc" stroke-width="1.6" stroke-opacity="0.55" stroke-dasharray="none"/>
   
-        <!-- Plataforma Blindada 2.5D + Torreta Evoluída -->
-        <polygon points="32,68 42,46 78,46 88,68" fill="#1e293b" stroke="#c084fc" stroke-width="1.8"/>
-        <circle cx="60" cy="48" r="18" fill="#0f172a" stroke="#c084fc" stroke-width="2.2"/>
-        <g transform="translate(60,46) rotate(-16)">
-          <rect x="-12" y="-9" width="24" height="18" rx="4" fill="#581c87" stroke="#c084fc" stroke-width="1.5"/>
-          <rect x="8" y="-6" width="29" height="5" rx="2" fill="#475569" stroke="#c084fc" stroke-width="1"/>
-          <rect x="8" y="1" width="29" height="5" rx="2" fill="#475569" stroke="#c084fc" stroke-width="1"/>
-          <rect x="-8" y="-14" width="16" height="4" rx="1.5" fill="#c084fc"/>
-          
+    <!-- Pedestal Octogonal Blindado 2.5D Profissional -->
+    <polygon points="24,72 34,54 86,54 96,72 88,78 32,78" fill="#090d16" stroke="#334155" stroke-width="1.5"/>
+    <polygon points="28,68 37,52 83,52 92,68 84,74 36,74" fill="#1e293b" stroke="#c084fc" stroke-width="1.4"/>
+    <ellipse cx="60" cy="61" rx="22" ry="11" fill="#0f172a" stroke="#c084fc" stroke-width="1.3"/>
+    <rect x="22" y="58" width="6" height="10" rx="1.5" fill="#c084fc"/><rect x="92" y="58" width="6" height="10" rx="1.5" fill="#c084fc"/>
+  
+        <g transform="translate(60,42)">
+          <ellipse cx="0" cy="0" rx="22" ry="8" transform="rotate(-25)" fill="none" stroke="#c084fc" stroke-width="2.4"/>
+          <ellipse cx="0" cy="0" rx="22" ry="8" transform="rotate(25)" fill="none" stroke="#38bdf8" stroke-width="2.4"/>
+          <circle cx="0" cy="0" r="8" fill="rgba(168,85,247,0.4)"/>
+          <circle cx="0" cy="0" r="5" fill="#e879f9" stroke="#ffffff" stroke-width="1.5"/>
         </g>
-        <circle cx="60" cy="46" r="5.5" fill="#c084fc" stroke="#ffffff" stroke-width="1.2"/>
   
 </svg>
