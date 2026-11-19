@@ -752,47 +752,119 @@
 <!-- Modal de Salas Privadas do Modo Cooperativo (2 a 4 Jogadores) -->
 <div id="coopModal" class="home-confirm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="coopModalTitle">
   <div class="home-confirm-card coop-modal-card">
-    <span class="hc-badge">🤝 ESQUADRÃO TÁTICO · SALAS PRIVADAS (2 A 4 JOGADORES)</span>
-    <h2 id="coopModalTitle">CENTRAL DO MODO COOPERATIVO</h2>
-    <p>Crie uma sala privada com código alfanumérico único para seus amigos ou entre em um esquadrão existente. A Vida da Base é compartilhada e os abates são divididos entre a equipe.</p>
+    <div class="coop-modal-header">
+      <span class="hc-badge coop-head-badge">🤝 REDE MULTIPLAYER ONLINE · SALAS PRIVADAS (2 A 4 JOGADORES)</span>
+      <h2 id="coopModalTitle">CENTRAL DE OPERAÇÕES DO ESQUADRÃO</h2>
+      <p class="coop-desc-sub">Conecte dois computadores usando o código exclusivo da sala para defender Vale Cinzento em equipe com Vida Compartilhada, Doação Percentual de Moedas (25/50/100%) e Protocolo de Ascensão!</p>
+    </div>
 
-    <div class="coop-code-box">
-      <div class="coop-code-left">
-        <small>CÓDIGO DA SUA SALA PRIVADA</small>
-        <strong id="coopRoomCodeDisplay">QZ-8K4M9X</strong>
+    <!-- Indicador de Status do Servidor e Conexão LAN -->
+    <div class="coop-server-bar">
+      <div class="coop-server-left">
+        <span class="coop-status-dot online" id="coopServerDot"></span>
+        <span id="coopServerStatusLabel">SERVIDOR DE JOGO ONLINE</span>
+        <span id="coopServerAddressTag" class="coop-ip-tag" title="Endereço de rede do servidor">DETECTANDO IP...</span>
       </div>
-      <div class="coop-code-actions">
-        <button type="button" id="btnCoopRegenCode" class="coop-sm-btn" title="Gerar novo código aleatório único">↻ NOVO CÓDIGO</button>
-        <button type="button" id="btnCoopCopyCode" class="coop-sm-btn primary" title="Copiar código da sala">📋 COPIAR</button>
+      <button type="button" id="btnToggleServerConfig" class="coop-link-btn" title="Configurar IP ou endereço do servidor para conexão entre dois computadores">⚙ CONFIGURAR IP DO SERVIDOR</button>
+    </div>
+    <div id="coopServerConfigDrawer" class="coop-server-drawer hidden">
+      <div class="coop-server-input-row">
+        <label for="coopServerInput">ENDEREÇO DO SERVIDOR (HOST):</label>
+        <input id="coopServerInput" type="text" placeholder="http://192.168.0.100:8080 ou http://localhost:8080" autocomplete="off" spellcheck="false">
+        <button type="button" id="btnSaveServerUrl" class="coop-sm-btn primary">SALVAR</button>
+        <button type="button" id="btnResetServerUrl" class="coop-sm-btn">PADRÃO</button>
+      </div>
+      <small class="coop-hint">💡 Para jogar entre dois PCs na mesma rede (Wi-Fi/Cabo): no 2º PC, digite o endereço do 1º PC acima e clique em SALVAR.</small>
+    </div>
+
+    <!-- Abas Táticas: Criar Sala (Host) vs Entrar com Código (Aliado) -->
+    <div class="coop-tabs-bar" role="tablist">
+      <button type="button" id="tabCoopHost" class="coop-tab-btn active" role="tab" aria-selected="true">👑 CRIAR SALA (HOST)</button>
+      <button type="button" id="tabCoopJoin" class="coop-tab-btn" role="tab" aria-selected="false">⚡ ENTRAR COM CÓDIGO (ALIADO / 2º PC)</button>
+    </div>
+
+    <!-- Painel 1: Criar Sala (Host) -->
+    <div id="coopHostPanel" class="coop-tab-panel">
+      <div class="coop-code-box">
+        <div class="coop-code-left">
+          <small>CÓDIGO DE ACESSO DA SUA SALA (COMPARTILHE COM O 2º PC)</small>
+          <strong id="coopRoomCodeDisplay">QZ-8K4M9X</strong>
+        </div>
+        <div class="coop-code-actions">
+          <button type="button" id="btnCoopRegenCode" class="coop-sm-btn" title="Gerar novo código aleatório único">↻ NOVO CÓDIGO</button>
+          <button type="button" id="btnCoopCopyCode" class="coop-sm-btn primary" title="Copiar código da sala">📋 COPIAR CÓDIGO</button>
+        </div>
+      </div>
+
+      <div class="coop-roster-header">
+        <span>ESQUADRÃO EM TEMPO REAL (<span id="coopPlayersCountLabel">1/2</span>)</span>
+        <span id="coopSquadStatusBadge" class="coop-squad-badge waiting">📡 AGUARDANDO ALIADO...</span>
+      </div>
+      <div id="coopSlotsPreview" class="coop-slots-preview"></div>
+
+      <div class="coop-config-grid">
+        <label>TAMANHO DO ESQUADRÃO
+          <select id="coopPlayersSelect">
+            <option value="2" selected>2 Jogadores (Dupla Tática)</option>
+            <option value="3">3 Jogadores (Trio de Contenção)</option>
+            <option value="4">4 Jogadores (Esquadrão Completo)</option>
+          </select>
+        </label>
+        <label>MAPA DA OPERAÇÃO (18 ZONAS)
+          <select id="coopMapSelect"></select>
+        </label>
+        <label>NÍVEL DE AMEAÇA
+          <select id="coopDiffSelect">
+            <option value="easy">Fácil (Sobrevivência Inicial)</option>
+            <option value="normal" selected>Normal (Padrão de Vale Cinzento)</option>
+            <option value="hard">Difícil (Horda Implacável)</option>
+            <option value="apoc">Apocalipse (Contaminação Máxima)</option>
+          </select>
+        </label>
+        <label>DIVISÃO DE TERRITÓRIO
+          <select id="coopDivisionSelect">
+            <option value="sectors" selected>Setores Divididos (Cada um defende sua área)</option>
+            <option value="free">Mapa Livre (Construção Compartilhada)</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="hc-actions">
+        <button type="button" id="btnCoopClose" class="hc-btn hc-btn-stay">← VOLTAR</button>
+        <button type="button" id="btnCoopStartMatch" class="hc-btn coop-btn-launch">🚀 INICIAR OPERAÇÃO CO-OP ▶</button>
       </div>
     </div>
 
-    <div class="coop-join-row">
-      <input id="coopJoinInput" type="text" maxlength="12" placeholder="Digite o código de um amigo (ex: QZ-8K4M9X)..." autocomplete="off">
-      <button type="button" id="btnCoopJoinRoom" class="coop-sm-btn">ENTRAR NA SALA</button>
-    </div>
+    <!-- Painel 2: Entrar com Código (Aliado / 2º PC) -->
+    <div id="coopJoinPanel" class="coop-tab-panel hidden">
+      <div class="coop-join-section">
+        <div class="coop-join-card">
+          <span class="coop-sub-kicker">CONECTAR AO ESQUADRÃO</span>
+          <h3>INSIRA O CÓDIGO DA SALA DO HOST</h3>
+          <div class="coop-input-group">
+            <input id="coopJoinInput" type="text" maxlength="9" placeholder="QZ-8K4M9X" autocomplete="off" spellcheck="false">
+            <button type="button" id="btnCoopJoinRoom" class="coop-action-launch">CONECTAR AO ESQUADRÃO ⚡</button>
+          </div>
+          <p id="coopJoinFeedback" class="coop-feedback-text">Digite o código de 6 caracteres exibido no 1º PC (Host) para ingressar na sala.</p>
+        </div>
 
-    <div class="coop-config-grid">
-      <label>TAMANHO DO ESQUADRÃO
-        <select id="coopPlayersSelect">
-          <option value="2" selected>2 Jogadores (Dupla Tática)</option>
-          <option value="3">3 Jogadores (Trio de Contenção)</option>
-          <option value="4">4 Jogadores (Esquadrão Completo)</option>
-        </select>
-      </label>
-      <label>DIVISÃO DE MAPA (18 ZONAS)
-        <select id="coopDivisionSelect">
-          <option value="sectors" selected>Setores Divididos (Quadrantes/Faixas)</option>
-          <option value="free">Mapa Livre (Construção Compartilhada)</option>
-        </select>
-      </label>
-    </div>
+        <div id="coopJoinedLobbyCard" class="coop-joined-card hidden">
+          <div class="coop-joined-header">
+            <span class="coop-status-dot online"></span>
+            <strong id="coopJoinedRoomTitle">SALA TÁTICA CONECTADA</strong>
+            <span id="coopJoinedCodeTag" class="coop-tag">QZ-000000</span>
+          </div>
+          <div id="coopJoinedDetails" class="coop-joined-details"></div>
+          <div class="coop-waiting-pulse">
+            <div class="coop-radar-circle"></div>
+            <span>Aguardando o Líder da Sala (Host) clicar em Iniciar Operação...</span>
+          </div>
+        </div>
+      </div>
 
-    <div id="coopSlotsPreview" class="coop-slots-preview"></div>
-
-    <div class="hc-actions">
-      <button type="button" id="btnCoopClose" class="hc-btn hc-btn-stay">← VOLTAR</button>
-      <button type="button" id="btnCoopStartMatch" class="hc-btn coop-btn-launch">🤝 INICIAR CO-OP AGORA ▶</button>
+      <div class="hc-actions">
+        <button type="button" id="btnCoopJoinBack" class="hc-btn hc-btn-stay">← VOLTAR</button>
+      </div>
     </div>
   </div>
 </div>

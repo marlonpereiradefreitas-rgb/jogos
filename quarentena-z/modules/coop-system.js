@@ -102,10 +102,88 @@
     };
   }
 
+  const SECTOR_COLORS = ['#38bdf8', '#4ade80', '#facc15', '#f472b6'];
+
+  function formatRoomCode(raw) {
+    if (!raw) return '';
+    let clean = String(raw).trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (clean.startsWith('QZ')) clean = clean.slice(2);
+    clean = clean.slice(0, 6);
+    return 'QZ-' + clean;
+  }
+
+  function getSectorColor(slot) {
+    return SECTOR_COLORS[Math.max(0, Math.min(3, slot || 0))] || '#38bdf8';
+  }
+
+  function getSectorName(slot, playerCount, divisionMode) {
+    if (divisionMode === 'free' || !playerCount || playerCount <= 1) {
+      return 'Zona Livre (Toda a Extensão)';
+    }
+    const p = (slot | 0) + 1;
+    if (playerCount === 2) {
+      return slot === 0 ? `Setor Alfa · Oeste (P1)` : `Setor Bravo · Leste (P2)`;
+    }
+    if (playerCount === 3) {
+      const names = ['Flanco Oeste (P1)', 'Setor Central (P2)', 'Flanco Leste (P3)'];
+      return names[slot] || `Setor P${p}`;
+    }
+    const qNames = ['Quadrante Noroeste (P1)', 'Quadrante Nordeste (P2)', 'Quadrante Sudoeste (P3)', 'Quadrante Sudeste (P4)'];
+    return qNames[slot] || `Quadrante P${p}`;
+  }
+
+  /**
+   * Renderiza os limites táticos de setores no canvas durante a batalha
+   */
+  function drawSectorLines(ctx, w, h, playerCount, divisionMode, localSlot) {
+    if (divisionMode === 'free' || !playerCount || playerCount <= 1) return;
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([8, 6]);
+
+    if (playerCount === 2) {
+      const midX = w * 0.5;
+      // Linha vertical divisória
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+      ctx.beginPath();
+      ctx.moveTo(midX, 0);
+      ctx.lineTo(midX, h);
+      ctx.stroke();
+
+      // Indicadores de setor nas bordas superiores
+      ctx.setLineDash([]);
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = localSlot === 0 ? 'rgba(56, 189, 248, 0.75)' : 'rgba(148, 163, 184, 0.45)';
+      ctx.fillText('[ SETOR P1 · VOCÊ ]', midX * 0.5, 20);
+      ctx.fillStyle = localSlot === 1 ? 'rgba(74, 222, 128, 0.75)' : 'rgba(148, 163, 184, 0.45)';
+      ctx.fillText('[ SETOR P2 · ALIADO ]', midX * 1.5, 20);
+    } else if (playerCount === 3) {
+      const x1 = w / 3, x2 = (w * 2) / 3;
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+      ctx.beginPath();
+      ctx.moveTo(x1, 0); ctx.lineTo(x1, h);
+      ctx.moveTo(x2, 0); ctx.lineTo(x2, h);
+      ctx.stroke();
+    } else if (playerCount === 4) {
+      const midX = w * 0.5, midY = h * 0.5;
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+      ctx.beginPath();
+      ctx.moveTo(midX, 0); ctx.lineTo(midX, h);
+      ctx.moveTo(0, midY); ctx.lineTo(w, midY);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   root.QZ_COOP = {
     VALID_DONATION_PCTS,
     generateRoomCode,
     isValidRoomCode,
+    formatRoomCode,
+    getSectorColor,
+    getSectorName,
+    drawSectorLines,
     calculatePercentageDonation,
     getPointSectorOwner,
     evaluateElementalCombo

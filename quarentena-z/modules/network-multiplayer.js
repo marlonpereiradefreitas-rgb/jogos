@@ -19,6 +19,35 @@
   let heartbeatTimer = null;
   let activeRoom = null;
   let clientToken = null;
+  let customServerUrl = '';
+  try {
+    if (typeof localStorage !== 'undefined') {
+      customServerUrl = localStorage.getItem('qz_server_url') || '';
+    }
+  } catch (_) {}
+
+  function setServerUrl(url) {
+    customServerUrl = String(url || '').trim().replace(/\/+$/, '');
+    try {
+      if (typeof localStorage !== 'undefined') {
+        if (customServerUrl) localStorage.setItem('qz_server_url', customServerUrl);
+        else localStorage.removeItem('qz_server_url');
+      }
+    } catch (_) {}
+  }
+
+  function getServerUrl() {
+    return customServerUrl;
+  }
+
+  function getEffectiveServerUrl() {
+    if (customServerUrl) return customServerUrl;
+    if (typeof location !== 'undefined') {
+      if (location.protocol === 'file:') return 'http://localhost:8080';
+      return location.origin;
+    }
+    return 'http://localhost:8080';
+  }
 
   function emit(event, data) {
     const subs = listeners.get(event);
@@ -41,16 +70,17 @@
   }
 
   function canUseNetwork() {
-    if (typeof location !== 'undefined' && location.protocol === 'file:') return false;
     return typeof root.fetch === 'function';
   }
 
   async function apiReq(path, method, body) {
     if (!canUseNetwork()) return null;
+    const base = getEffectiveServerUrl();
+    const fullUrl = path.startsWith('http') ? path : (base + path);
     const headers = { 'Content-Type': 'application/json' };
     if (clientToken) headers['X-Client-Token'] = clientToken;
     try {
-      const res = await root.fetch(path, {
+      const res = await root.fetch(fullUrl, {
         method: method || 'GET',
         headers,
         body: body ? JSON.stringify(body) : undefined
@@ -84,14 +114,17 @@
   // --- Cliente WebSocket Assíncrono (RFC 6455) ---
   function connectWebSocket(customWsUrl) {
     if (typeof WebSocket === 'undefined') return false;
-    if (typeof location !== 'undefined' && location.protocol === 'file:') return false;
     if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
       return true;
     }
 
-    const proto = (typeof location !== 'undefined' && location.protocol === 'https:') ? 'wss:' : 'ws:';
-    const host = (typeof location !== 'undefined' && location.host) ? location.host : 'localhost:8080';
-    const url = customWsUrl || `${proto}//${host}/ws`;
+    let url = customWsUrl;
+    if (!url) {
+      const srv = getEffectiveServerUrl();
+      const wsProto = srv.startsWith('https:') ? 'wss:' : 'ws:';
+      const hostPart = srv.replace(/^https?:\/\//, '');
+      url = `${wsProto}//${hostPart}/ws`;
+    }
 
     try {
       ws = new WebSocket(url);
@@ -102,8 +135,14 @@
         heartbeatTimer = setInterval(() => {
           sendWsMessage({ type: 'ping', ts: Date.now() });
         }, 20000);
-        if (activeRoom && activeRoom.roomId) {
-          sendWsMessage({ type: 'join_room', roomId: activeRoom.roomId, token: clientToken });
+        if (activeRoom && (activeRoom.roomId || activeRoom.roomCode)) {
+          sendWsMessage({
+            type: 'join_room',
+            roomId: activeRoom.roomId,
+            roomCode: activeRoom.roomCode,
+            slot: activeRoom.mySlot || 0,
+            token: clientToken
+          });
         }
         emit('connected', { url });
       };
@@ -112,7 +151,7 @@
         try {
           const msg = JSON.parse(ev.data);
           if (!msg || typeof msg !== 'object') return;
-          if (msg.type === 'wave_sync' || msg.type === 'cmd_broadcast' || msg.type === 'room_state') {
+          if (msg.type) {
             emit(msg.type, msg);
           }
           emit('message', msg);
@@ -153,19 +192,30 @@
     return await apiReq('/api/mp/rooms' + q, 'GET');
   }
 
+  async function getRoomInfo(codeOrId) {
+    if (!codeOrId) return null;
+    return await apiReq('/api/mp/rooms/info?code=' + encodeURIComponent(codeOrId), 'GET');
+  }
+
   async function createRoom(opts) {
     const o = opts || {};
     const res = await apiReq('/api/mp/rooms', 'POST', {
       name: o.name || 'Esquadrão Alfa',
+      roomCode: o.roomCode,
       mode: o.mode || 'coop',
+      division: o.division || 'sectors',
       map: o.map || 'four',
       diff: o.diff || 'normal',
+      seed: o.seed,
       maxPlayers: o.maxPlayers || 2,
       playerName: o.playerName || 'Comandante',
       isPublic: o.isPublic !== false
     });
     if (res && res.ok && res.room) {
       activeRoom = res.room;
+      activeRoom.mySlot = 0;
+      connectWebSocket();
+      sendWsMessage({ type: 'join_room', roomId: activeRoom.roomId, roomCode: activeRoom.roomCode, slot: 0, playerName: o.playerName });
       emit('room_joined', activeRoom);
     }
     return res;
@@ -180,10 +230,57 @@
     });
     if (res && res.ok && res.room) {
       activeRoom = res.room;
-      sendWsMessage({ type: 'join_room', roomId: activeRoom.roomId, token: clientToken });
+      activeRoom.mySlot = res.slot !== undefined ? res.slot : (activeRoom.players ? activeRoom.players.length - 1 : 1);
+      connectWebSocket();
+      sendWsMessage({ type: 'join_room', roomId: activeRoom.roomId, roomCode: activeRoom.roomCode, slot: activeRoom.mySlot, playerName: o.playerName });
       emit('room_joined', activeRoom);
     }
     return res;
+  }
+
+  async function updateRoom(opts) {
+    const o = opts || {};
+    const payload = Object.assign({
+      roomId: activeRoom ? activeRoom.roomId : undefined,
+      roomCode: activeRoom ? activeRoom.roomCode : undefined
+    }, o);
+    sendWsMessage(Object.assign({ type: 'room_update' }, payload));
+    return await apiReq('/api/mp/rooms/update', 'POST', payload);
+  }
+
+  async function startRoomMatch(opts) {
+    const o = opts || {};
+    const payload = Object.assign({
+      roomId: activeRoom ? activeRoom.roomId : undefined,
+      roomCode: activeRoom ? activeRoom.roomCode : undefined
+    }, o);
+    sendWsMessage(Object.assign({ type: 'game_start' }, payload));
+    return await apiReq('/api/mp/rooms/start', 'POST', payload);
+  }
+
+  function broadcastCommand(cmd) {
+    if (!cmd || typeof cmd !== 'object') return false;
+    const packet = { type: 'cmd_broadcast', command: cmd, ts: Date.now() };
+    return sendWsMessage(packet);
+  }
+
+  function broadcastDonate(data) {
+    const packet = Object.assign({ type: 'coop_donate' }, data);
+    return sendWsMessage(packet);
+  }
+
+  function broadcastPing(data) {
+    const packet = Object.assign({ type: 'coop_ping' }, data);
+    return sendWsMessage(packet);
+  }
+
+  function broadcastVote(data) {
+    const packet = Object.assign({ type: 'coop_vote' }, data);
+    return sendWsMessage(packet);
+  }
+
+  function broadcastBaseSync(life) {
+    return sendWsMessage({ type: 'base_sync', life: Math.max(0, Math.floor(life || 0)) });
   }
 
   async function matchmake(opts) {
@@ -196,6 +293,7 @@
     });
     if (res && res.ok && res.room) {
       activeRoom = res.room;
+      connectWebSocket();
       sendWsMessage({ type: 'join_room', roomId: activeRoom.roomId, token: clientToken });
       emit('room_joined', activeRoom);
     }
@@ -246,11 +344,15 @@
 
   const QZ_NET_MP = {
     setClientToken(tk) { clientToken = tk; },
+    setServerUrl,
+    getServerUrl,
+    getEffectiveServerUrl,
     getStatus() {
       return {
         wsConnected,
         activeRoom: activeRoom ? activeRoom.roomId : null,
-        roomCode: activeRoom ? activeRoom.roomCode : null
+        roomCode: activeRoom ? activeRoom.roomCode : null,
+        mySlot: activeRoom ? (activeRoom.mySlot || 0) : 0
       };
     },
     on,
@@ -258,8 +360,16 @@
     connectWebSocket,
     sendWsMessage,
     listRooms,
+    getRoomInfo,
     createRoom,
     joinRoom,
+    updateRoom,
+    startRoomMatch,
+    broadcastCommand,
+    broadcastDonate,
+    broadcastPing,
+    broadcastVote,
+    broadcastBaseSync,
     matchmake,
     syncWaveAndCommands,
     submitMultiplayerScore,

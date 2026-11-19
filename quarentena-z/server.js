@@ -16,6 +16,7 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 const crypto = require('crypto');
+const os = require('os');
 
 const PORT = Number(process.env.PORT) || 8080;
 const ROOT_DIR = __dirname;
@@ -23,6 +24,22 @@ const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : pat
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 const SECRET_FILE = path.join(DATA_DIR, '.server_secret');
 const ADMIN_KEY = process.env.ADMIN_KEY || '';
+
+// Detecta endereços IPv4 locais (LAN) para exibição e conexão direta entre 2 PCs
+function getLocalIps() {
+  const ips = [];
+  try {
+    const ifaces = os.networkInterfaces();
+    for (const name of Object.keys(ifaces)) {
+      for (const iface of ifaces[name] || []) {
+        if (iface.family === 'IPv4' && !iface.internal) {
+          ips.push(iface.address);
+        }
+      }
+    }
+  } catch (_) {}
+  return ips;
+}
 
 // Garante diretório seguro de dados
 if (!fs.existsSync(DATA_DIR)) {
@@ -557,8 +574,10 @@ const SECURITY_HEADERS = {
 function getCorsHeaders(req) {
   const origin = req.headers.origin;
   const host = req.headers.host || 'localhost';
-  // Permite apenas mesma origem ou localhost para evitar CSRF cross-origin abusivo
-  const allowedOrigin = (!origin || origin.includes(host) || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin))
+  const isLanOrLocal = /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/i.test(origin || '');
+  const isGithubPages = /^https:\/\/marlonpereiradefreitas-rgb\.github\.io$/i.test(origin || '');
+  // Permite conexões locais, LAN entre dois PCs, GitHub Pages e mesma origem
+  const allowedOrigin = (!origin || origin.includes(host) || isLanOrLocal || isGithubPages || origin === 'null')
     ? (origin || '*')
     : 'null';
   return {
@@ -639,6 +658,23 @@ async function handleApi(req, res, urlObj) {
   }
 
   const pathname = urlObj.pathname;
+
+  // 0. SERVER INFO & LAN IP: GET /api/server-info — Detecção de servidor e IP de rede local para conectar 2 PCs
+  if (pathname === '/api/server-info' && req.method === 'GET') {
+    const localIps = getLocalIps();
+    sendJson(req, res, 200, {
+      ok: true,
+      name: 'Quarentena Z Server',
+      version: '1.0.13',
+      port: PORT,
+      localIps,
+      primaryLanIp: localIps[0] || '127.0.0.1',
+      wsPath: '/ws',
+      roomsCount: Object.keys(DB.mpRooms || {}).length,
+      ts: Date.now()
+    });
+    return;
+  }
 
   // 0. GET ou POST /api/session — Emissão/ renovação de token criptográfico de sessão (HMAC-SHA256)
   if (pathname === '/api/session' && (req.method === 'GET' || req.method === 'POST')) {
@@ -1169,37 +1205,108 @@ async function handleApi(req, res, urlObj) {
       const body = await readJsonBody(req);
       const auth = extractClientAuth(req, body);
       const code = String(body.roomCode || '').trim().toUpperCase();
+      const normalizedCode = code.startsWith('QZ-') ? code : (code.startsWith('QZ') ? ('QZ-' + code.slice(2)) : ('QZ-' + code));
       const id = cleanId(body.roomId || '');
       const room = id && DB.mpRooms[id]
         ? DB.mpRooms[id]
-        : Object.values(DB.mpRooms).find(r => r && r.roomCode === code);
+        : Object.values(DB.mpRooms).find(r => r && (r.roomCode === code || r.roomCode === normalizedCode));
       if (!room) {
         sendJson(req, res, 404, { ok: false, error: 'Sala multiplayer não encontrada.' });
         return;
       }
       const ownerHash = auth.valid ? auth.ownerHash : ('anon_' + crypto.randomBytes(4).toString('hex'));
       const playerName = cleanName(body.playerName || 'Comandante');
-      const existingPlayer = room.players.find(p => p.ownerHash === ownerHash);
+      let existingPlayer = room.players.find(p => p.ownerHash === ownerHash);
       if (!existingPlayer) {
         if (room.players.length >= room.maxPlayers) {
           sendJson(req, res, 400, { ok: false, error: 'A sala selecionada já está lotada.' });
           return;
         }
-        room.players.push({
+        const newPlayer = {
           name: playerName,
           ownerHash,
           slot: room.players.length,
           ready: true,
           joinedAt: Date.now()
-        });
+        };
+        room.players.push(newPlayer);
+        existingPlayer = newPlayer;
       }
       if (room.players.length >= 2 && room.status === 'waiting') {
         room.status = 'playing';
       }
       room.updatedAt = Date.now();
       persistDb();
+      broadcastRoomWs(room.roomId, {
+        type: 'player_joined',
+        slot: existingPlayer.slot,
+        player: { name: existingPlayer.name, slot: existingPlayer.slot, ready: true },
+        room: publicRoom(room)
+      });
       broadcastRoomWs(room.roomId, { type: 'room_state', room: publicRoom(room) });
+      sendJson(req, res, 200, { ok: true, slot: existingPlayer.slot, room: publicRoom(room) });
+    } catch (err) {
+      sendJson(req, res, 400, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  // 10b. MULTIPLAYER: GET /api/mp/rooms/info — Consulta dados atualizados da sala
+  if (pathname === '/api/mp/rooms/info' && req.method === 'GET') {
+    const raw = String(urlObj.searchParams.get('code') || urlObj.searchParams.get('roomId') || '').trim().toUpperCase();
+    const normalized = raw.startsWith('QZ-') ? raw : (raw.startsWith('QZ') ? ('QZ-' + raw.slice(2)) : ('QZ-' + raw));
+    const room = DB.mpRooms[raw] || Object.values(DB.mpRooms).find(r => r && (r.roomCode === raw || r.roomCode === normalized || r.roomId === raw));
+    if (!room) {
+      sendJson(req, res, 404, { ok: false, error: 'Sala não encontrada.' });
+      return;
+    }
+    sendJson(req, res, 200, { ok: true, room: publicRoom(room) });
+    return;
+  }
+
+  // 10c. MULTIPLAYER: POST /api/mp/rooms/update — Atualizar configurações da sala no Lobby (Host)
+  if (pathname === '/api/mp/rooms/update' && req.method === 'POST') {
+    try {
+      const body = await readJsonBody(req);
+      const roomId = cleanId(body.roomId || '');
+      const code = String(body.roomCode || '').trim().toUpperCase();
+      const room = (roomId && DB.mpRooms[roomId]) || Object.values(DB.mpRooms).find(r => r && r.roomCode === code);
+      if (!room) {
+        sendJson(req, res, 404, { ok: false, error: 'Sala não encontrada.' });
+        return;
+      }
+      if (body.map && VALID_MAPS.has(body.map)) room.map = body.map;
+      if (body.diff && VALID_DIFFS.has(body.diff)) room.diff = body.diff;
+      if (body.division && (body.division === 'free' || body.division === 'sectors')) room.division = body.division;
+      if (body.maxPlayers) room.maxPlayers = Math.max(2, Math.min(4, Number(body.maxPlayers) || 2));
+      room.updatedAt = Date.now();
+      persistDb();
+      broadcastRoomWs(room.roomId, { type: 'room_update', room: publicRoom(room) });
       sendJson(req, res, 200, { ok: true, room: publicRoom(room) });
+    } catch (err) {
+      sendJson(req, res, 400, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  // 10d. MULTIPLAYER: POST /api/mp/rooms/start — Host inicia a partida para todo o esquadrão
+  if (pathname === '/api/mp/rooms/start' && req.method === 'POST') {
+    try {
+      const body = await readJsonBody(req);
+      const roomId = cleanId(body.roomId || '');
+      const code = String(body.roomCode || '').trim().toUpperCase();
+      const room = (roomId && DB.mpRooms[roomId]) || Object.values(DB.mpRooms).find(r => r && r.roomCode === code);
+      if (!room) {
+        sendJson(req, res, 404, { ok: false, error: 'Sala não encontrada.' });
+        return;
+      }
+      room.status = 'playing';
+      room.seed = (Number(body.seed) >>> 0) || room.seed || 20260101;
+      room.updatedAt = Date.now();
+      persistDb();
+      const startEv = { type: 'game_start', room: publicRoom(room) };
+      broadcastRoomWs(room.roomId, startEv);
+      sendJson(req, res, 200, Object.assign({ ok: true }, startEv));
     } catch (err) {
       sendJson(req, res, 400, { ok: false, error: err.message });
     }
@@ -1494,6 +1601,7 @@ function publicRoom(room) {
     roomCode: room.roomCode,
     name: room.name,
     mode: room.mode,
+    division: room.division || 'sectors',
     map: room.map,
     diff: room.diff,
     maxPlayers: room.maxPlayers,
@@ -1560,11 +1668,11 @@ function decodeWsFrame(buf) {
   return { text: data.toString('utf8') };
 }
 
-function broadcastRoomWs(roomId, msgObj) {
+function broadcastRoomWs(roomId, msgObj, excludeClient) {
   if (!roomId || wsClients.size === 0) return;
   const frame = encodeWsFrame(JSON.stringify(msgObj));
   for (const client of wsClients) {
-    if (client.roomId === roomId && !client.socket.destroyed) {
+    if (client !== excludeClient && client.roomId === roomId && !client.socket.destroyed) {
       try { client.socket.write(frame); } catch (_) {}
     }
   }
@@ -1731,12 +1839,92 @@ server.on('upgrade', (req, socket) => {
           if (!msg || typeof msg !== 'object') return;
           if (msg.type === 'ping') {
             socket.write(encodeWsFrame(JSON.stringify({ type: 'pong', ts: Date.now() })));
-          } else if (msg.type === 'join_room' && msg.roomId) {
-            client.roomId = cleanId(msg.roomId);
+          } else if (msg.type === 'join_room') {
+            const raw = String(msg.roomId || msg.roomCode || '').trim();
+            const normalized = raw.startsWith('QZ-') ? raw : (raw.startsWith('QZ') ? ('QZ-' + raw.slice(2)) : ('QZ-' + raw));
+            const room = DB.mpRooms[raw] || Object.values(DB.mpRooms).find(r => r && (r.roomCode === raw.toUpperCase() || r.roomCode === normalized.toUpperCase() || r.roomId === raw));
+            if (room) {
+              client.roomId = room.roomId;
+              client.roomCode = room.roomCode;
+              client.slot = Number(msg.slot) || 0;
+              client.name = cleanName(msg.playerName || 'Comandante');
+              socket.write(encodeWsFrame(JSON.stringify({ type: 'room_state', room: publicRoom(room) })));
+              broadcastRoomWs(room.roomId, {
+                type: 'player_joined',
+                slot: client.slot,
+                player: { name: client.name, slot: client.slot, ready: true },
+                room: publicRoom(room)
+              }, client);
+            }
+          } else if (msg.type === 'game_start' && client.roomId) {
             const room = DB.mpRooms[client.roomId];
             if (room) {
-              socket.write(encodeWsFrame(JSON.stringify({ type: 'room_state', room: publicRoom(room) })));
+              room.status = 'playing';
+              if (msg.seed) room.seed = Number(msg.seed) >>> 0;
+              persistDb();
+              broadcastRoomWs(client.roomId, { type: 'game_start', room: publicRoom(room) });
             }
+          } else if (msg.type === 'room_update' && client.roomId) {
+            const room = DB.mpRooms[client.roomId];
+            if (room) {
+              if (msg.map && VALID_MAPS.has(msg.map)) room.map = msg.map;
+              if (msg.diff && VALID_DIFFS.has(msg.diff)) room.diff = msg.diff;
+              if (msg.division) room.division = msg.division;
+              persistDb();
+              broadcastRoomWs(client.roomId, { type: 'room_update', room: publicRoom(room) });
+            }
+          } else if (msg.type === 'cmd_broadcast' && client.roomId) {
+            const cmd = msg.command;
+            if (cmd && validateMultiplayerCommand(cmd).valid) {
+              broadcastRoomWs(client.roomId, {
+                type: 'cmd_broadcast',
+                fromSlot: client.slot !== undefined ? client.slot : (msg.fromSlot || 0),
+                command: cmd,
+                tick: Number(msg.tick) || 0,
+                ts: Date.now()
+              }, client);
+            }
+          } else if (msg.type === 'coop_donate' && client.roomId) {
+            const check = validateCoinDonation(msg);
+            if (check.valid) {
+              const ev = {
+                type: 'coop_donate',
+                fromSlot: check.fromSlot,
+                toSlot: check.toSlot,
+                pct: check.pct,
+                amount: check.amount,
+                remainingBalance: check.remainingBalance,
+                ts: Date.now()
+              };
+              broadcastRoomWs(client.roomId, ev);
+            }
+          } else if (msg.type === 'coop_ping' && client.roomId) {
+            const x = Math.max(8, Math.min(952, Math.round(Number(msg.x) || 480)));
+            const y = Math.max(8, Math.min(632, Math.round(Number(msg.y) || 320)));
+            const kind = ['danger', 'focus', 'combo'].includes(msg.kind) ? msg.kind : 'danger';
+            const pingEv = {
+              type: 'coop_ping',
+              x, y, kind,
+              sender: cleanName(msg.sender || client.name || 'Comandante'),
+              fromSlot: client.slot || 0,
+              ts: Date.now()
+            };
+            broadcastRoomWs(client.roomId, pingEv);
+          } else if (msg.type === 'coop_vote' && client.roomId) {
+            const voteType = msg.voteType === 'speed' ? 'speed' : 'wave';
+            const speedVal = [1, 2, 3].includes(Number(msg.speed)) ? Number(msg.speed) : 1;
+            const ev = {
+              type: 'coop_vote',
+              voteType,
+              speed: speedVal,
+              voter: cleanName(msg.voter || client.name || 'Comandante'),
+              fromSlot: client.slot || 0,
+              ts: Date.now()
+            };
+            broadcastRoomWs(client.roomId, ev);
+          } else if (msg.type === 'base_sync' && client.roomId) {
+            const life = Math.max(0, Math.floor(Number(msg.life) || 0));
+            broadcastRoomWs(client.roomId, { type: 'base_sync', life, fromSlot: client.slot || 0 }, client);
           } else if (msg.type === 'wave_sync' && client.roomId) {
             const cmds = Array.isArray(msg.commands) ? msg.commands.slice(0, 30) : [];
             if (cmds.every(c => validateMultiplayerCommand(c).valid)) {
@@ -1754,8 +1942,20 @@ server.on('upgrade', (req, socket) => {
       }
     });
 
-    socket.on('close', () => wsClients.delete(client));
-    socket.on('error', () => wsClients.delete(client));
+    socket.on('close', () => {
+      wsClients.delete(client);
+      if (client.roomId) {
+        broadcastRoomWs(client.roomId, {
+          type: 'player_left',
+          slot: client.slot,
+          name: client.name,
+          roomId: client.roomId
+        });
+      }
+    });
+    socket.on('error', () => {
+      wsClients.delete(client);
+    });
   } catch (_) {
     try { socket.destroy(); } catch (__) {}
   }
@@ -1768,14 +1968,15 @@ server.keepAliveTimeout = 5000;
 server.maxHeadersCount = 60;
 
 if (require.main === module) {
+  const localIps = getLocalIps();
+  const lanUrl = localIps.length > 0 ? `http://${localIps[0]}:${PORT}` : `http://localhost:${PORT}`;
   server.listen(PORT, '0.0.0.0', () => {
     console.log('==========================================================');
     console.log(` ☣ QUARENTENA Z — SERVIDOR BLINDADO ATIVO NA PORTA ${PORT}`);
     console.log(` 🔒 Segurança: HMAC-SHA256 + Anti-Cheat + CSP + RateLimit`);
-    console.log(` 🌐 Acesse no navegador: http://localhost:${PORT}`);
-    console.log(` 📡 API Ranking Online:  http://localhost:${PORT}/api/leaderboard`);
-    console.log(` 💾 API Cloud Save:      http://localhost:${PORT}/api/cloud-save`);
-    console.log(` 🤝 API Multiplayer/WS:  http://localhost:${PORT}/api/mp/rooms | ws://localhost:${PORT}/ws`);
+    console.log(` 🌐 Acesso Local (Host):     http://localhost:${PORT}`);
+    console.log(` 🤝 Rede Local (LAN / 2º PC): ${lanUrl}`);
+    console.log(` 📡 API Multiplayer/WS:       ${lanUrl}/api/mp/rooms | ws://${localIps[0] || 'localhost'}:${PORT}/ws`);
     console.log('==========================================================');
   });
 }

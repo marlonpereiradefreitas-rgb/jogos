@@ -1612,18 +1612,25 @@ const Snd = {
 /* ===================== 6. DANO, STATUS, COMBOS ELEMENTAIS E CO-OP ===================== */
 const COOP={
   active:false,
+  isMultiplayer:false,
+  isHost:true,
   roomCode:'QZ-8K4M9X',
+  roomId:'',
   maxPlayers:2,
   division:'sectors', // 'sectors' | 'free'
   mySlot:0,
+  map:'four',
+  diff:'normal',
+  seed:20260101,
   votesWave:1,
   votesSpeed:1,
   players:[
-    {slot:0,name:'Comandante',money:650,isLocal:true,color:'#38bdf8'},
-    {slot:1,name:'Aliado Bravo',money:650,isLocal:false,color:'#4ade80'}
+    {slot:0,name:'Comandante',money:650,isLocal:true,color:'#38bdf8',ready:true},
+    {slot:1,name:'Aliado Bravo',money:650,isLocal:false,color:'#4ade80',ready:false}
   ],
   pings:[]
 };
+let startGameOperation=null;
 
 function evaluateElementalCombo(z,incomingDtype){
   if(window.QZ_COOP&&typeof window.QZ_COOP.evaluateElementalCombo==='function'){
@@ -2596,7 +2603,7 @@ function seedRng(n){_s=(n>>>0)||1;}
 function srand(){_s=(_s+0x6D2B79F5)|0;let t=Math.imul(_s^(_s>>>15),1|_s);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;}
 const towerById=id=>towers.find(t=>t.id===id);
 const CMDS={
-  place:c=>placeTower(c.key,c.x,c.y),
+  place:c=>placeTower(c.key,c.x,c.y,c.playerSlot,c.remote),
   up:c=>{const t=towerById(c.id);return t?upgradeTower(t,c.i||0,c.path|0):false;},
   paragon:c=>{const t=towerById(c.id);return t?makeParagon(t):false;},
   ability:c=>{const t=towerById(c.id);return t?activateTowerAbility(t):false;},
@@ -2605,7 +2612,7 @@ const CMDS={
   aim:c=>{const t=towerById(c.id);return t?setTowerAim(t,c.x,c.y):false;},
   portal_exit:c=>{const t=towerById(c.id);return t?setPortalExit(t,c.x,c.y):false;},
   clearObs:c=>clearObstacle(c.id),
-  donate:c=>donateCoopCoins(c.toSlot|0,+c.pct),
+  donate:c=>donateCoopCoins(c.toSlot|0,+c.pct,c.remote,c.fromSlot,c.amount),
   wave:()=>WM.send(),
   power:c=>Powers.click(c.key),
   auto:c=>setAuto(!!c.on)
@@ -2616,6 +2623,9 @@ function dispatch(c){
   CMDLOG.push(Object.assign({tick:G.tick},c));
   const res=f(c);
   SecurityGuard.syncVault();
+  if(COOP.active && COOP.isMultiplayer && !c.remote && window.QZ_NET_MP && typeof window.QZ_NET_MP.broadcastCommand === 'function'){
+    window.QZ_NET_MP.broadcastCommand(Object.assign({}, c, { playerSlot: COOP.mySlot || 0 }));
+  }
   return res;
 }
 function stateHash(){let h=2166136261;const mix=v=>{h^=Math.round(v*1000)|0;h=Math.imul(h,16777619)>>>0;};
@@ -2974,14 +2984,22 @@ const OnlineAPI={
     if(window.QZ_CLOUD_DB&&typeof window.QZ_CLOUD_DB.setTokens==='function')window.QZ_CLOUD_DB.setTokens(this.token,tk);
   },
   req(path,opts){
-    if(typeof window.fetch!=='function'||(typeof location!=='undefined'&&location.protocol==='file:'))return Promise.resolve(null);
+    if(typeof window.fetch!=='function')return Promise.resolve(null);
+    let srv='';
+    if(window.QZ_NET_MP&&typeof window.QZ_NET_MP.getServerUrl==='function'){
+      srv=window.QZ_NET_MP.getServerUrl();
+    }
+    if(!srv&&typeof location!=='undefined'&&location.protocol==='file:'){
+      srv='http://localhost:8080';
+    }
+    const fullPath=(srv&&!path.startsWith('http'))?(srv.replace(/\/+$/,'')+path):path;
     const hdrs={'Content-Type':'application/json'};
     const tk=this.getToken();
     const ltk=this.getLicenseToken();
     if(tk)hdrs['X-Client-Token']=tk;
     if(ltk)hdrs['X-License-Token']=ltk;
     const mergedOpts=Object.assign({},opts||{},{headers:Object.assign(hdrs,(opts&&opts.headers)||{})});
-    return window.fetch(path,mergedOpts).then(r=>r.json().catch(()=>null)).catch(()=>null);
+    return window.fetch(fullPath,mergedOpts).then(r=>r.json().catch(()=>null)).catch(()=>null);
   },
   ensureSession(){
     if(typeof window.fetch!=='function')return Promise.resolve(null);
@@ -4803,6 +4821,15 @@ function drawTower(t){
   if(t.weak>0){ctx.fillStyle='rgba(120,220,60,'+(.22+.12*Math.sin(G.simT*10))+')';ctx.beginPath();ctx.arc(t.x,t.y,18,0,6.283);ctx.fill();R(t.x-3,t.y-26,6,6,'#a6e05a');}
   if(t.key==='ice'){ctx.strokeStyle='rgba(160,220,255,.25)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(t.x,t.y,t.s.range,0,6.283);ctx.stroke();}
   if(t.key==='flame'&&t.heat>.05){R(t.x-8,t.y-26,16,3,'#222');R(t.x-8,t.y-26,Math.round(16*t.heat),3,'#ff7a20');}
+  if(COOP.active&&typeof t.ownerSlot==='number'){
+    ctx.save();
+    const pCol=(window.QZ_COOP&&typeof window.QZ_COOP.getSectorColor==='function')?window.QZ_COOP.getSectorColor(t.ownerSlot):(t.ownerSlot===0?'#38bdf8':'#4ade80');
+    ctx.fillStyle='rgba(15,23,42,0.85)';ctx.strokeStyle=pCol;ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.rect(t.x+10,t.y-22,17,13);ctx.fill();ctx.stroke();
+    ctx.fillStyle=pCol;ctx.font='bold 9px "Segoe UI",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('P'+(t.ownerSlot+1),t.x+18.5,t.y-15);
+    ctx.restore();
+  }
 }
 function drawProj(p){
   if(p.x<-VIEW.padX-30||p.x>W+VIEW.padX+30||p.y<-VIEW.padY-60||p.y>H+VIEW.padY+30)return;
@@ -4949,20 +4976,24 @@ function drawEffects(){
   }
   ctx.globalAlpha=1;ctx.textAlign='left';
   // Divisão de Setores Co-op (2 a 4 jogadores) e Marcadores Visuais de Alerta na Pista
-  if(COOP.active&&COOP.division==='sectors'){
-    ctx.save();
-    ctx.strokeStyle='rgba(56,189,248,0.32)';
-    ctx.lineWidth=1.5;
-    ctx.setLineDash([7,7]);
-    if(COOP.maxPlayers===2){
-      ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.stroke();
-    }else if(COOP.maxPlayers===3){
-      ctx.beginPath();ctx.moveTo(W/3,0);ctx.lineTo(W/3,H);ctx.moveTo((W*2)/3,0);ctx.lineTo((W*2)/3,H);ctx.stroke();
-    }else{
-      ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
+  if(COOP.active){
+    if(window.QZ_COOP&&typeof window.QZ_COOP.drawSectorLines==='function'){
+      window.QZ_COOP.drawSectorLines(ctx,W,H,COOP.maxPlayers,COOP.division,COOP.mySlot);
+    }else if(COOP.division==='sectors'){
+      ctx.save();
+      ctx.strokeStyle='rgba(56,189,248,0.32)';
+      ctx.lineWidth=1.5;
+      ctx.setLineDash([7,7]);
+      if(COOP.maxPlayers===2){
+        ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.stroke();
+      }else if(COOP.maxPlayers===3){
+        ctx.beginPath();ctx.moveTo(W/3,0);ctx.lineTo(W/3,H);ctx.moveTo((W*2)/3,0);ctx.lineTo((W*2)/3,H);ctx.stroke();
+      }else{
+        ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      ctx.restore();
     }
-    ctx.setLineDash([]);
-    ctx.restore();
   }
   if(COOP.pings&&COOP.pings.length){
     ctx.save();
@@ -4992,6 +5023,12 @@ function validSpot(x,y){
   for(const [bx,by,bw,bh] of (MAPS[activeMap].blocked||[]))if(x>bx-14&&x<bx+bw+14&&y>by-14&&y<by+bh+14)return 'Terreno bloqueado (água)';
   for(const ob of obstacles)if(!ob.cleared&&dist(ob.x,ob.y,x,y)<ob.r+CFG.towerR)return 'Obstáculo no terreno (clique para demolir)';
   for(const t of towers)if(dist(t.x,t.y,x,y)<CFG.towerR*2)return 'Sobreposição com outra torre';
+  if(COOP.active&&COOP.division==='sectors'&&window.QZ_COOP&&typeof window.QZ_COOP.getPointSectorOwner==='function'){
+    const ownerSlot=window.QZ_COOP.getPointSectorOwner(x,y,W,H,COOP.maxPlayers,COOP.division);
+    if(ownerSlot!==(COOP.mySlot||0)){
+      return 'Setor exclusivo do Comandante P'+(ownerSlot+1);
+    }
+  }
   return null;
 }
 function drawPreview(){
@@ -5243,14 +5280,20 @@ function pickTower(key){
   G.placing=key;G.targeting=null;select(null);Snd.play('ui');
   setHint('Clique no mapa para construir '+d.name+'. Verde = válido. ESC cancela (Shift mantém a construção).');
 }
-function placeTower(key,x,y){
+function placeTower(key,x,y,playerSlot,remote){
   const d=TOWERS[key]; if(!d)return null;
   if(!Number.isFinite(x)||!Number.isFinite(y))return null;
-  if(!Number.isFinite(G.money)||G.money<d.cost){noMoney();return null;}
-  const bad=validSpot(x,y); if(bad){toast(bad,'bad');Snd.play('err');return null;}
-  G.money-=d.cost;
-  const t=new Tower(key,x,y); towers.push(t); towers.sort((a,b)=>a.y-b.y); psAdd('built');
-  FX.ring(x,y,6,26,.3,'#f2c230',3); FX.spark(x,y,'#d8c890',6); Snd.play('build');
+  const isRemote=!!remote;
+  if(!isRemote){
+    if(!Number.isFinite(G.money)||G.money<d.cost){noMoney();return null;}
+    const bad=validSpot(x,y); if(bad){toast(bad,'bad');Snd.play('err');return null;}
+    G.money-=d.cost;
+  }
+  const t=new Tower(key,x,y);
+  t.ownerSlot=(typeof playerSlot==='number')?playerSlot:(COOP.active?(COOP.mySlot||0):0);
+  towers.push(t); towers.sort((a,b)=>a.y-b.y); psAdd('built');
+  const ringCol=(t.ownerSlot===1)?'#4ade80':'#f2c230';
+  FX.ring(x,y,6,26,.3,ringCol,3); FX.spark(x,y,t.ownerSlot===1?'#86efac':'#d8c890',6); Snd.play('build');
   return t;
 }
 function setTowerAim(t,x,y){
@@ -5909,7 +5952,7 @@ function hideEnd(){ $('endScreen').classList.add('hidden'); }
 
 /* --- reinício / início --- */
 function resetGame(seed){
-  G.seed=(seed>>>0)||((Math.random()*4294967296)>>>0)||1;seedRng(G.seed);G.tick=0;TID=0;CMDLOG.length=0;
+  G.seed=(seed>>>0)||(COOP.active&&COOP.seed?(COOP.seed>>>0):(((Math.random()*4294967296)>>>0)||1));seedRng(G.seed);G.tick=0;TID=0;CMDLOG.length=0;
   G.auto0=G.auto;ACC=0;G.replay=null;G.newAch=[];G.stats={bosses:0,leaks:0,paragons:0};G.banner=null;G.tips=null;
   try{if(!localStorage.getItem('ztd_v19_tut'))G.tips=[[3,'Escolha uma torre na lista à direita e clique no mapa para construir.'],[30,'Clique numa torre construída para melhorá-la: são 3 caminhos de upgrade.'],[70,'Camuflados e voadores só são atacados por Radar e Drone.'],[140,'3 torres iguais no nível máximo do mesmo caminho formam uma ASCENSÃO.']];}catch(e){}
   G.money=CFG.startMoney;G.life=CFG.baseLife;G.kills=0;G.earned=0;G.time=0;G.simT=0;G.shake=0;G.flash=0;
@@ -6469,6 +6512,55 @@ function setupCoopPlayers(maxP){
   }
 }
 
+function populateCoopMaps(){
+  const sel=$('coopMapSelect');
+  if(!sel||sel.children.length>0)return;
+  for(const k in MAPS){
+    const m=MAPS[k];
+    const opt=document.createElement('option');
+    opt.value=k;
+    opt.textContent=(m.name||k).toUpperCase()+' ('+(m.diff?m.diff.toUpperCase():'NORMAL')+')';
+    sel.appendChild(opt);
+  }
+  if(activeMap)sel.value=activeMap;
+}
+
+function detectCoopServer(){
+  populateCoopMaps();
+  if(window.QZ_NET_MP&&typeof window.QZ_NET_MP.getServerUrl==='function'){
+    const currentUrl=window.QZ_NET_MP.getServerUrl();
+    if($('coopServerInput'))$('coopServerInput').value=currentUrl;
+  }
+  const tag=$('coopServerAddressTag');
+  const dot=$('coopServerDot');
+  const lbl=$('coopServerStatusLabel');
+  OnlineAPI.req('/api/server-info')
+    .then(res=>{
+      if(res&&res.ok){
+        if(dot)dot.className='coop-status-dot online';
+        if(lbl)lbl.textContent='SERVIDOR DE JOGO ONLINE';
+        const primaryLan=(res.localIps&&res.localIps[0])?res.localIps[0]:(res.host||'localhost');
+        const lanUrl='http://'+primaryLan+':'+(res.port||8080);
+        if(tag){
+          tag.textContent='REDE LOCAL (2º PC): '+lanUrl;
+          tag.title='Digite este endereço no 2º PC caso esteja na mesma rede Wi-Fi/Cabo';
+        }
+        if($('coopServerInput')&&!$('coopServerInput').value){
+          $('coopServerInput').value=lanUrl;
+        }
+      }else{
+        if(dot)dot.className='coop-status-dot offline';
+        if(lbl)lbl.textContent='MODO LOCAL OFFLINE';
+        if(tag)tag.textContent='STANDALONE';
+      }
+    })
+    .catch(()=>{
+      if(dot)dot.className='coop-status-dot offline';
+      if(lbl)lbl.textContent='MODO LOCAL OFFLINE';
+      if(tag)tag.textContent='STANDALONE';
+    });
+}
+
 function renderCoopModalSlots(){
   const box=$('coopSlotsPreview');
   if(!box)return;
@@ -6476,9 +6568,34 @@ function renderCoopModalSlots(){
   setupCoopPlayers(n);
   const divMode=($('coopDivisionSelect')&&$('coopDivisionSelect').value)||COOP.division||'sectors';
   COOP.division=divMode;
+  if($('coopPlayersCountLabel')){
+    const readyCount=COOP.players.filter(p=>p.ready||p.isLocal).length;
+    $('coopPlayersCountLabel').textContent=readyCount+'/'+n;
+  }
+  if($('coopSquadStatusBadge')){
+    const hasGuests=COOP.players.some(p=>!p.isLocal&&p.ready);
+    $('coopSquadStatusBadge').className='coop-squad-badge '+(hasGuests?'ready':'waiting');
+    $('coopSquadStatusBadge').textContent=hasGuests?'🟢 ESQUADRÃO PRONTO PARA AÇÃO':'📡 AGUARDANDO ALIADO (2º PC)...';
+  }
   box.innerHTML=COOP.players.map((p,i)=>{
-    const secLbl=divMode==='free'?'Mapa Livre':('Setor P'+(i+1));
-    return '<div class="coop-slot-chip"><span><b>P'+(i+1)+'</b> · '+escHtml(p.name)+'</span><small>'+secLbl+'</small></div>';
+    const secLbl=divMode==='free'?'Mapa Livre (Compartilhado)':('Setor Tático P'+(i+1));
+    const pCol=(window.QZ_COOP&&typeof window.QZ_COOP.getSectorColor==='function')?window.QZ_COOP.getSectorColor(i):p.color;
+    const isOnline=p.isLocal||p.ready;
+    if(isOnline){
+      return '<div class="coop-roster-card connected" style="border-left:4px solid '+pCol+'">'
+        +'<div class="coop-roster-avatar" style="background:'+pCol+'22;color:'+pCol+'"><b>P'+(i+1)+'</b></div>'
+        +'<div class="coop-roster-info">'
+        +'<div class="coop-roster-name"><strong>'+escHtml(p.name)+'</strong>'+(p.isLocal?'<span class="coop-tag-host">VOCÊ ('+(i===0?'HOST':'ALIADO')+')</span>':'<span class="coop-tag-ally">CONECTADO</span>')+'</div>'
+        +'<small class="coop-roster-sec">'+secLbl+'</small>'
+        +'</div></div>';
+    }else{
+      return '<div class="coop-roster-card waiting">'
+        +'<div class="coop-radar-circle"></div>'
+        +'<div class="coop-roster-info">'
+        +'<div class="coop-roster-name"><span class="coop-waiting-text">Aguardando Aliado P'+(i+1)+'...</span></div>'
+        +'<small class="coop-roster-sec">Compartilhe o código <b>'+escHtml(COOP.roomCode)+'</b> com o 2º PC</small>'
+        +'</div></div>';
+    }
   }).join('');
 }
 
@@ -6512,7 +6629,24 @@ function renderCoopHud(){
   });
 }
 
-function donateCoopCoins(toSlot,pct){
+function donateCoopCoins(toSlot,pct,remote,fromSlot,remoteAmount){
+  if(remote){
+    const amt=Math.floor(Number(remoteAmount)||0);
+    const fromIdx=(typeof fromSlot==='number')?fromSlot:1;
+    if(toSlot===COOP.mySlot){
+      G.money=(Number(G.money)||0)+amt;
+      SecurityGuard.syncVault();
+      FX.popup(W/2,90,'💸 +'+amt+' ● (Recebido de P'+(fromIdx+1)+')','#4ade80',true);
+      toast('💸 Você recebeu '+amt+' moedas de P'+(fromIdx+1)+'!','good');
+      Snd.play('coin');
+    }
+    const target=COOP.players.find(p=>p.slot===(toSlot|0));
+    if(target)target.money=(target.money||0)+amt;
+    const source=COOP.players.find(p=>p.slot===fromIdx);
+    if(source)source.money=Math.max(0,(source.money||0)-amt);
+    renderCoopHud();
+    return amt;
+  }
   const curBal=Math.floor(Number(G.money)||0);
   const numPct=Number(pct);
   const validPcts=[0.25,0.50,1.00];
@@ -6533,11 +6667,14 @@ function donateCoopCoins(toSlot,pct){
   G.money-=amount;
   target.money=(target.money||0)+amount;
   SecurityGuard.syncVault();
+  if(COOP.active && COOP.isMultiplayer && window.QZ_NET_MP && typeof window.QZ_NET_MP.broadcastDonate==='function'){
+    window.QZ_NET_MP.broadcastDonate(target.slot,matched,amount,COOP.mySlot||0);
+  }
   OnlineAPI.req('/api/mp/donate',{
     method:'POST',
     body:JSON.stringify({
       roomCode:COOP.roomCode,
-      fromSlot:0,
+      fromSlot:COOP.mySlot||0,
       toSlot:target.slot,
       pct:matched,
       balance:curBal,
@@ -6551,7 +6688,7 @@ function donateCoopCoins(toSlot,pct){
   return amount;
 }
 
-function triggerCoopPing(kind,customX,customY){
+function triggerCoopPing(kind,customX,customY,remote){
   pathPos(Math.min(PATH_LEN-40,Math.max(40,PATH_LEN*0.42)),_pp);
   const px=Number.isFinite(customX)?customX:(M.in?M.x:Math.round(_pp.x));
   const py=Number.isFinite(customY)?customY:(M.in?M.y:Math.round(_pp.y));
@@ -6563,27 +6700,42 @@ function triggerCoopPing(kind,customX,customY){
   COOP.pings.push({x:px,y:py,kind:kind||'danger',label:meta.label,color:meta.color,life:4.2,max:4.2});
   FX.ring(px,py,6,56,.45,meta.color,3.5);
   Snd.play('ui');
-  toast('📍 '+meta.label+' enviado ao esquadrão!','good');
-  OnlineAPI.req('/api/mp/ping',{method:'POST',body:JSON.stringify({roomId:COOP.roomCode,x:px,y:py,kind:kind||'danger',playerName:getPlayerName()})});
+  if(!remote){
+    toast('📍 '+meta.label+' enviado ao esquadrão!','good');
+    if(COOP.active && COOP.isMultiplayer && window.QZ_NET_MP && typeof window.QZ_NET_MP.broadcastPing==='function'){
+      window.QZ_NET_MP.broadcastPing(kind||'danger',px,py);
+    }
+    OnlineAPI.req('/api/mp/ping',{method:'POST',body:JSON.stringify({roomId:COOP.roomCode,x:px,y:py,kind:kind||'danger',playerName:getPlayerName()})});
+  }
   return true;
 }
 
-function voteCoopAction(voteType,speedVal){
+function voteCoopAction(voteType,speedVal,remote){
   if(voteType==='speed'){
     const sp=[1,2,3].includes(Number(speedVal))?Number(speedVal):1;
     setSpeed(sp);
     document.querySelectorAll('.coop-vote-spd').forEach(b=>b.classList.toggle('active',+b.dataset.vspd===sp));
     toast('🗳 Votação de grupo aprovada: Velocidade '+sp+'x!','good');
-    OnlineAPI.req('/api/mp/vote',{method:'POST',body:JSON.stringify({roomId:COOP.roomCode,voteType:'speed',speed:sp,playerName:getPlayerName()})});
+    if(!remote){
+      if(COOP.active && COOP.isMultiplayer && window.QZ_NET_MP && typeof window.QZ_NET_MP.broadcastVote==='function'){
+        window.QZ_NET_MP.broadcastVote('speed',sp);
+      }
+      OnlineAPI.req('/api/mp/vote',{method:'POST',body:JSON.stringify({roomId:COOP.roomCode,voteType:'speed',speed:sp,playerName:getPlayerName()})});
+    }
     return true;
   }
   COOP.votesWave=COOP.maxPlayers;
   renderCoopHud();
   if(G.mode==='play'&&!G.paused){
-    dispatch({type:'wave'});
+    dispatch({type:'wave',remote:true});
     toast('🗳 Esquadrão votou ('+COOP.maxPlayers+'/'+COOP.maxPlayers+'): Onda iniciada!','good');
   }
-  OnlineAPI.req('/api/mp/vote',{method:'POST',body:JSON.stringify({roomId:COOP.roomCode,voteType:'wave',playerName:getPlayerName()})});
+  if(!remote){
+    if(COOP.active && COOP.isMultiplayer && window.QZ_NET_MP && typeof window.QZ_NET_MP.broadcastVote==='function'){
+      window.QZ_NET_MP.broadcastVote('wave',1);
+    }
+    OnlineAPI.req('/api/mp/vote',{method:'POST',body:JSON.stringify({roomId:COOP.roomCode,voteType:'wave',playerName:getPlayerName()})});
+  }
   return true;
 }
 
@@ -6592,14 +6744,218 @@ function openCoopModal(){
   if(!m)return;
   if(!COOP.roomCode)generateCoopRoomCode();
   if($('coopRoomCodeDisplay'))$('coopRoomCodeDisplay').textContent=COOP.roomCode;
+  populateCoopMaps();
+  detectCoopServer();
   renderCoopModalSlots();
   m.classList.remove('hidden');
   Snd.play('ui');
+  // Auto-registra sala no servidor para permitir entrada simultânea pelo 2º PC
+  if(window.QZ_NET_MP && typeof window.QZ_NET_MP.createRoom === 'function'){
+    const n = Math.max(2, Math.min(4, Number($('coopPlayersSelect') && $('coopPlayersSelect').value) || COOP.maxPlayers || 2));
+    const div = ($('coopDivisionSelect') && $('coopDivisionSelect').value) || COOP.division || 'sectors';
+    window.QZ_NET_MP.createRoom({
+      roomCode: COOP.roomCode,
+      name: 'Sala ' + COOP.roomCode,
+      mode: 'coop',
+      division: div,
+      map: activeMap || 'four',
+      diff: activeDifficulty || 'normal',
+      maxPlayers: n,
+      playerName: getPlayerName()
+    }).then(res => {
+      if(res && res.room) {
+        COOP.roomId = res.room.roomId;
+        COOP.isHost = true;
+        COOP.mySlot = 0;
+      }
+    });
+  }
 }
 
 function closeCoopModal(){
   const m=$('coopModal');
   if(m)m.classList.add('hidden');
+}
+
+async function joinCoopRoom(){
+  const raw=($('coopJoinInput')&&$('coopJoinInput').value||'').trim().toUpperCase();
+  const clean=raw.replace(/\s+/g,'');
+  if(!clean||clean.length<4){
+    toast('Digite o código da sala gerado pelo Host (ex: QZ-8K4M9X)','bad');
+    Snd.play('err');
+    return;
+  }
+  const formatted=(window.QZ_COOP&&typeof window.QZ_COOP.formatRoomCode==='function')
+    ?window.QZ_COOP.formatRoomCode(clean)
+    :clean;
+  const feedback=$('coopJoinFeedback');
+  if(feedback)feedback.textContent='Conectando à sala '+formatted+' no servidor...';
+  if(!window.QZ_NET_MP||typeof window.QZ_NET_MP.joinRoom!=='function'){
+    toast('Módulo de rede multiplayer não disponível','bad');
+    return;
+  }
+  const res=await window.QZ_NET_MP.joinRoom({
+    roomCode:formatted,
+    playerName:getPlayerName()
+  });
+  if(res&&res.ok&&res.room){
+    COOP.roomCode=res.room.roomCode||formatted;
+    COOP.roomId=res.room.roomId;
+    COOP.isHost=false;
+    COOP.mySlot=(res.slot!==undefined)?res.slot:1;
+    COOP.active=true;
+    COOP.isMultiplayer=true;
+    COOP.division=res.room.division||'sectors';
+    COOP.maxPlayers=res.room.maxPlayers||2;
+    setupCoopPlayers(COOP.maxPlayers);
+    if(COOP.players[COOP.mySlot]){
+      COOP.players[COOP.mySlot].name=getPlayerName();
+      COOP.players[COOP.mySlot].isLocal=true;
+      COOP.players[COOP.mySlot].ready=true;
+    }
+    if(res.room.players&&res.room.players[0]&&COOP.players[0]){
+      COOP.players[0].name=res.room.players[0].name||'Host Comandante';
+      COOP.players[0].ready=true;
+    }
+    if($('coopJoinedLobbyCard'))$('coopJoinedLobbyCard').classList.remove('hidden');
+    if($('coopJoinedCodeTag'))$('coopJoinedCodeTag').textContent=COOP.roomCode;
+    if($('coopJoinedRoomTitle'))$('coopJoinedRoomTitle').textContent='CONECTADO À SALA: '+(res.room.name||COOP.roomCode);
+    if($('coopJoinedDetails')){
+      $('coopJoinedDetails').innerHTML=
+        '<div><b>Líder da Sala:</b> '+escHtml(res.room.players&&res.room.players[0]?res.room.players[0].name:'Host')+'</div>'
+        +'<div><b>Sua Posição:</b> Comandante P'+(COOP.mySlot+1)+'</div>'
+        +'<div><b>Mapa / Ameaça:</b> '+(res.room.map||'four').toUpperCase()+' · '+(res.room.diff||'normal').toUpperCase()+'</div>'
+        +'<div><b>Divisão:</b> '+(COOP.division==='free'?'Mapa Livre':'Setores Divididos')+'</div>';
+    }
+    if(feedback)feedback.textContent='🟢 Conexão estabelecida com sucesso! Aguarde o Host iniciar a partida.';
+    toast('⚡ Conectado à sala '+COOP.roomCode+'!','good');
+    Snd.play('up');
+  }else{
+    const errMsg=(res&&res.error)?res.error:'Sala não encontrada ou cheia';
+    if(feedback)feedback.textContent='❌ Falha ao entrar: '+errMsg+'. Verifique o código e o IP do servidor.';
+    toast('❌ '+errMsg,'bad');
+    Snd.play('err');
+  }
+}
+
+function launchCoopHostMatch(){
+  const n=Number($('coopPlayersSelect')&&$('coopPlayersSelect').value)||2;
+  const div=($('coopDivisionSelect')&&$('coopDivisionSelect').value)||'sectors';
+  const chosenMap=($('coopMapSelect')&&$('coopMapSelect').value)||activeMap||'four';
+  const chosenDiff=($('coopDiffSelect')&&$('coopDiffSelect').value)||activeDifficulty||'normal';
+  setupCoopPlayers(n);
+  COOP.division=div;
+  COOP.maxPlayers=n;
+  COOP.active=true;
+  COOP.isMultiplayer=true;
+  COOP.isHost=true;
+  COOP.mySlot=0;
+  const seed=((Date.now()^(Math.random()*0x7fffffff))&0x7fffffff)||20260101;
+  COOP.seed=seed;
+  selectMap(chosenMap);
+  activeDifficulty=chosenDiff;
+  if(window.QZ_NET_MP&&typeof window.QZ_NET_MP.startRoomMatch==='function'){
+    window.QZ_NET_MP.startRoomMatch({
+      seed,
+      map:chosenMap,
+      diff:chosenDiff,
+      division:div
+    });
+  }
+  closeCoopModal();
+  if(typeof startGameOperation==='function'){
+    startGameOperation();
+  }
+  renderCoopHud();
+  toast('🤝 Operação Co-op ('+n+'P · '+(div==='free'?'Mapa Livre':'Setores Divididos')+') iniciada!','good');
+}
+
+function handleRemoteGameStart(msg){
+  if(!msg)return;
+  COOP.active=true;
+  COOP.isMultiplayer=true;
+  COOP.seed=msg.seed||(Date.now()&0x7fffffff);
+  COOP.division=msg.division||COOP.division||'sectors';
+  if(msg.map){
+    activeMap=msg.map;
+    selectMap(msg.map);
+  }
+  if(msg.diff){
+    activeDifficulty=msg.diff;
+  }
+  closeCoopModal();
+  if(typeof startGameOperation==='function'){
+    startGameOperation();
+  }
+  renderCoopHud();
+  toast('🚀 Operação iniciada pelo Host! Protejam a Base Alfa!','good');
+}
+
+function initCoopNetworkListeners(){
+  if(!window.QZ_NET_MP||typeof window.QZ_NET_MP.on!=='function')return;
+  if(window.__qzCoopListenersInitialized)return;
+  window.__qzCoopListenersInitialized=true;
+
+  window.QZ_NET_MP.on('player_joined',data=>{
+    if(data&&data.player){
+      const slot=data.player.slot!==undefined?data.player.slot:1;
+      if(COOP.players[slot]){
+        COOP.players[slot].name=data.player.name||('Aliado P'+(slot+1));
+        COOP.players[slot].ready=true;
+        renderCoopModalSlots();
+        toast('🤝 '+COOP.players[slot].name+' entrou no esquadrão!','good');
+        Snd.play('up');
+      }
+    }
+  });
+
+  window.QZ_NET_MP.on('player_left',data=>{
+    if(data&&typeof data.slot==='number'){
+      if(COOP.players[data.slot]){
+        COOP.players[data.slot].ready=false;
+        renderCoopModalSlots();
+        toast('⚠ Aliado P'+(data.slot+1)+' desconectou.','bad');
+      }
+    }
+  });
+
+  window.QZ_NET_MP.on('game_start',msg=>{
+    handleRemoteGameStart(msg);
+  });
+
+  window.QZ_NET_MP.on('cmd_broadcast',c=>{
+    if(!c||!c.type)return;
+    if(c.playerSlot===COOP.mySlot&&!c.force)return;
+    c.remote=true;
+    const f=CMDS[c.type];
+    if(f){
+      CMDLOG.push(Object.assign({tick:G.tick},c));
+      f(c);
+      SecurityGuard.syncVault();
+    }
+  });
+
+  window.QZ_NET_MP.on('coop_donate',data=>{
+    if(!data)return;
+    donateCoopCoins(data.toSlot,data.pct,true,data.fromSlot,data.amount);
+  });
+
+  window.QZ_NET_MP.on('coop_ping',data=>{
+    if(!data)return;
+    triggerCoopPing(data.kind,data.x,data.y,true);
+  });
+
+  window.QZ_NET_MP.on('coop_vote',data=>{
+    if(!data)return;
+    voteCoopAction(data.voteType,data.speed,true);
+  });
+
+  window.QZ_NET_MP.on('base_sync',data=>{
+    if(!COOP.isHost&&data&&typeof data.life==='number'){
+      G.life=data.life;
+      SecurityGuard.syncVault();
+    }
+  });
 }
 
 function bindEvents(){
@@ -6667,34 +7023,57 @@ function bindEvents(){
     toast('Código copiado: '+COOP.roomCode,'good');
     Snd.play('ui');
   });
+  if($('tabCoopHost'))$('tabCoopHost').addEventListener('click',()=>{
+    $('tabCoopHost').classList.add('active');
+    $('tabCoopHost').setAttribute('aria-selected','true');
+    if($('tabCoopJoin')){$('tabCoopJoin').classList.remove('active');$('tabCoopJoin').setAttribute('aria-selected','false');}
+    if($('coopHostPanel'))$('coopHostPanel').classList.remove('hidden');
+    if($('coopJoinPanel'))$('coopJoinPanel').classList.add('hidden');
+    Snd.play('ui');
+  });
+  if($('tabCoopJoin'))$('tabCoopJoin').addEventListener('click',()=>{
+    $('tabCoopJoin').classList.add('active');
+    $('tabCoopJoin').setAttribute('aria-selected','true');
+    if($('tabCoopHost')){$('tabCoopHost').classList.remove('active');$('tabCoopHost').setAttribute('aria-selected','false');}
+    if($('coopJoinPanel'))$('coopJoinPanel').classList.remove('hidden');
+    if($('coopHostPanel'))$('coopHostPanel').classList.add('hidden');
+    Snd.play('ui');
+  });
+  if($('btnToggleServerConfig'))$('btnToggleServerConfig').addEventListener('click',()=>{
+    if($('coopServerConfigDrawer'))$('coopServerConfigDrawer').classList.toggle('hidden');
+    Snd.play('ui');
+  });
+  if($('btnSaveServerUrl'))$('btnSaveServerUrl').addEventListener('click',()=>{
+    const url=($('coopServerInput')&&$('coopServerInput').value||'').trim();
+    if(window.QZ_NET_MP&&typeof window.QZ_NET_MP.setServerUrl==='function'){
+      window.QZ_NET_MP.setServerUrl(url);
+      detectCoopServer();
+      toast('Endereço do servidor atualizado!','good');
+      Snd.play('ui');
+    }
+  });
+  if($('btnResetServerUrl'))$('btnResetServerUrl').addEventListener('click',()=>{
+    if(window.QZ_NET_MP&&typeof window.QZ_NET_MP.setServerUrl==='function'){
+      window.QZ_NET_MP.setServerUrl('');
+      detectCoopServer();
+      toast('Endereço restaurado para o padrão local!','good');
+      Snd.play('ui');
+    }
+  });
   if($('coopPlayersSelect'))$('coopPlayersSelect').addEventListener('change',renderCoopModalSlots);
   if($('coopDivisionSelect'))$('coopDivisionSelect').addEventListener('change',renderCoopModalSlots);
-  if($('btnCoopJoinRoom'))$('btnCoopJoinRoom').addEventListener('click',()=>{
-    const raw=($('coopJoinInput')&&$('coopJoinInput').value||'').trim().toUpperCase();
-    if(!/^QZ-?[2-9A-Z]{4,8}$/.test(raw)){
-      toast('Digite um código válido no formato QZ-XXXXXX','bad');
-      Snd.play('err');
-      return;
-    }
-    COOP.roomCode=raw.includes('-')?raw:('QZ-'+raw.slice(2));
-    if($('coopRoomCodeDisplay'))$('coopRoomCodeDisplay').textContent=COOP.roomCode;
-    toast('Conectado à sala privada '+COOP.roomCode+'!','good');
-    Snd.play('up');
+  if($('coopMapSelect'))$('coopMapSelect').addEventListener('change',e=>{
+    activeMap=e.target.value;
+    selectMap(activeMap);
+    Snd.play('ui');
   });
-  if($('btnCoopStartMatch'))$('btnCoopStartMatch').addEventListener('click',()=>{
-    const n=Number($('coopPlayersSelect')&&$('coopPlayersSelect').value)||2;
-    const div=($('coopDivisionSelect')&&$('coopDivisionSelect').value)||'sectors';
-    setupCoopPlayers(n);
-    COOP.division=div;
-    COOP.active=true;
-    closeCoopModal();
-    startGameOperation();
-    renderCoopHud();
-    if(window.QZ_NET_MP&&typeof window.QZ_NET_MP.createRoom==='function'){
-      window.QZ_NET_MP.createRoom({name:'Sala '+COOP.roomCode,mode:'coop',map:activeMap,diff:activeDifficulty,maxPlayers:COOP.maxPlayers,playerName:getPlayerName()});
-    }
-    toast('🤝 Operação Co-op ('+COOP.maxPlayers+'P · '+(div==='free'?'Mapa Livre':'Setores Divididos')+') iniciada!','good');
+  if($('coopDiffSelect'))$('coopDiffSelect').addEventListener('change',e=>{
+    activeDifficulty=e.target.value;
+    Snd.play('ui');
   });
+  if($('btnCoopJoinRoom'))$('btnCoopJoinRoom').addEventListener('click',joinCoopRoom);
+  if($('btnCoopStartMatch'))$('btnCoopStartMatch').addEventListener('click',launchCoopHostMatch);
+  initCoopNetworkListeners();
   if($('btnCoopHudToggle'))$('btnCoopHudToggle').addEventListener('click',()=>{
     const w=$('coopHudWidget');
     if(w){
@@ -6846,7 +7225,7 @@ function bindEvents(){
   });
   const syncMapCards=val=>{document.querySelectorAll('.map-card').forEach(c=>c.classList.toggle('selected',c.dataset.map===val));};
   const syncDiffPills=val=>{document.querySelectorAll('.diff-pill').forEach(p=>p.classList.toggle('active',p.dataset.diff===val));};
-  const startGameOperation=()=>{
+  startGameOperation=()=>{
     Snd.init();
     document.body.classList.remove('menu-mode');
     document.body.classList.remove('settings-in-game');
