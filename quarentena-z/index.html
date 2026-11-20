@@ -750,7 +750,7 @@
 </div>
 
 <!-- Modal de Salas Privadas do Modo Cooperativo (2 a 4 Jogadores) -->
-<div id="coopModal" class="home-confirm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="coopModalTitle">
+<div id="coopModal" class="confirm-modal-overlay home-confirm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="coopModalTitle">
   <div class="home-confirm-card coop-modal-card">
     <div class="coop-modal-header">
       <span class="hc-badge coop-head-badge">🤝 REDE MULTIPLAYER ONLINE · SALAS PRIVADAS (2 A 4 JOGADORES)</span>
@@ -877,7 +877,7 @@
           <span class="coop-sub-kicker">CONEXÃO AO ESQUADRÃO</span>
           <h3>INSIRA O CÓDIGO DA SALA DO HOST</h3>
           <div class="coop-input-group">
-            <input id="coopJoinInput" type="text" maxlength="9" placeholder="QZ-8K4M9X" autocomplete="off" spellcheck="false">
+            <input id="coopJoinInput" type="text" maxlength="9" placeholder="QZ-8K4M9X" autocomplete="off" spellcheck="false" autocapitalize="characters" autocorrect="off" enterkeyhint="go">
             <button type="button" id="btnCoopJoinRoom" class="coop-action-launch">CONECTAR AO ESQUADRÃO ⚡</button>
           </div>
           <p id="coopJoinFeedback" class="coop-feedback-text">Digite o código de 6 caracteres exibido no 1º PC (Host) para ingressar na sala.</p>

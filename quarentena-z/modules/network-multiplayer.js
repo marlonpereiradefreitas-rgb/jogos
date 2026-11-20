@@ -46,8 +46,15 @@
     } catch (_) {}
   }
 
+  let lastServerOk = 0;
+  let lastServerData = null;
+  let activeWakePromise = null;
+
   function setServerUrl(url) {
     customServerUrl = String(url || '').trim().replace(/\/+$/, '');
+    lastServerOk = 0;
+    lastServerData = null;
+    activeWakePromise = null;
     try {
       if (typeof localStorage !== 'undefined') {
         if (customServerUrl) localStorage.setItem('qz_server_url', customServerUrl);
@@ -64,6 +71,10 @@
     if (customServerUrl) return customServerUrl;
     if (typeof location !== 'undefined') {
       if (location.protocol === 'file:') return 'http://localhost:3000';
+      // Se estiver rodando em live server ou porta dev diferente no localhost, aponta para porta 3000 do Node
+      if ((location.hostname === 'localhost' || location.hostname === '127.0.0.1') && location.port && location.port !== '3000') {
+        return 'http://localhost:3000';
+      }
       // Se estiver hospedado no GitHub Pages e nenhuma URL manual foi definida:
       if (location.hostname && (location.hostname.endsWith('github.io') || location.hostname.includes('github.io'))) {
         return DEFAULT_PROD_SERVER_URL;
@@ -466,63 +477,98 @@
 
   async function wakeServer(onProgress) {
     const srv = getEffectiveServerUrl();
-    const maxAttempts = 18;
-    const intervalMs = 2500;
-    let attempt = 0;
-    const startT = Date.now();
-
-    while (attempt < maxAttempts) {
-      attempt++;
-      const elapsed = Math.round((Date.now() - startT) / 1000);
+    if (Date.now() - lastServerOk < 25000 && lastServerData) {
       if (typeof onProgress === 'function') {
         onProgress({
-          status: 'waking',
-          attempt,
-          maxAttempts,
-          elapsed,
+          status: 'ready',
+          attempt: 1,
+          elapsed: 0,
           serverUrl: srv,
-          message: attempt === 1
-            ? 'Conectando ao servidor tático...'
-            : `Acordando servidor na nuvem (${attempt}/${maxAttempts}) — aguarde ~${elapsed}s...`
+          data: lastServerData,
+          message: 'Servidor operacional e conectado!'
         });
       }
+      return { ok: true, data: lastServerData };
+    }
 
+    if (activeWakePromise) {
+      return await activeWakePromise;
+    }
+
+    activeWakePromise = (async () => {
       try {
-        const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
-        const to = controller ? setTimeout(() => controller.abort(), 4000) : null;
-        const res = await root.fetch(srv + '/health', {
-          method: 'GET',
-          signal: controller ? controller.signal : undefined
-        });
-        if (to) clearTimeout(to);
-        if (res && res.ok) {
-          const data = await res.json().catch(() => ({}));
+        const isLocal = srv.includes('localhost') || srv.includes('127.0.0.1') || srv.includes('192.168.') || srv.includes('10.') || srv.includes('172.');
+        const maxAttempts = isLocal ? 3 : 18;
+        const intervalMs = isLocal ? 800 : 2500;
+        let attempt = 0;
+        const startT = Date.now();
+
+        while (attempt < maxAttempts) {
+          attempt++;
+          const elapsed = Math.round((Date.now() - startT) / 1000);
           if (typeof onProgress === 'function') {
             onProgress({
-              status: 'ready',
+              status: 'waking',
               attempt,
+              maxAttempts,
               elapsed,
               serverUrl: srv,
-              data,
-              message: 'Servidor operacional e conectado!'
+              message: attempt === 1
+                ? 'Conectando ao servidor tático...'
+                : (isLocal
+                    ? `Verificando servidor local (${attempt}/${maxAttempts})...`
+                    : `Acordando servidor na nuvem (${attempt}/${maxAttempts}) — aguarde ~${elapsed}s...`)
             });
           }
-          return { ok: true, data };
+
+          try {
+            const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+            const to = controller ? setTimeout(() => controller.abort(), isLocal ? 1500 : 4000) : null;
+            const res = await root.fetch(srv + '/health', {
+              method: 'GET',
+              signal: controller ? controller.signal : undefined
+            });
+            if (to) clearTimeout(to);
+            if (res && res.ok) {
+              const data = await res.json().catch(() => ({}));
+              lastServerOk = Date.now();
+              lastServerData = data;
+              if (typeof onProgress === 'function') {
+                onProgress({
+                  status: 'ready',
+                  attempt,
+                  elapsed,
+                  serverUrl: srv,
+                  data,
+                  message: 'Servidor operacional e conectado!'
+                });
+              }
+              return { ok: true, data };
+            }
+          } catch (_) {}
+
+          if (attempt < maxAttempts) {
+            await new Promise(r => setTimeout(r, intervalMs));
+          }
         }
-      } catch (_) {}
 
-      await new Promise(r => setTimeout(r, intervalMs));
-    }
+        if (typeof onProgress === 'function') {
+          onProgress({
+            status: 'timeout',
+            attempt,
+            serverUrl: srv,
+            message: isLocal
+              ? 'Servidor local offline. Inicie o servidor com npm start.'
+              : 'Tempo limite ao acordar o servidor na nuvem. Verifique sua conexão ou a URL nas opções avançadas.'
+          });
+        }
+        return { ok: false, error: 'Timeout ao conectar com o servidor' };
+      } finally {
+        activeWakePromise = null;
+      }
+    })();
 
-    if (typeof onProgress === 'function') {
-      onProgress({
-        status: 'timeout',
-        attempt,
-        serverUrl: srv,
-        message: 'Tempo limite ao acordar o servidor. Verifique sua conexão ou a URL nas opções avançadas.'
-      });
-    }
-    return { ok: false, error: 'Timeout ao conectar com o servidor' };
+    return await activeWakePromise;
   }
 
   async function matchmake(opts) {

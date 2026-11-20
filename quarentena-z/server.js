@@ -673,12 +673,16 @@ async function handleApi(req, res, urlObj) {
 
   // 0a. HEALTH CHECK LEVE PARA CLOUD (Render, Railway, Fly.io, Monitoramento): HTTP 200 rápido e sem rate limit
   if ((pathname === '/health' || pathname === '/api/health') && req.method === 'GET') {
+    const localIps = getLocalIps();
     sendJson(req, res, 200, {
       status: 'ok',
       service: 'Quarentena Z Server',
-      version: '1.0.14',
+      version: '1.0.15',
       uptime: Math.floor(process.uptime()),
       roomsCount: Object.keys(DB.mpRooms || {}).length,
+      port: PORT,
+      localIps,
+      primaryLanIp: localIps[0] || 'localhost',
       timestamp: Date.now()
     });
     return;
@@ -1897,7 +1901,8 @@ const server = http.createServer((req, res) => {
 server.on('upgrade', (req, socket) => {
   try {
     const urlObj = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
-    if (urlObj.pathname !== '/ws') {
+    const cleanPath = (urlObj.pathname || '').replace(/\/+$/, '') || '/';
+    if (cleanPath !== '/ws') {
       socket.destroy();
       return;
     }

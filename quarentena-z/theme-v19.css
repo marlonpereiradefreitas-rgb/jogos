@@ -2080,6 +2080,23 @@ body:not(.menu-mode) #rankScreen {
   font-size: 12px !important;
   letter-spacing: 1px !important;
 }
+#coopModal,
+.home-confirm-modal {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 99999 !important;
+  background: rgba(4, 8, 16, 0.88) !important;
+  backdrop-filter: blur(8px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 12px !important;
+  box-sizing: border-box !important;
+}
+#coopModal.hidden,
+.home-confirm-modal.hidden {
+  display: none !important;
+}
 .coop-modal-card {
   max-width: 680px !important;
   width: min(95vw, 680px) !important;
@@ -2092,6 +2109,7 @@ body:not(.menu-mode) #rankScreen {
   padding: 16px 20px !important;
   max-height: 90vh !important;
   overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 .coop-modal-header {
   margin-bottom: 10px;
@@ -2862,6 +2880,71 @@ body.menu-mode .coop-hud-widget {
 @keyframes coopLaunchPulse {
   0%, 100% { box-shadow: 0 0 14px rgba(16, 185, 129, 0.4); transform: scale(1); }
   50% { box-shadow: 0 0 24px rgba(16, 185, 129, 0.7); transform: scale(1.02); }
+}
+
+@media (max-width: 640px) {
+  .coop-modal-card {
+    padding: 12px 14px !important;
+    max-height: 94vh !important;
+    width: 96vw !important;
+  }
+  .coop-code-box {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+  .coop-code-actions {
+    width: 100% !important;
+    display: flex !important;
+    gap: 6px !important;
+  }
+  .coop-code-actions button {
+    flex: 1 !important;
+    text-align: center !important;
+    padding: 9px 8px !important;
+  }
+  .coop-slots-preview {
+    grid-template-columns: 1fr !important;
+  }
+  .coop-config-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .coop-input-group {
+    flex-direction: column !important;
+  }
+  .coop-input-group input {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .coop-action-launch {
+    width: 100% !important;
+    padding: 12px !important;
+  }
+  .coop-tabs-bar {
+    grid-template-columns: 1fr !important;
+  }
+  .coop-server-bar {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
+  }
+  .coop-server-left {
+    flex-wrap: wrap !important;
+  }
+  .coop-hud-widget {
+    top: 4px !important;
+    left: 4px !important;
+    width: min(220px, calc(100vw - 12px)) !important;
+    font-size: 10px !important;
+    z-index: 99 !important;
+  }
+  .coop-pct-btn,
+  .coop-act-btn,
+  .coop-vote-btn,
+  .coop-vote-spd {
+    min-height: 32px !important;
+    padding: 6px 4px !important;
+  }
 }
 
 
