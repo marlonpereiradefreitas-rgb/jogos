@@ -1,18 +1,18 @@
 /* Cache offline para o Apocalipse. Atualize CACHE_VERSION ao publicar novas versões. */
-const CACHE_VERSION = 'quarentena-z-v19-30';
+const CACHE_VERSION = 'quarentena-z-v19-31';
 const APP_SHELL = [
   './',
   './index.html',
-  './style.css?v=19.29',
-  './theme-v19.css?v=19.29',
-  './modules/security-vault.js?v=19.30',
-  './modules/cloud-db.js?v=19.30',
-  './modules/network-multiplayer.js?v=19.30',
-  './modules/coop-system.js?v=19.30',
-  './modules/object-pool.js?v=19.30',
-  './modules/btd6-towers.js?v=19.30',
-  './modules/btd6-ui.js?v=19.30',
-  './game.js?v=19.30',
+  './style.css?v=19.31',
+  './theme-v19.css?v=19.31',
+  './modules/security-vault.js?v=19.31',
+  './modules/cloud-db.js?v=19.31',
+  './modules/network-multiplayer.js?v=19.31',
+  './modules/coop-system.js?v=19.31',
+  './modules/object-pool.js?v=19.31',
+  './modules/btd6-towers.js?v=19.31',
+  './modules/btd6-ui.js?v=19.31',
+  './game.js?v=19.31',
   './manifest.webmanifest',
   './assets/icon.svg',
 ];

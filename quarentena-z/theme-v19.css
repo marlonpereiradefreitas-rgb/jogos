@@ -3308,19 +3308,349 @@ body.menu-mode .coop-hud-widget {
   color: #c084fc !important;
 }
 
+/* Oculta botão de instalação quando instalado (PWA / Standalone / Fullscreen) */
+@media all and (display-mode: standalone), all and (display-mode: fullscreen), all and (display-mode: minimal-ui) {
+  #btnHomeInstall,
+  .install-menu,
+  .home-install-btn {
+    display: none !important;
+  }
+}
+body.is-installed-app #btnHomeInstall,
+body.is-installed-app .install-menu,
+body.is-installed-app .home-install-btn {
+  display: none !important;
+}
+
+/* ==========================================================================
+   ERGONOMIA MOBILE PROFISSIONAL (GAVETA DE TORRES, HUD LIMPO, BARRA UNIFICADA)
+   ========================================================================== */
+.mob-only {
+  display: none !important;
+}
+.sidebar-toggle-tab {
+  display: none !important;
+}
+.sidebar-mobile-header {
+  display: none !important;
+}
+
+body.is-mobile:not(.menu-mode) .mob-only {
+  display: inline-flex !important;
+}
+body.is-mobile:not(.menu-mode) .sidebar-toggle-tab.mob-only {
+  display: flex !important;
+}
+body.is-mobile:not(.menu-mode) .sidebar-mobile-header.mob-only {
+  display: flex !important;
+}
+
+/* Oculta barra antiga flutuante sobre o canvas */
+.mobile-quick-bar,
+body.is-mobile .mobile-quick-bar {
+  display: none !important;
+}
+
+/* Topbar Mobile Slim 36px */
+body.is-mobile #topbar {
+  height: 36px !important;
+  min-height: 36px !important;
+  max-height: 36px !important;
+  padding: 2px 8px !important;
+  gap: 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background: rgba(11, 17, 29, 0.96) !important;
+  border-bottom: 1px solid var(--ui-border) !important;
+  z-index: 30 !important;
+}
+
+body.is-mobile #topbar .life-hud,
+body.is-mobile #topbar .hud-mod {
+  zoom: 1 !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 2px 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  background: rgba(15, 23, 42, 0.85) !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+
+body.is-mobile #topbar .hud-icon-wrap,
+body.is-mobile #topbar .hm-mini-bar {
+  display: none !important;
+}
+
+body.is-mobile #topbar .hud-lbl {
+  font-size: 8.5px !important;
+  color: #94a3b8 !important;
+  margin-right: 2px !important;
+}
+
+body.is-mobile #topbar .hud-val {
+  font-size: 11.5px !important;
+  font-weight: 900 !important;
+}
+
+body.is-mobile #topbar .hm-sub {
+  display: none !important;
+}
+
+body.is-mobile #topbar .life-frame,
+body.is-mobile #topbar .life-val-bar,
+body.is-mobile #topbar .life-hex-badge {
+  display: none !important;
+}
+
+body.is-mobile #topbar .life-hud::before {
+  content: '❤️ ';
+  font-size: 11px;
+}
+
+body.is-mobile #topbar #life {
+  display: inline-block !important;
+  font-size: 11.5px !important;
+  font-weight: 900 !important;
+  color: #10b981 !important;
+}
+
+body.is-mobile #topbar button,
+body.is-mobile #topbar .ingame-nav {
+  height: 28px !important;
+  min-height: 28px !important;
+  min-width: 28px !important;
+  padding: 2px 8px !important;
+  font-size: 11px !important;
+  border-radius: 6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Área de Jogo (Stage 100% de largura no mobile) */
+body.is-mobile #main {
+  flex-direction: row !important;
+  position: relative !important;
+  width: 100% !important;
+  height: calc(100% - 74px) !important;
+  overflow: hidden !important;
+}
+
+body.is-mobile #stage {
+  flex: 1 1 100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  position: relative !important;
+}
+
+/* Gaveta Lateral de Torres Retrátil no Mobile */
+body.is-mobile #sidebar {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: min(320px, 80vw) !important;
+  max-width: 320px !important;
+  height: 100vh !important;
+  z-index: 1000 !important;
+  background: rgba(11, 17, 29, 0.98) !important;
+  backdrop-filter: blur(16px) !important;
+  border-left: 2px solid var(--ui-border) !important;
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.9) !important;
+  transform: translateX(100%) !important;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  padding: 10px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow-y: auto !important;
+}
+
+body.is-mobile #sidebar.mobile-open {
+  transform: translateX(0) !important;
+}
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
+  z-index: 999;
+}
+
+.sidebar-toggle-tab {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 22;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(6, 78, 59, 0.92));
+  border: 1.5px solid #10b981;
+  color: #a7f3d0;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.45);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sidebar-toggle-tab:active,
+.sidebar-toggle-tab.active {
+  background: #10b981;
+  color: #022c22;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.7);
+}
+
+.sidebar-mobile-header {
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 2px 10px;
+  border-bottom: 1px solid var(--ui-border);
+  margin-bottom: 8px;
+}
+
+.smh-title {
+  font-size: 12px;
+  font-weight: 900;
+  color: #38bdf8;
+  letter-spacing: 1.2px;
+}
+
+.smh-close {
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Barra Inferior Unificada Mobile (38px de altura) */
+body.is-mobile #bottombar {
+  height: 38px !important;
+  min-height: 38px !important;
+  max-height: 38px !important;
+  padding: 0 8px !important;
+  gap: 6px !important;
+  background: rgba(11, 17, 29, 0.96) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  z-index: 30 !important;
+}
+
+body.is-mobile #bottombar #btnNext {
+  padding: 4px 12px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  height: 30px !important;
+  border-radius: 6px !important;
+  flex-shrink: 0 !important;
+}
+
+body.is-mobile #bottombar .auto {
+  font-size: 10px !important;
+  gap: 3px !important;
+  color: #cbd5e1 !important;
+  flex-shrink: 0 !important;
+}
+
+body.is-mobile #bottombar .mob-qbtn {
+  height: 30px !important;
+  min-height: 30px !important;
+  min-width: 36px !important;
+  padding: 3px 8px !important;
+  font-size: 11px !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  flex-shrink: 0 !important;
+  background: rgba(30, 34, 40, 0.92);
+  border: 1px solid var(--ui-border);
+  color: #f1f5f9;
+  cursor: pointer;
+}
+
+body.is-mobile #bottombar #progress,
+body.is-mobile #bottombar #quickAbilityBar {
+  display: none !important;
+}
+
+body.is-mobile #bottombar #btnRestart {
+  margin-left: auto !important;
+  height: 30px !important;
+  padding: 3px 8px !important;
+  font-size: 10px !important;
+  border-radius: 6px !important;
+}
+
+/* Popover Flutuante de Chamadas Táticas no Mobile */
+body.is-mobile .tactical-callin-bar {
+  display: none !important;
+  position: fixed !important;
+  bottom: 44px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 1100 !important;
+  background: rgba(15, 23, 42, 0.96) !important;
+  border: 1.5px solid #a855f7 !important;
+  border-radius: 12px !important;
+  padding: 8px 12px !important;
+  box-shadow: 0 0 25px rgba(168, 85, 247, 0.45) !important;
+  backdrop-filter: blur(12px) !important;
+  flex-direction: row !important;
+  gap: 8px !important;
+}
+
+body.is-mobile .tactical-callin-bar.open {
+  display: flex !important;
+  animation: popoverFadeIn 0.15s ease-out;
+}
+
+@keyframes popoverFadeIn {
+  from { opacity: 0; transform: translate(-50%, 6px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+body.is-mobile .callin-btn {
+  min-width: 85px !important;
+  padding: 6px 8px !important;
+}
+
+body.is-mobile .cb-key {
+  display: none !important;
+}
+
+/* Micro-pílula Co-op Retrátil no Mobile (evita cobrir o Setor 1) */
+body.is-mobile .coop-hud-widget.collapsed {
+  width: auto !important;
+  max-width: 140px !important;
+  border-radius: 16px !important;
+  background: rgba(9, 14, 24, 0.88) !important;
+}
+
+body.is-mobile .coop-hud-widget.collapsed .coop-hud-header {
+  padding: 3px 8px !important;
+  gap: 4px !important;
+  font-size: 10px !important;
+}
+
+body.is-mobile .coop-hud-widget.collapsed .coop-hud-sub {
+  display: none !important;
+}
+
 @media (max-width: 768px) {
-  .tactical-callin-bar {
-    bottom: 60px;
-    left: 8px;
-    gap: 6px;
-  }
-  .callin-btn {
-    min-width: 80px;
-    padding: 4px 6px;
-  }
-  .cb-key {
-    display: none;
-  }
   .tech-head {
     flex-direction: column;
     align-items: flex-start;

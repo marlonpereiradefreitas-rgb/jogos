@@ -209,9 +209,18 @@ function updateCallinUI() {
   if (!bar) return;
   if (G.mode !== 'play') {
     bar.classList.add('hidden');
+    bar.classList.remove('open');
     return;
   }
-  bar.classList.remove('hidden');
+  if (IS_MOBILE) {
+    if (!bar.classList.contains('open')) {
+      bar.classList.add('hidden');
+    } else {
+      bar.classList.remove('hidden');
+    }
+  } else {
+    bar.classList.remove('hidden');
+  }
 
   const cdrMult = 1 - getTechBonus('callin_cdr') * 0.05;
   const items = [
@@ -5704,10 +5713,25 @@ function noMoney(){ toast('Dinheiro insuficiente!','bad'); Snd.play('err'); $('s
 let lastCoinBump=0;
 function coinBump(){ const n=performance.now(); if(n-lastCoinBump<120)return; lastCoinBump=n; $('coins').animate([{transform:'scale(1.35)',color:'#fff'},{transform:'scale(1)'}],{duration:220}); }
 
+function setSidebarMobileOpen(open){
+  const sb=$('sidebar'),bd=$('sidebarBackdrop'),tb=$('btnToggleSidebar');
+  if(!sb)return;
+  if(open){
+    sb.classList.add('mobile-open');
+    if(bd)bd.classList.remove('hidden');
+    if(tb)tb.classList.add('active');
+  }else{
+    sb.classList.remove('mobile-open');
+    if(bd)bd.classList.add('hidden');
+    if(tb)tb.classList.remove('active');
+  }
+}
+
 function select(t){ if(t&&G.selected!==t)UI.panelCollapsed=false; G.selected=t; G.selectedObs=null; UI.panelKey=''; }
 function cancelAll(){
   if(G.placing||G.targeting){G.placing=null;G.targeting=null;setHint('');return;}
   if(G.selected||G.selectedObs){G.selected=null;G.selectedObs=null;UI.panelKey='';}
+  if(IS_MOBILE)setSidebarMobileOpen(false);
 }
 function pickTower(key){
   if(G.mode!=='play')return;
@@ -5716,6 +5740,7 @@ function pickTower(key){
   if(G.placing===key){G.placing=null;setHint('');return;}
   if(!Number.isFinite(G.money)||G.money<d.cost){noMoney();const c=UI.cards[key];if(c){c.classList.remove('shake');void c.offsetWidth;c.classList.add('shake');}return;}
   G.placing=key;G.targeting=null;select(null);Snd.play('ui');
+  if(IS_MOBILE)setSidebarMobileOpen(false);
   setHint('Clique no mapa para construir '+d.name+'. Verde = válido. ESC cancela (Shift mantém a construção).');
 }
 function placeTower(key,x,y,playerSlot,remote,tid){
@@ -6210,7 +6235,7 @@ function buildSidebar(){
     el.innerHTML='<i></i><span class="pname">'+P.name+'</span><span class="pst"></span>';
     pl.appendChild(el); UI.pcards[key]=el; el._st=el.querySelector('.pst'); el._fill=el.querySelector('i');
   });
-  pl.addEventListener('click',e=>{const c=e.target.closest('.pcard');if(c){dispatch({type:'power',key:c.dataset.key});Snd.play('ui');}});
+  pl.addEventListener('click',e=>{const c=e.target.closest('.pcard');if(c){dispatch({type:'power',key:c.dataset.key});Snd.play('ui');if(IS_MOBILE)setSidebarMobileOpen(false);}});
   pl.addEventListener('pointerover',e=>{const c=e.target.closest('.pcard');if(c&&e.pointerType==='mouse'){const P=POWERS[c.dataset.key];tip('<b>'+P.name+'</b> — '+P.cost+' ●<br><span class="d">'+P.desc+'</span><br><span class="d">Consumível: precisa pagar novamente em cada uso.</span>',c);}});
   pl.addEventListener('pointerout',hideTip);
 
@@ -6934,7 +6959,18 @@ function hideDangerHome(){
 
 let _deferredInstallPrompt=null;
 function isAppInstalled(){
-  try{return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;}catch(_){return false;}
+  try{
+    if(typeof window==='undefined')return false;
+    if(window.matchMedia){
+      if(window.matchMedia('(display-mode: standalone)').matches)return true;
+      if(window.matchMedia('(display-mode: fullscreen)').matches)return true;
+      if(window.matchMedia('(display-mode: minimal-ui)').matches)return true;
+    }
+    if(window.navigator&&window.navigator.standalone===true)return true;
+    if(typeof document!=='undefined'&&document.referrer&&document.referrer.indexOf('android-app://')===0)return true;
+    if(typeof localStorage!=='undefined'&&localStorage.getItem('qz_pwa_installed')==='1')return true;
+  }catch(_){return false;}
+  return false;
 }
 function refreshInstallUI(){
   const btn=$('btnHomeInstall'),sub=$('homeInstallSub'),badge=$('installPlatformBadge'),pwaBtn=$('btnInstallPwaNow'),guide=$('installGuideBox');
@@ -6942,10 +6978,22 @@ function refreshInstallUI(){
   const isiOS=/iPad|iPhone|iPod/i.test(ua);
   const isAndroid=/Android/i.test(ua);
   const installed=isAppInstalled();
+  if(typeof document!=='undefined'&&document.body){
+    document.body.classList.toggle('is-installed-app',installed);
+  }
+  if(btn){
+    if(installed){
+      btn.style.display='none';
+      btn.classList.add('hidden');
+    }else{
+      btn.style.display='';
+      btn.classList.remove('hidden');
+    }
+    btn.classList.toggle('installed',installed);
+  }
   if(sub){
     sub.textContent=installed?'App já instalado neste aparelho':(_deferredInstallPrompt?'Instalação rápida pronta (1 clique)':'App offline (PC, Android e iOS)');
   }
-  if(btn)btn.classList.toggle('installed',installed);
   if(badge){
     badge.textContent=installed?'✓ Já instalado em modo App':isiOS?'iOS / Safari (Tela de Início)':isAndroid?'Android / PWA Offline':'PC / Navegador · Windows (.exe)';
   }
@@ -8058,7 +8106,33 @@ function bindEvents(){
     }
   });
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();_deferredInstallPrompt=e;refreshInstallUI();});
-  window.addEventListener('appinstalled',()=>{_deferredInstallPrompt=null;refreshInstallUI();toast('App Quarentena Z instalado!','good');});
+  window.addEventListener('appinstalled',()=>{
+    try{localStorage.setItem('qz_pwa_installed','1');}catch(_){}
+    _deferredInstallPrompt=null;
+    refreshInstallUI();
+    toast('App Quarentena Z instalado!','good');
+  });
+
+  if($('btnToggleSidebar')){
+    $('btnToggleSidebar').addEventListener('click',()=>{
+      const sb=$('sidebar');
+      const isOpen=sb&&sb.classList.contains('mobile-open');
+      setSidebarMobileOpen(!isOpen);
+      Snd.play('ui');
+    });
+  }
+  if($('btnCloseSidebarMobile')){
+    $('btnCloseSidebarMobile').addEventListener('click',()=>{
+      setSidebarMobileOpen(false);
+      Snd.play('ui');
+    });
+  }
+  if($('sidebarBackdrop')){
+    $('sidebarBackdrop').addEventListener('pointerdown',()=>{
+      setSidebarMobileOpen(false);
+    });
+  }
+
   const openTechScreen=()=>{Snd.init();renderTechScreen();showScreen('techScreen');};
   if($('btnHomeTech'))$('btnHomeTech').addEventListener('click',openTechScreen);
   if($('btnTechBack'))$('btnTechBack').addEventListener('click',()=>showScreen('homeScreen'));
@@ -8076,17 +8150,40 @@ function bindEvents(){
       btn.addEventListener('click',()=>{
         if(!G.paused&&G.mode==='play'){
           dispatch({type:'callin',callin:key});
+          if(IS_MOBILE){
+            const bar=$('tacticalCallinBar');
+            if(bar){
+              bar.classList.remove('open');
+              bar.classList.add('hidden');
+            }
+          }
         }
       });
     }
   });
   if($('btnMobCallins')){
-    $('btnMobCallins').addEventListener('click',()=>{
+    $('btnMobCallins').addEventListener('click',e=>{
+      e.stopPropagation();
       const bar=$('tacticalCallinBar');
-      if(bar)bar.classList.toggle('hidden');
+      if(bar){
+        const open=!bar.classList.contains('open');
+        bar.classList.toggle('open',open);
+        bar.classList.toggle('hidden',!open);
+      }
       Snd.play('ui');
     });
   }
+  document.addEventListener('pointerdown',e=>{
+    if(IS_MOBILE){
+      const bar=$('tacticalCallinBar');
+      if(bar&&bar.classList.contains('open')){
+        if(!e.target.closest('#tacticalCallinBar')&&!e.target.closest('#btnMobCallins')){
+          bar.classList.remove('open');
+          bar.classList.add('hidden');
+        }
+      }
+    }
+  });
   $('btnHomeAch').addEventListener('click',()=>{checkAch();renderAch();showScreen('achScreen');});
   const openRankScreen=()=>{Snd.init();renderRank();OnlineAPI.sync();showScreen('rankScreen');};
   $('btnHomeRank').addEventListener('click',openRankScreen);

@@ -15,8 +15,8 @@
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/icon.svg">
 <title>Quarentena Z — Tower Defense de Zumbis</title>
-<link rel="stylesheet" href="style.css?v=19.29">
-<link rel="stylesheet" href="theme-v19.css?v=19.29">
+<link rel="stylesheet" href="style.css?v=19.31">
+<link rel="stylesheet" href="theme-v19.css?v=19.31">
 </head>
 <body class="menu-mode">
 <div id="app">
@@ -133,7 +133,14 @@
         </div>
       </div>
 
-      <!-- Barra de Chamadas Táticas do Comandante (PC: Z / X / C | Mobile: Toque) -->
+      <!-- Aba Flutuante para Gaveta de Torres no Mobile -->
+      <button type="button" id="btnToggleSidebar" class="sidebar-toggle-tab mob-only" title="Torres de combate" aria-label="Abrir gaveta de torres">
+        <span class="st-ico">🗼</span>
+        <span class="st-txt">TORRES</span>
+      </button>
+      <div id="sidebarBackdrop" class="sidebar-backdrop hidden" aria-hidden="true"></div>
+
+      <!-- Barra de Chamadas Táticas do Comandante (PC: Z / X / C | Mobile: Popover via TÁTICA) -->
       <div id="tacticalCallinBar" class="tactical-callin-bar hidden" aria-label="Chamadas táticas do comandante">
         <button type="button" class="callin-btn" id="btnCallinNapalm" data-callin="napalm" title="Bombardeio Napalm (Atalho: Z) - Incinera a pista e elimina infectados comuns">
           <span class="cb-key">Z</span>
@@ -164,12 +171,9 @@
         </button>
       </div>
 
-      <!-- Barra de Ação Rápida Exclusiva para Mobile / Toque durante a partida -->
-      <div id="mobileQuickBar" class="mobile-quick-bar" aria-label="Controles rápidos mobile">
-        <button type="button" id="btnMobWave" class="mob-qbtn mob-qbtn-wave" title="Enviar próxima onda">▶ ONDA</button>
-        <button type="button" id="btnMobSpeed" class="mob-qbtn" title="Alternar velocidade (1x/2x/3x)">⚡ 1x</button>
-        <button type="button" id="btnMobPause" class="mob-qbtn" title="Pausar ou retomar">❚❚</button>
-        <button type="button" id="btnMobCallins" class="mob-qbtn mob-qbtn-tactical" title="Abrir/Recolher Chamadas Táticas">🎯 TÁTICA</button>
+      <!-- Fallback de controles rápidos mobile (oculto no canvas; botões ativos unificados na barra inferior) -->
+      <div id="mobileQuickBar" class="mobile-quick-bar hidden" style="display:none !important;" aria-label="Controles rápidos mobile">
+        <button type="button" id="btnMobWave" class="mob-qbtn mob-qbtn-wave hidden" title="Enviar próxima onda">▶ ONDA</button>
         <button type="button" id="btnMobCancel" class="mob-qbtn mob-qbtn-cancel hidden" title="Cancelar ação atual">✕ CANCELAR</button>
       </div>
 
@@ -738,6 +742,10 @@
 
     <!-- ===== LATERAL ===== -->
     <aside id="sidebar">
+      <div class="sidebar-mobile-header mob-only">
+        <span class="smh-title">🗼 TORRES DE COMBATE</span>
+        <button type="button" id="btnCloseSidebarMobile" class="smh-close" aria-label="Fechar gaveta">✕ FECHAR</button>
+      </div>
       <h3>TORRES DE COMBATE</h3>
       <div id="towerList"></div>
       <h3 class="support-h3">🛡 TORRES DE SUPORTE</h3>
@@ -753,6 +761,10 @@
     <label class="auto" title="Inicia a próxima onda automaticamente após um breve intervalo">
       <input type="checkbox" id="chkAuto"> Envio automático
     </label>
+    <!-- Controles Rápidos Mobile na Barra Inferior -->
+    <button type="button" id="btnMobSpeed" class="mob-qbtn mob-only" title="Alternar velocidade (1x/2x/3x)">⚡ 1x</button>
+    <button type="button" id="btnMobPause" class="mob-qbtn mob-only" title="Pausar ou retomar">❚❚</button>
+    <button type="button" id="btnMobCallins" class="mob-qbtn mob-qbtn-tactical mob-only" title="Abrir/Recolher Chamadas Táticas">🎯 TÁTICA</button>
     <div id="quickAbilityBar" class="quick-ability-bar" aria-label="Habilidades ativas rápidas"></div>
     <div id="progress" title="Progresso da onda atual">
       <i id="progBar"></i><span id="progTxt">Pronto para começar</span>
@@ -1016,13 +1028,13 @@
 </div>
 
 <script src="modules/peerjs.min.js"></script>
-<script src="modules/security-vault.js?v=19.30"></script>
-<script src="modules/cloud-db.js?v=19.30"></script>
-<script src="modules/network-multiplayer.js?v=19.30"></script>
-<script src="modules/coop-system.js?v=19.30"></script>
-<script src="modules/object-pool.js?v=19.30"></script>
-<script src="modules/btd6-towers.js?v=19.30"></script>
-<script src="modules/btd6-ui.js?v=19.30"></script>
-<script src="game.js?v=19.30"></script>
+<script src="modules/security-vault.js?v=19.31"></script>
+<script src="modules/cloud-db.js?v=19.31"></script>
+<script src="modules/network-multiplayer.js?v=19.31"></script>
+<script src="modules/coop-system.js?v=19.31"></script>
+<script src="modules/object-pool.js?v=19.31"></script>
+<script src="modules/btd6-towers.js?v=19.31"></script>
+<script src="modules/btd6-ui.js?v=19.31"></script>
+<script src="game.js?v=19.31"></script>
 </body>
 </html>
