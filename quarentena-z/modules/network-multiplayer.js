@@ -112,18 +112,26 @@
     return typeof root.fetch === 'function';
   }
 
-  async function apiReq(path, method, body) {
+  async function apiReq(path, method, body, timeoutMs) {
     if (!canUseNetwork()) return null;
     const base = getEffectiveServerUrl();
     const fullUrl = path.startsWith('http') ? path : (base + path);
     const headers = { 'Content-Type': 'application/json' };
     if (clientToken) headers['X-Client-Token'] = clientToken;
+    const tMs = typeof timeoutMs === 'number' ? timeoutMs : 2500;
     try {
+      const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+      let timer = null;
+      if (controller) {
+        timer = setTimeout(() => controller.abort(), tMs);
+      }
       const res = await root.fetch(fullUrl, {
         method: method || 'GET',
         headers,
-        body: body ? JSON.stringify(body) : undefined
+        body: body ? JSON.stringify(body) : undefined,
+        signal: controller ? controller.signal : undefined
       });
+      if (timer) clearTimeout(timer);
       return await res.json();
     } catch (_) {
       return { ok: false, networkError: true, error: 'Sem conexão com o servidor (' + base + '). Confira se o servidor está ligado e o endereço está correto.' };
@@ -293,6 +301,17 @@
     return 'qz-coop-' + clean;
   }
 
+  const DEFAULT_ICE_SERVERS = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
+    { urls: 'stun:stun.cloudflare.com:3478' },
+    { urls: 'stun:global.stun.twilio.com:3478' },
+    { urls: 'stun:stun.services.mozilla.com' }
+  ];
+
   function setupHostWebRTC(roomCode, playerName) {
     if (typeof Peer === 'undefined') return;
     closeWebRTC();
@@ -301,11 +320,8 @@
       webrtcPeer = new Peer(peerId, {
         debug: 0,
         config: {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:global.stun.twilio.com:3478' }
-          ]
+          iceServers: DEFAULT_ICE_SERVERS,
+          iceCandidatePoolSize: 10
         }
       });
 
@@ -386,11 +402,8 @@
         webrtcPeer = new Peer(null, {
           debug: 0,
           config: {
-            iceServers: [
-              { urls: 'stun:stun.l.google.com:19302' },
-              { urls: 'stun:stun1.l.google.com:19302' },
-              { urls: 'stun:global.stun.twilio.com:3478' }
-            ]
+            iceServers: DEFAULT_ICE_SERVERS,
+            iceCandidatePoolSize: 10
           }
         });
 
@@ -399,7 +412,7 @@
             resolved = true;
             resolve(null);
           }
-        }, 3500);
+        }, 7500);
 
         webrtcPeer.on('open', () => {
           const conn = webrtcPeer.connect(targetPeerId, { reliable: true });
@@ -651,72 +664,82 @@
 
   async function joinRoom(opts) {
     const o = opts || {};
-    let res = null;
-    try {
-      res = await apiReq('/api/mp/rooms/join', 'POST', {
-        roomId: o.roomId,
-        roomCode: o.roomCode,
-        playerName: o.playerName || 'Comandante'
-      });
-    } catch (_) {}
-
-    if (res && res.ok && res.room) {
-      isLocalVirtualMode = false;
-      activeRoom = res.room;
-      activeRoom.mySlot = res.slot !== undefined ? res.slot : (activeRoom.players ? activeRoom.players.length - 1 : 1);
-      myPlayerName = o.playerName || myPlayerName;
-      setupBroadcastChannel(res.room.roomCode);
-      attachToRoomSocket();
-      emit('room_joined', activeRoom);
-      return res;
-    }
-
-    // Se o servidor backend estiver offline, tenta conectar via WebRTC (P2P entre diferentes internets/casas)
-    // e via BroadcastChannel (abas no mesmo computador)
     const code = String(o.roomCode || o.roomId || '').trim();
-    if (code) {
-      setupBroadcastChannel(code);
-
-      // 1. Tenta enlace direto WebRTC pela internet
-      const p2pPromise = connectGuestWebRTC(code, o.playerName);
-
-      // 2. Tenta enlace BroadcastChannel no mesmo navegador
-      let bcPromise = Promise.resolve(null);
-      if (typeof BroadcastChannel !== 'undefined' && bc) {
-        bcPromise = new Promise((resolve) => {
-          let resolved = false;
-          const tmpHandler = (ev) => {
-            const msg = ev.data;
-            if (msg && msg.type === 'p2p_room_state' && msg.room) {
-              if (resolved) return;
-              resolved = true;
-              isLocalVirtualMode = true;
-              activeRoom = msg.room;
-              activeRoom.mySlot = msg.assignedSlot !== undefined ? msg.assignedSlot : 1;
-              myPlayerName = o.playerName || myPlayerName;
-              emit('room_joined', activeRoom);
-              resolve({ ok: true, room: activeRoom, slot: activeRoom.mySlot, localMode: true });
-            }
-          };
-          bc.addEventListener('message', tmpHandler);
-          bc.postMessage({ type: 'p2p_join_req', playerName: o.playerName || 'Comandante' });
-          setTimeout(() => { if (!resolved) { resolved = true; resolve(null); } }, 1200);
-        });
-      }
-
-      // Aguarda qualquer um dos enlaces diretos conectar
-      const directRes = await Promise.race([
-        p2pPromise.then(r => r ? r : new Promise(() => {})),
-        bcPromise.then(r => r ? r : new Promise(() => {})),
-        new Promise(r => setTimeout(() => r(null), 3600))
-      ]);
-
-      if (directRes && directRes.ok) {
-        return directRes;
-      }
+    if (!code) {
+      return { ok: false, error: 'Código de sala inválido. Digite o código exibido pelo Host.' };
     }
 
-    return res || { ok: false, error: 'Sala não encontrada. Verifique o código com o Host ou se o servidor/internet está ativo.' };
+    setupBroadcastChannel(code);
+
+    // 1. Enlace WebRTC P2P direto (conecta tanto na mesma LAN/Wi-Fi quanto entre internets/casas diferentes via STUN)
+    const p2pPromise = connectGuestWebRTC(code, o.playerName);
+
+    // 2. Enlace BroadcastChannel para abas no mesmo navegador/máquina
+    let bcPromise = Promise.resolve(null);
+    if (typeof BroadcastChannel !== 'undefined' && bc) {
+      bcPromise = new Promise((resolve) => {
+        let resolved = false;
+        const tmpHandler = (ev) => {
+          const msg = ev.data;
+          if (msg && msg.type === 'p2p_room_state' && msg.room) {
+            if (resolved) return;
+            resolved = true;
+            try { bc.removeEventListener('message', tmpHandler); } catch (_) {}
+            isLocalVirtualMode = true;
+            activeRoom = msg.room;
+            activeRoom.mySlot = msg.assignedSlot !== undefined ? msg.assignedSlot : 1;
+            myPlayerName = o.playerName || myPlayerName;
+            emit('room_joined', activeRoom);
+            resolve({ ok: true, room: activeRoom, slot: activeRoom.mySlot, localMode: true });
+          }
+        };
+        bc.addEventListener('message', tmpHandler);
+        bc.postMessage({ type: 'p2p_join_req', playerName: o.playerName || 'Comandante' });
+        setTimeout(() => {
+          if (!resolved) {
+            resolved = true;
+            try { bc.removeEventListener('message', tmpHandler); } catch (_) {}
+            resolve(null);
+          }
+        }, 1200);
+      });
+    }
+
+    // 3. Enlace Servidor Central Backend (REST + WebSocket com timeout ágil de 2.5s)
+    const serverPromise = apiReq('/api/mp/rooms/join', 'POST', {
+      roomId: o.roomId,
+      roomCode: o.roomCode,
+      playerName: o.playerName || 'Comandante'
+    }, 2500).then(res => {
+      if (res && res.ok && res.room) {
+        isLocalVirtualMode = false;
+        activeRoom = res.room;
+        activeRoom.mySlot = res.slot !== undefined ? res.slot : (activeRoom.players ? activeRoom.players.length - 1 : 1);
+        myPlayerName = o.playerName || myPlayerName;
+        attachToRoomSocket();
+        emit('room_joined', activeRoom);
+        return res;
+      }
+      return null;
+    }).catch(() => null);
+
+    // O primeiro canal que conectar (P2P WebRTC, BroadcastChannel ou Servidor) estabelece a conexão imediatamente!
+    const firstSuccess = await Promise.race([
+      serverPromise.then(r => r ? r : new Promise(() => {})),
+      p2pPromise.then(r => r ? r : new Promise(() => {})),
+      bcPromise.then(r => r ? r : new Promise(() => {}))
+    ]);
+
+    if (firstSuccess && firstSuccess.ok) {
+      return firstSuccess;
+    }
+
+    // Fallback: aguarda conclusão das promessas P2P ou Servidor caso ainda estejam finalizando o handshake STUN
+    const [p2pRes, srvRes] = await Promise.allSettled([p2pPromise, serverPromise]);
+    if (p2pRes.status === 'fulfilled' && p2pRes.value && p2pRes.value.ok) return p2pRes.value;
+    if (srvRes.status === 'fulfilled' && srvRes.value && srvRes.value.ok) return srvRes.value;
+
+    return { ok: false, error: 'Não foi possível conectar à sala ' + code + '. Verifique se o código está correto e se o Host está aguardando na sala.' };
   }
 
   async function updateRoom(opts) {

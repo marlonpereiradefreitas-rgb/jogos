@@ -2911,13 +2911,85 @@ function srand(){_s=(_s+0x6D2B79F5)|0;let t=Math.imul(_s^(_s>>>15),1|_s);t=(t+Ma
 const towerById=id=>towers.find(t=>t.id===id);
 const CMDS={
   place:c=>placeTower(c.key,c.x,c.y,c.playerSlot,c.remote,c.tid),
-  up:c=>{const t=towerById(c.id);return t?upgradeTower(t,c.i||0,c.path|0,c.remote):false;},
-  paragon:c=>{const t=towerById(c.id);return t?makeParagon(t,c.remote):false;},
-  ability:c=>{const t=towerById(c.id);return t?activateTowerAbility(t,c.remote):false;},
-  sell:c=>{const t=towerById(c.id);if(t){sellTower(t,c.remote);return true;}return false;},
-  prio:c=>{const t=towerById(c.id);if(t){t.priority=c.k;return true;}return false;},
-  aim:c=>{const t=towerById(c.id);return t?setTowerAim(t,c.x,c.y):false;},
-  portal_exit:c=>{const t=towerById(c.id);return t?setPortalExit(t,c.x,c.y):false;},
+  up:c=>{
+    const t=towerById(c.id);
+    if(!t)return false;
+    if(COOP.active&&COOP.isMultiplayer&&!c.remote){
+      if((t.ownerSlot??0)!==(COOP.mySlot??0)){
+        toast('Ação negada: Você só pode aprimorar as suas próprias torres!','bad');
+        return false;
+      }
+    }
+    return upgradeTower(t,c.i||0,c.path|0,c.remote);
+  },
+  paragon:c=>{
+    const t=towerById(c.id);
+    if(!t)return false;
+    if(COOP.active&&COOP.isMultiplayer&&!c.remote){
+      if((t.ownerSlot??0)!==(COOP.mySlot??0)){
+        toast('Ação negada: Você só pode ascender as suas próprias torres!','bad');
+        return false;
+      }
+    }
+    return makeParagon(t,c.remote);
+  },
+  ability:c=>{
+    const t=towerById(c.id);
+    if(!t)return false;
+    if(COOP.active&&COOP.isMultiplayer&&!c.remote){
+      if((t.ownerSlot??0)!==(COOP.mySlot??0)){
+        toast('Ação negada: Você só pode ativar habilidades das suas próprias torres!','bad');
+        return false;
+      }
+    }
+    return activateTowerAbility(t,c.remote);
+  },
+  sell:c=>{
+    const t=towerById(c.id);
+    if(!t)return false;
+    if(COOP.active&&COOP.isMultiplayer&&!c.remote){
+      if((t.ownerSlot??0)!==(COOP.mySlot??0)){
+        toast('Ação negada: Você só pode vender as suas próprias torres!','bad');
+        return false;
+      }
+    }
+    sellTower(t,c.remote);
+    return true;
+  },
+  prio:c=>{
+    const t=towerById(c.id);
+    if(!t)return false;
+    if(COOP.active&&COOP.isMultiplayer&&!c.remote){
+      if((t.ownerSlot??0)!==(COOP.mySlot??0)){
+        toast('Apenas o comandante dono pode alterar a prioridade desta torre!','bad');
+        return false;
+      }
+    }
+    t.priority=c.k;
+    return true;
+  },
+  aim:c=>{
+    const t=towerById(c.id);
+    if(!t)return false;
+    if(COOP.active&&COOP.isMultiplayer&&!c.remote){
+      if((t.ownerSlot??0)!==(COOP.mySlot??0)){
+        toast('Apenas o comandante dono pode definir a mira desta torre!','bad');
+        return false;
+      }
+    }
+    return setTowerAim(t,c.x,c.y);
+  },
+  portal_exit:c=>{
+    const t=towerById(c.id);
+    if(!t)return false;
+    if(COOP.active&&COOP.isMultiplayer&&!c.remote){
+      if((t.ownerSlot??0)!==(COOP.mySlot??0)){
+        toast('Apenas o comandante dono pode definir a saída deste portal!','bad');
+        return false;
+      }
+    }
+    return setPortalExit(t,c.x,c.y);
+  },
   clearObs:c=>clearObstacle(c.id,c.remote),
   donate:c=>donateCoopCoins(c.toSlot|0,+c.pct,c.remote,c.fromSlot,c.amount),
   callin:c=>triggerCommanderCallin(c.callin,c.remote),
@@ -5852,12 +5924,15 @@ function nextUpgrade(t){
 }
 function upgradeTower(t,choice,pathIndex,remote){
   if(!t)return false;
+  const isRemote=!!remote;
+  if(COOP.active&&COOP.isMultiplayer&&!isRemote){
+    if((t.ownerSlot??0)!==(COOP.mySlot??0))return false;
+  }
   const available=nextUpgrade(t); if(!available.length)return false;
   // Compatibilidade com chamadas antigas: escolha a primeira melhoria disponível.
   let entry=Number.isInteger(pathIndex)?available.find(x=>x.path===pathIndex):available[0];
   if(!entry)return false;
   const path=entry.path, up=entry.up;
-  const isRemote=!!remote;
   if(up.choices){
     const u=up.choices[choice];
     if(!u)return false;
@@ -5911,6 +5986,10 @@ function applyParagonStats(t){
 }
 function makeParagon(t,remote){
   if(!t)return false;
+  const isRemote=!!remote;
+  if(COOP.active&&COOP.isMultiplayer&&!isRemote){
+    if((t.ownerSlot??0)!==(COOP.mySlot??0))return false;
+  }
   // Ascensão em Equipe: une 3 torres idênticas no nível máximo (mesmo de jogadores diferentes no Co-op)
   const same=towers.filter(q=>q.key===t.key&&Math.max(...q.pathLevels)>=5&&!q.paragon);
   if(Math.max(...t.pathLevels)<5||same.length<3){toast('Precisa de 3 torres iguais com um caminho no nível 5.','bad');return false;}
@@ -5934,6 +6013,10 @@ function makeParagon(t,remote){
 }
 function activateTowerAbility(t,remote){
   if(!t)return false;
+  const isRemote=!!remote;
+  if(COOP.active&&COOP.isMultiplayer&&!isRemote){
+    if((t.ownerSlot??0)!==(COOP.mySlot??0))return false;
+  }
   const a=TOWER_ABILITIES[t.key];if(!a||t.abilityCD>0)return false;
   if(!remote){
     if(!Number.isFinite(G.money)||G.money<a.cost){noMoney();return false;}
@@ -5989,6 +6072,10 @@ function activateTowerAbility(t,remote){
   FX.popup(t.x,t.y-25,a.name,'#ffe06a',true);UI.panelKey='';return true;
 }
 function sellTower(t,remote){
+  const isRemote=!!remote;
+  if(COOP.active&&COOP.isMultiplayer&&!isRemote){
+    if((t.ownerSlot??0)!==(COOP.mySlot??0))return;
+  }
   if(t.tier>=5)psAdd('soldMax');
   const refundRatio=CFG.sellRatio+getTechBonus('sell_refund')*0.03;
   const refund=Math.floor(t.spent*refundRatio);
@@ -6076,9 +6163,12 @@ function refreshPanel(){
       +'<button class="tp-up'+(G.money>=ob.cost?'':' poor')+'" data-act="clearObs" data-id="'+ob.id+'"><b>💥 Demolir e Limpar Terreno</b> — '+ob.cost+' ●<small>Remove permanentemente este obstáculo da zona de operação.</small></button>';
     return;
   }
+  const isMyTower=!COOP.active||!COOP.isMultiplayer||((t.ownerSlot??0)===(COOP.mySlot??0));
+  const allyOwnerSlot=(typeof t.ownerSlot==='number')?t.ownerSlot:0;
+  const allyName=(COOP.active&&COOP.players&&COOP.players[allyOwnerSlot]&&COOP.players[allyOwnerSlot].name)?COOP.players[allyOwnerSlot].name:('P'+(allyOwnerSlot+1));
   const upgrades=nextUpgrade(t);
   const aff=upgrades.map(e=>e.path+':'+e.level+':'+(e.up.choices?e.up.choices.map(c=>G.money>=c.cost?1:0).join(''):(G.money>=e.up.cost?1:0))).join('|')||'-';
-  const key=t.id+'|'+t.tier+'|'+t.priority+'|'+aff+'|'+Math.floor(t.spent*CFG.sellRatio)+'|'+Math.ceil(t.abilityCD)+'|'+t.paragon+'|'+(t.kills||0)+'|'+G.targeting+'|'+UI.panelCollapsed+'|'+towers.filter(q=>q.key===t.key&&Math.max(...q.pathLevels)>=5).length;
+  const key=t.id+'|'+t.tier+'|'+t.priority+'|'+aff+'|'+Math.floor(t.spent*CFG.sellRatio)+'|'+Math.ceil(t.abilityCD)+'|'+t.paragon+'|'+(t.kills||0)+'|'+G.targeting+'|'+UI.panelCollapsed+'|'+(isMyTower?1:0)+'|'+towers.filter(q=>q.key===t.key&&Math.max(...q.pathLevels)>=5).length;
   if(key===UI.panelKey)return;
   UI.panelKey=key;
   const s=t.s,d=t.def;
@@ -6103,19 +6193,34 @@ function refreshPanel(){
     +'<div class="tp-head-actions"><button type="button" class="tp-collapse" data-act="toggleCollapse" title="'+(UI.panelCollapsed?'Expandir Painel':'Recolher Painel Lateral')+'">'+colIco+'</button>'
     +'<button type="button" class="tp-close" data-act="close" title="Fechar (ESC)">✕</button></div>'
     +'</div></div>';
+  if(!isMyTower){
+    h+='<div class="tp-ally-banner">🤝 UNIDADE DO ALIADO ('+escHtml(allyName)+')</div>';
+  }
   h+='<div class="tp-body">';
   const dmgTxt=d.kind==='flame'?(s.dmg.toFixed(1)+' (+calor)'):d.kind==='ice'?s.dmg.toFixed(0)+' (+lentidão)':Math.round(s.dmg)+(s.splash?' (área)':'');
   h+='<div class="tp-stats"><span>Dano/ataque</span><span>'+dmgTxt+'</span><span>Cadência</span><span>'+s.rate.toFixed(2)+' /s</span><span>Alcance</span><span>'+Math.round(s.range)+'</span><span>Tipo</span><span>'+d.dtype+'</span></div>';
   h+='<div class="tp-extra">'+(extrasText(t)||'&nbsp;')+'</div>';
   if(t.key==='dartgun'){
-    h+='<div class="tp-lbl">Mira Travada (Estilo BTD6)</div><div class="tp-prio"><button data-act="aim" class="'+(G.targeting==='aim'?'active':'')+'" style="grid-column:span 4">🎯 '+(G.targeting==='aim'?'Clique no mapa para travar...':'Mudar Ponto de Mira ('+t.aimX+', '+t.aimY+')')+'</button></div>';
+    if(isMyTower){
+      h+='<div class="tp-lbl">Mira Travada (Estilo BTD6)</div><div class="tp-prio"><button data-act="aim" class="'+(G.targeting==='aim'?'active':'')+'" style="grid-column:span 4">🎯 '+(G.targeting==='aim'?'Clique no mapa para travar...':'Mudar Ponto de Mira ('+t.aimX+', '+t.aimY+')')+'</button></div>';
+    }else{
+      h+='<div class="tp-lbl">Mira Travada (Definida por '+escHtml(allyName)+')</div><div class="tp-prio"><span class="tp-prio-readonly">🎯 Ponto ('+t.aimX+', '+t.aimY+')</span></div>';
+    }
   } else if(t.key!=='minefactory'){
-    h+='<div class="tp-lbl">Alvo Prioritário</div><div class="tp-prio">';
-    for(const k of ['first','last','strong','close'])h+='<button data-act="prio" data-k="'+k+'" class="'+(t.priority===k?'active':'')+'" title="'+PRIO_LABEL[k]+'">'+PRIO_LABEL[k]+'</button>';
-    h+='</div>';
+    if(isMyTower){
+      h+='<div class="tp-lbl">Alvo Prioritário</div><div class="tp-prio">';
+      for(const k of ['first','last','strong','close'])h+='<button data-act="prio" data-k="'+k+'" class="'+(t.priority===k?'active':'')+'" title="'+PRIO_LABEL[k]+'">'+PRIO_LABEL[k]+'</button>';
+      h+='</div>';
+    }else{
+      h+='<div class="tp-lbl">Alvo Prioritário (Definido por '+escHtml(allyName)+')</div><div class="tp-prio"><span class="tp-prio-readonly">🎯 '+PRIO_LABEL[t.priority]+'</span></div>';
+    }
   }
   if(t.key==='portal'){
-    h+='<div class="tp-prio" style="margin-top:4px"><button data-act="portal_exit" class="'+(G.targeting==='portal_exit'?'active':'')+'" style="grid-column:span 4">🌀 '+(G.targeting==='portal_exit'?'Clique na pista para posicionar...':'Definir Saída do Portal na Pista')+'</button></div>';
+    if(isMyTower){
+      h+='<div class="tp-prio" style="margin-top:4px"><button data-act="portal_exit" class="'+(G.targeting==='portal_exit'?'active':'')+'" style="grid-column:span 4">🌀 '+(G.targeting==='portal_exit'?'Clique na pista para posicionar...':'Definir Saída do Portal na Pista')+'</button></div>';
+    }else{
+      h+='<div class="tp-prio" style="margin-top:4px"><span class="tp-prio-readonly">🌀 Saída do Portal controlada por '+escHtml(allyName)+'</span></div>';
+    }
   }
   // As 3 Linhas de Evolução estilo BTD6 com Ícones Circulares Ilustrados e Tooltips
   const paths=TOWER_PATHS[t.key]||[];
@@ -6140,11 +6245,11 @@ function refreshPanel(){
       const uDesc=uItem?uItem.desc:'';
       const isBought=step<lv||t.paragon;
       const isNext=(step===lv)&&!locked&&!t.paragon;
-      const canBuy=isNext&&G.money>=uCost;
-      const stateCls=isBought?'state-bought':isNext?(canBuy?'state-available':'state-poor'):'state-locked';
-      const stLabel=isBought?'✔ Comprado':isNext?(canBuy?'● Disponível para compra':'✖ Moedas insuficientes'):'🔒 Bloqueado';
-      const badgeHtml=isBought?'<span class="btd6-nc-badge ok">✓</span>':isNext?('<span class="btd6-nc-badge cost">'+uCost+'●</span>'):'<span class="btd6-nc-badge lck">🔒</span>';
-      const actAttr=isNext?' data-act="up" data-i="0" data-path="'+pi+'"':' data-act="nodeTip"';
+      const canBuy=isNext&&G.money>=uCost&&isMyTower;
+      const stateCls=isBought?'state-bought':isNext?(isMyTower?(canBuy?'state-available':'state-poor'):'state-locked'):'state-locked';
+      const stLabel=isBought?'✔ Comprado':isNext?(isMyTower?(canBuy?'● Disponível para compra':'✖ Moedas insuficientes'):('🔒 Exclusivo de '+allyName)):'🔒 Bloqueado';
+      const badgeHtml=isBought?'<span class="btd6-nc-badge ok">✓</span>':isNext?(isMyTower?('<span class="btd6-nc-badge cost">'+uCost+'●</span>'):'<span class="btd6-nc-badge lck">🔒</span>'):'<span class="btd6-nc-badge lck">🔒</span>';
+      const actAttr=(isNext&&isMyTower)?(' data-act="up" data-i="0" data-path="'+pi+'"'):' data-act="nodeTip"';
       const customSvgPath='assets/upgrades/path'+pi+'-lv'+(step+1)+'.svg';
       h+='<button type="button" class="btd6-node-circle '+stateCls+'"'+actAttr
         +' data-up-tip="1"'
@@ -6166,6 +6271,8 @@ function refreshPanel(){
       h+='<div class="btd6-path-max">★ Nível Máximo (5/5)</div>';
     } else if(locked){
       h+='<div class="btd6-path-locked">🔒 Linha bloqueada</div>';
+    } else if(!isMyTower){
+      h+='<div class="tp-path-ally-status">🔒 Apenas o comandante '+escHtml(allyName)+' pode aprimorar esta unidade.</div>';
     } else {
       const up=paths[pi]&&paths[pi][lv];
       if(up){
@@ -6181,11 +6288,21 @@ function refreshPanel(){
     h+='</div>';
   }
   h+='</div>';
-  const sameMax=towers.filter(q=>q!==t&&q.key===t.key&&Math.max(...q.pathLevels)>=5&&!q.paragon).length;
-  if(Math.max(...t.pathLevels)>=5&&!t.paragon&&sameMax>=2)h+='<button class="tp-up" data-act="paragon"><b>◆ Criar Ascensão</b> — '+paragonCost(t.key)+' ●<small>Consome esta torre e mais 2 torres '+d.name+' no nível 5.</small></button>';
-  const ab=TOWER_ABILITIES[t.key]; if(ab&&!t.paragon)h+='<button class="tp-up" data-act="ability" '+(t.abilityCD>0?'disabled':'')+'><b>⚡ '+ab.name+'</b> — '+ab.cost+' ●<small>'+(t.abilityCD>0?'Recarga '+Math.ceil(t.abilityCD)+'s':ab.desc)+'</small></button>';
-  if(t.paragon)h+='<div class="tp-max">◆ ASCENSÃO — Poder máximo desbloqueado</div>';
-  h+='<button class="tp-sell" data-act="sell">Vender por '+Math.floor(t.spent*CFG.sellRatio)+' ●</button></div>';
+  if(isMyTower){
+    const sameMax=towers.filter(q=>q!==t&&q.key===t.key&&Math.max(...q.pathLevels)>=5&&!q.paragon).length;
+    if(Math.max(...t.pathLevels)>=5&&!t.paragon&&sameMax>=2)h+='<button class="tp-up" data-act="paragon"><b>◆ Criar Ascensão</b> — '+paragonCost(t.key)+' ●<small>Consome esta torre e mais 2 torres '+d.name+' no nível 5.</small></button>';
+    const ab=TOWER_ABILITIES[t.key]; if(ab&&!t.paragon)h+='<button class="tp-up" data-act="ability" '+(t.abilityCD>0?'disabled':'')+'><b>⚡ '+ab.name+'</b> — '+ab.cost+' ●<small>'+(t.abilityCD>0?'Recarga '+Math.ceil(t.abilityCD)+'s':ab.desc)+'</small></button>';
+    if(t.paragon)h+='<div class="tp-max">◆ ASCENSÃO — Poder máximo desbloqueado</div>';
+    h+='<button class="tp-sell" data-act="sell">Vender por '+Math.floor(t.spent*CFG.sellRatio)+' ●</button>';
+  } else {
+    const ab=TOWER_ABILITIES[t.key];
+    if(ab&&!t.paragon){
+      h+='<div class="tp-path-ally-status">⚡ Habilidade Ativa: '+escHtml(ab.name)+' ('+(t.abilityCD>0?'Recarga '+Math.ceil(t.abilityCD)+'s':'Pronta')+') — sob comando de '+escHtml(allyName)+'</div>';
+    }
+    if(t.paragon)h+='<div class="tp-max">◆ ASCENSÃO — Poder máximo desbloqueado</div>';
+    h+='<div class="tp-ally-sell-notice">🛡️ Torre sob comando de '+escHtml(allyName)+' (protegida contra venda e alterações de outros jogadores)</div>';
+  }
+  h+='</div>';
   p.innerHTML=h;
 }
 
@@ -6274,6 +6391,12 @@ function buildSidebar(){
       if(a==='toggleCollapse'){hideTip();UI.panelCollapsed=!UI.panelCollapsed;UI.panelKey='';Snd.play('ui');refreshPanel();return;}
       if(a==='clearObs'){dispatch({type:'clearObs',id:Number(b.dataset.id)});return;}
       const t=G.selected; if(!t)return;
+      const isMyTower=!COOP.active||!COOP.isMultiplayer||((t.ownerSlot??0)===(COOP.mySlot??0));
+      if(!isMyTower&&(a==='up'||a==='paragon'||a==='ability'||a==='sell'||a==='prio'||a==='aim'||a==='portal_exit')){
+        toast('Ação negada: Você só pode controlar e evoluir as suas próprias torres!','bad');
+        Snd.play('err');
+        return;
+      }
       if(a==='prio'){dispatch({type:'prio',id:t.id,k:b.dataset.k});UI.panelKey='';Snd.play('ui');}
       else if(a==='aim'){G.targeting=G.targeting==='aim'?null:'aim';UI.panelKey='';setHint(G.targeting==='aim'?'Clique em qualquer ponto do mapa para travar a mira da Metralhadora Direcional.':'');Snd.play('ui');}
       else if(a==='portal_exit'){G.targeting=G.targeting==='portal_exit'?null:'portal_exit';UI.panelKey='';setHint(G.targeting==='portal_exit'?'Clique em um ponto da pista para definir a saída do Portal Tático.':'');Snd.play('ui');}
@@ -6288,7 +6411,13 @@ function buildSidebar(){
 function updateQuickAbilities(){
   const qab=$('quickAbilityBar');
   if(!qab)return;
-  const activeTowers=towers.filter(t=>TOWER_ABILITIES[t.key]&&!t.paragon);
+  const activeTowers=towers.filter(t=>{
+    if(!TOWER_ABILITIES[t.key]||t.paragon)return false;
+    if(COOP.active&&COOP.isMultiplayer){
+      return (t.ownerSlot??0)===(COOP.mySlot??0);
+    }
+    return true;
+  });
   const sig=activeTowers.map(t=>t.id+':'+Math.ceil(t.abilityCD)+':'+(G.money>=TOWER_ABILITIES[t.key].cost?1:0)).join('|');
   if(UI.quickKey===sig)return;
   UI.quickKey=sig;

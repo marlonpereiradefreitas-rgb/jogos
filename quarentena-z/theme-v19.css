@@ -3656,3 +3656,51 @@ body.is-mobile .coop-hud-widget.collapsed .coop-hud-sub {
     align-items: flex-start;
   }
 }
+
+/* Painel de Inspeção Co-op (Bloqueio e Identificação de Torres de Aliados) */
+.tp-ally-banner {
+  background: linear-gradient(90deg, rgba(2, 132, 199, 0.35), rgba(15, 23, 42, 0.9));
+  border: 1px solid rgba(56, 189, 248, 0.6);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #38bdf8;
+  letter-spacing: 0.8px;
+  text-align: center;
+  margin: 6px 12px 2px;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+}
+.tp-path-ally-status {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+  border-radius: 6px;
+  padding: 6px 10px;
+  text-align: center;
+  margin-top: 5px;
+}
+.tp-ally-sell-notice {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  text-align: center;
+  padding: 8px 10px;
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 6px;
+}
+.tp-prio-readonly {
+  grid-column: span 4;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #7dd3fc;
+  background: rgba(2, 132, 199, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 6px;
+  text-align: center;
+}
