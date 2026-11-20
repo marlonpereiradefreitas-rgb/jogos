@@ -3351,85 +3351,151 @@ body.is-mobile .mobile-quick-bar {
   display: none !important;
 }
 
-/* Topbar Mobile Slim 36px */
+/* Topbar Mobile Slim 32px — Layout Tático Ultracompacto com Zero Overflow */
 body.is-mobile #topbar {
-  height: 36px !important;
-  min-height: 36px !important;
-  max-height: 36px !important;
-  padding: 2px 8px !important;
-  gap: 6px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+  padding: 2px 6px !important;
+  gap: 4px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  background: rgba(11, 17, 29, 0.96) !important;
-  border-bottom: 1px solid var(--ui-border) !important;
+  background: rgba(11, 17, 29, 0.98) !important;
+  border-bottom: 1px solid rgba(56, 189, 248, 0.25) !important;
   z-index: 30 !important;
+  overflow: hidden !important;
+  flex-wrap: nowrap !important;
+  width: 100% !important;
 }
 
-body.is-mobile #topbar .life-hud,
-body.is-mobile #topbar .hud-mod {
-  zoom: 1 !important;
-  height: 28px !important;
-  min-height: 28px !important;
-  padding: 2px 8px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 4px !important;
-  background: rgba(15, 23, 42, 0.85) !important;
-  border: 1px solid rgba(56, 189, 248, 0.3) !important;
-  border-radius: 6px !important;
-  box-shadow: none !important;
-}
-
+/* Oculta SVGs pesados de desktop e elementos decorativos no mobile */
+body.is-mobile #topbar .life-svg,
+body.is-mobile #topbar .hud-mod-svg,
+body.is-mobile #topbar .hm-icon,
+body.is-mobile #topbar .hm-mini-bar,
+body.is-mobile #topbar .life-bar,
 body.is-mobile #topbar .hud-icon-wrap,
-body.is-mobile #topbar .hm-mini-bar {
-  display: none !important;
-}
-
-body.is-mobile #topbar .hud-lbl {
-  font-size: 8.5px !important;
-  color: #94a3b8 !important;
-  margin-right: 2px !important;
-}
-
-body.is-mobile #topbar .hud-val {
-  font-size: 11.5px !important;
-  font-weight: 900 !important;
-}
-
-body.is-mobile #topbar .hm-sub {
-  display: none !important;
-}
-
+body.is-mobile #topbar .hud-lbl,
+body.is-mobile #topbar .hm-sub,
 body.is-mobile #topbar .life-frame,
 body.is-mobile #topbar .life-val-bar,
 body.is-mobile #topbar .life-hex-badge {
   display: none !important;
 }
 
-body.is-mobile #topbar .life-hud::before {
-  content: '❤️ ';
-  font-size: 11px;
-}
-
-body.is-mobile #topbar #life {
-  display: inline-block !important;
-  font-size: 11.5px !important;
-  font-weight: 900 !important;
-  color: #10b981 !important;
-}
-
-body.is-mobile #topbar button,
-body.is-mobile #topbar .ingame-nav {
-  height: 28px !important;
-  min-height: 28px !important;
-  min-width: 28px !important;
-  padding: 2px 8px !important;
-  font-size: 11px !important;
-  border-radius: 6px !important;
+/* 4 Pílulas HUD compactas de alto contraste: Vida, Moedas, Onda, Zumbis */
+body.is-mobile #topbar .life-hud,
+body.is-mobile #topbar .hud-mod {
+  zoom: 1 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  flex: 0 0 auto !important;
+  height: 25px !important;
+  min-height: 25px !important;
+  padding: 1px 6px !important;
+  margin: 0 !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
+  gap: 3px !important;
+  background: rgba(15, 23, 42, 0.94) !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+  border-radius: 5px !important;
+  box-shadow: none !important;
+  transform: none !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+}
+
+body.is-mobile #topbar .life-hud::before {
+  content: '❤️';
+  font-size: 11px;
+}
+body.is-mobile #topbar .hud-coins::before {
+  content: '💰';
+  font-size: 11px;
+}
+body.is-mobile #topbar .hud-wave::before {
+  content: '🌊';
+  font-size: 11px;
+}
+body.is-mobile #topbar .hud-zombies::before {
+  content: '🧟';
+  font-size: 11px;
+}
+
+body.is-mobile #topbar .life-num,
+body.is-mobile #topbar .hm-content,
+body.is-mobile #topbar .hm-val-row {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+body.is-mobile #topbar #life,
+body.is-mobile #topbar .hud-val {
+  display: inline-block !important;
+  font-size: 11.5px !important;
+  font-weight: 900 !important;
+  font-family: var(--f-mono, monospace) !important;
+  color: #38bdf8 !important;
+  letter-spacing: 0.4px !important;
+  line-height: 1 !important;
+}
+
+body.is-mobile #topbar #life {
+  color: #10b981 !important;
+}
+body.is-mobile #topbar #coins {
+  color: #facc15 !important;
+}
+body.is-mobile #topbar #waveNum {
+  color: #38bdf8 !important;
+}
+body.is-mobile #topbar #enemies {
+  color: #4ade80 !important;
+}
+body.is-mobile #topbar .hud-zombies[data-threat="high"] #enemies,
+body.is-mobile #topbar .hud-zombies[data-threat="boss"] #enemies {
+  color: #ef4444 !important;
+}
+body.is-mobile #topbar .life-hud[data-lv="low"] #life {
+  color: #ef4444 !important;
+}
+
+/* Botões de Ação na barra superior mobile */
+body.is-mobile #topbar button,
+body.is-mobile #topbar .ingame-nav {
+  height: 25px !important;
+  min-height: 25px !important;
+  min-width: 25px !important;
+  padding: 1px 6px !important;
+  font-size: 10px !important;
+  border-radius: 5px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  background: rgba(30, 41, 59, 0.85) !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  color: #f1f5f9 !important;
+}
+
+/* Quando instalado em modo PWA Standalone, não exibe botão de instalação */
+body.is-installed-app #btnHomeInstall,
+@media all and (display-mode: standalone) {
+  #btnHomeInstall {
+    display: none !important;
+  }
+}
+@media all and (display-mode: fullscreen) {
+  #btnHomeInstall {
+    display: none !important;
+  }
 }
 
 /* Área de Jogo (Stage 100% de largura no mobile) */
@@ -3447,6 +3513,11 @@ body.is-mobile #stage {
   height: 100% !important;
   min-width: 0 !important;
   position: relative !important;
+  background: #070b14 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
 }
 
 /* Gaveta Lateral de Torres Retrátil no Mobile */

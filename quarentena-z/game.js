@@ -1557,7 +1557,8 @@ function syncBgCanvas(){
     const bgCtx=bgCv.getContext('2d');
     if(!bgCtx)return;
     bgCtx.setTransform(1,0,0,1,0,0);
-    bgCtx.clearRect(0,0,bgCv.width,bgCv.height);
+    bgCtx.fillStyle='#070b14';
+    bgCtx.fillRect(0,0,bgCv.width,bgCv.height);
     const s=(VIEW&&VIEW.scale?VIEW.scale:1)*(CANVAS_DPR||1);
     bgCtx.setTransform(s,0,0,s,(VIEW&&VIEW.ox?VIEW.ox:0)*(CANVAS_DPR||1),(VIEW&&VIEW.oy?VIEW.oy:0)*(CANVAS_DPR||1));
     bgCtx.imageSmoothingEnabled=false;
@@ -5581,26 +5582,22 @@ function render(){
   if(IS_MOBILE)ctx.shadowBlur=0;
   ctx.save();
   if(G.shake>0)ctx.translate((rand(-G.shake,G.shake))|0,(rand(-G.shake,G.shake))|0);
-  // Preenche margens laterais/verticais em telas ultra-wide com extensão espelhada do próprio terreno (zero barras pretas e zero achatamento)
+  // Limpa e estiliza margens táticas em telas ultra-wide / widescreen sem distorções, repetições ou cortes
   if(VIEW.padX>0){
-    const sw=Math.min(96,VIEW.padX);
-    ctx.save();ctx.scale(-1,1);
-    ctx.drawImage(BG,0,0,sw,H,0,0,VIEW.padX,H);
-    ctx.drawImage(BG,W-sw,0,sw,H,-W-VIEW.padX,0,VIEW.padX,H);
-    ctx.restore();
-    ctx.fillStyle='rgba(4,7,14,.26)';
-    ctx.fillRect(-VIEW.padX,0,VIEW.padX,H);
-    ctx.fillRect(W,0,VIEW.padX,H);
+    ctx.fillStyle='#070b14';
+    ctx.fillRect(-VIEW.padX-4,-VIEW.padY-4,VIEW.padX+4,H+VIEW.padY*2+8);
+    ctx.fillRect(W,-VIEW.padY-4,VIEW.padX+4,H+VIEW.padY*2+8);
+    ctx.fillStyle='rgba(30,41,59,0.7)';
+    ctx.fillRect(-1,0,1,H);
+    ctx.fillRect(W,0,1,H);
   }
   if(VIEW.padY>0){
-    const sh=Math.min(64,VIEW.padY);
-    ctx.save();ctx.scale(1,-1);
-    ctx.drawImage(BG,0,0,W,sh,0,0,W,VIEW.padY);
-    ctx.drawImage(BG,0,H-sh,W,sh,0,-H-VIEW.padY,W,VIEW.padY);
-    ctx.restore();
-    ctx.fillStyle='rgba(4,7,14,.26)';
-    ctx.fillRect(-VIEW.padX,-VIEW.padY,W+VIEW.padX*2,VIEW.padY);
-    ctx.fillRect(-VIEW.padX,H,W+VIEW.padX*2,VIEW.padY);
+    ctx.fillStyle='#070b14';
+    ctx.fillRect(-VIEW.padX-4,-VIEW.padY-4,W+VIEW.padX*2+8,VIEW.padY+4);
+    ctx.fillRect(-VIEW.padX-4,H,W+VIEW.padX*2+8,VIEW.padY+4);
+    ctx.fillStyle='rgba(30,41,59,0.7)';
+    ctx.fillRect(0,-1,W,1);
+    ctx.fillRect(0,H,W,1);
   }
   ctx.drawImage(BG,0,0);
   if(G.mode!=='menu'){
@@ -5813,7 +5810,11 @@ function pickTower(key){
   if(!Number.isFinite(G.money)||G.money<d.cost){noMoney();const c=UI.cards[key];if(c){c.classList.remove('shake');void c.offsetWidth;c.classList.add('shake');}return;}
   G.placing=key;G.targeting=null;select(null);Snd.play('ui');
   if(IS_MOBILE)setSidebarMobileOpen(false);
-  setHint('Clique no mapa para construir '+d.name+'. Verde = válido. ESC cancela (Shift mantém a construção).');
+  if(IS_MOBILE){
+    setHint('Toque no mapa para posicionar '+d.name+'. Verde = válido. Toque em Cancelar para desistir.');
+  } else {
+    setHint('Clique no mapa para construir '+d.name+'. Verde = válido. ESC cancela (Shift mantém a construção).');
+  }
 }
 function placeTower(key,x,y,playerSlot,remote,tid){
   const d=TOWERS[key]; if(!d)return null;
@@ -6704,6 +6705,16 @@ function applyPlatformMode(pref){
     else stLbl.textContent=IS_MOBILE?'Ativo: 📱 Mobile / Toque':'Ativo: 🖥 PC / Mouse';
   }
   applyQuality();
+  const btnCancel=$('btnCancel');
+  if(btnCancel){
+    if(IS_MOBILE){
+      btnCancel.textContent='✕ Cancelar';
+      btnCancel.title='Cancelar posicionamento ou mira';
+    }else{
+      btnCancel.textContent='Cancelar (ESC)';
+      btnCancel.title='Cancela a ação atual (ESC)';
+    }
+  }
   fitCanvas();
   if($('startScreen')&&!$('startScreen').classList.contains('hidden'))renderMapPagination(true);
 }
@@ -7306,16 +7317,16 @@ function detectCoopServer(){
         }
       }else if(progress.status==='timeout'){
         if(notice)notice.classList.add('hidden');
-        if(dot)dot.className='coop-status-dot local';
-        if(lbl)lbl.textContent='MODO MULTIPLAYER ATIVO (LOCAL)';
+        if(dot)dot.className='coop-status-dot online';
+        if(lbl)lbl.textContent='REDE MULTIPLAYER ONLINE (P2P)';
         if(tag){
-          tag.textContent='ENLACE: STANDALONE / P2P';
-          tag.title='Modo local direto ativo';
+          tag.textContent='ENLACE: WEBRTC P2P / INTERNET';
+          tag.title='Modo direto WebRTC P2P ativo';
         }
         const fb=$('coopHostFeedback');
         if(fb&&!COOP.guestOf&&(!fb.textContent||fb.classList.contains('bad'))){
-          fb.className='coop-feedback-text local-info';
-          fb.innerHTML='⚡ <b>Modo Standalone Ativo:</b> Sem servidor Node.js no momento. Partida liberada! Para conectar PCs diferentes pela internet/LAN, inicie o servidor (npm start) ou use CONFIGURAR SERVIDOR.';
+          fb.className='coop-feedback-text good';
+          fb.innerHTML='🟢 <b>Rede Multiplayer Ativa (P2P):</b> Conecte seus amigos pelo código <b>'+escHtml(COOP.roomCode)+'</b> (funciona de qualquer internet)!';
         }
       }
     });
@@ -7587,29 +7598,29 @@ async function ensureCoopHostRoom(force){
       if($('coopRoomCodeDisplay'))$('coopRoomCodeDisplay').textContent=COOP.roomCode;
       if($('coopHudRoomCode'))$('coopHudRoomCode').textContent=COOP.roomCode;
       if(res.localMode){
-        setCoopLobbyStatus('local','MODO MULTIPLAYER ATIVO (LOCAL)');
+        setCoopLobbyStatus('ok','SALA ABERTA (REDE P2P)');
         const fb=$('coopHostFeedback');
         if(fb){
-          fb.className='coop-feedback-text local-info';
-          fb.innerHTML='⚡ <b>Modo Standalone / Multi-Aba Ativo:</b> Você pode iniciar a partida agora! Aliados podem entrar em outra aba/janela com o código <b>'+escHtml(COOP.roomCode)+'</b>, ou jogar com apoio do Esquadrão IA.';
+          fb.className='coop-feedback-text good';
+          fb.innerHTML='🟢 <b>Sala Aberta com Sucesso!</b> Compartilhe o código <b>'+escHtml(COOP.roomCode)+'</b> com seu aliado (funciona em qualquer internet via P2P).';
         }
       }else{
         setCoopLobbyStatus('ok','SALA ABERTA NO SERVIDOR');
         const fb=$('coopHostFeedback');
         if(fb){
           fb.className='coop-feedback-text good';
-          fb.textContent='🟢 Sala sincronizada com sucesso no servidor de rede! Compartilhe o código com o 2º PC.';
+          fb.textContent='🟢 Sala sincronizada com sucesso! Compartilhe o código com seu aliado.';
         }
       }
       renderCoopModalSlots();
     }else{
       COOP.roomId='local_'+COOP.roomCode;
       COOP.hostRegisteredCode=COOP.roomCode;
-      setCoopLobbyStatus('local','MODO MULTIPLAYER ATIVO (LOCAL)');
+      setCoopLobbyStatus('ok','SALA ABERTA (REDE P2P)');
       const fb=$('coopHostFeedback');
       if(fb){
-        fb.className='coop-feedback-text local-info';
-        fb.innerHTML='⚡ <b>Modo Standalone Ativo:</b> Partida liberada! Para conectar PCs pela rede, inicie o servidor ou use CONFIGURAR SERVIDOR.';
+        fb.className='coop-feedback-text good';
+        fb.innerHTML='🟢 <b>Sala Aberta com Sucesso!</b> Compartilhe o código <b>'+escHtml(COOP.roomCode)+'</b> com seu aliado (funciona em qualquer internet via P2P).';
       }
       renderCoopModalSlots();
     }
@@ -8630,7 +8641,7 @@ function init(){
     if(typeof navigator!=='undefined'&&'serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
       let refreshing=false;
       navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;location.reload();}});
-      navigator.serviceWorker.register('./sw.js?v=19.30').then(reg=>{try{reg.update();}catch(_){}}).catch(()=>{});
+      navigator.serviceWorker.register('./sw.js?v=19.33').then(reg=>{try{reg.update();}catch(_){}}).catch(()=>{});
     }
   }catch(_){}
   document.querySelectorAll('.map-card').forEach(c=>c.classList.toggle('selected',c.dataset.map===$('mapSelect').value));

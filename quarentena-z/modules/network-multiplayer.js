@@ -46,6 +46,17 @@
     } catch (_) {}
   }
 
+  // 3. Proteção automática: se customServerUrl aponta para localhost mas estamos rodando
+  // em um domínio remoto (ex: GitHub Pages ou mobile), descarta o localhost para não falhar
+  try {
+    if (customServerUrl && (customServerUrl.includes('localhost') || customServerUrl.includes('127.0.0.1'))) {
+      if (typeof location !== 'undefined' && location.hostname && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        customServerUrl = '';
+        if (typeof localStorage !== 'undefined') localStorage.removeItem('qz_server_url');
+      }
+    }
+  } catch (_) {}
+
   let lastServerOk = 0;
   let lastServerData = null;
   let activeWakePromise = null;
@@ -937,9 +948,7 @@
             status: 'timeout',
             attempt,
             serverUrl: srv,
-            message: isLocal
-              ? 'Servidor local offline. Inicie o servidor com npm start.'
-              : 'Tempo limite ao acordar o servidor na nuvem. Verifique sua conexão ou a URL nas opções avançadas.'
+            message: 'Rede P2P WebRTC ativa! Conecte diretamente pelo código da sala (mesmo em redes diferentes).'
           });
         }
         return { ok: false, error: 'Timeout ao conectar com o servidor' };
