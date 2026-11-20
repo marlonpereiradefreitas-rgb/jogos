@@ -1208,6 +1208,13 @@ async function handleApi(req, res, urlObj) {
       const playerName = cleanName(body.playerName || 'Comandante');
       const ownerHash = auth.valid ? auth.ownerHash : ('anon_' + crypto.randomBytes(4).toString('hex'));
 
+      // Limpa qualquer sala antiga com o mesmo código para evitar conflitos de IDs
+      for (const [existingId, r] of Object.entries(DB.mpRooms)) {
+        if (r && (r.roomCode === roomCode || r.roomId === roomId)) {
+          delete DB.mpRooms[existingId];
+        }
+      }
+
       const room = {
         roomId,
         roomCode,
@@ -1248,7 +1255,8 @@ async function handleApi(req, res, urlObj) {
       const id = cleanId(body.roomId || '');
       const room = id && DB.mpRooms[id]
         ? DB.mpRooms[id]
-        : Object.values(DB.mpRooms).find(r => r && (r.roomCode === code || r.roomCode === normalizedCode));
+        : Object.values(DB.mpRooms).reverse().find(r => r && (r.roomCode === code || r.roomCode === normalizedCode) && r.status !== 'closed')
+          || Object.values(DB.mpRooms).reverse().find(r => r && (r.roomCode === code || r.roomCode === normalizedCode));
       if (!room) {
         sendJson(req, res, 404, { ok: false, error: 'Sala multiplayer não encontrada.' });
         return;
@@ -1294,7 +1302,7 @@ async function handleApi(req, res, urlObj) {
   if (pathname === '/api/mp/rooms/info' && req.method === 'GET') {
     const raw = String(urlObj.searchParams.get('code') || urlObj.searchParams.get('roomId') || '').trim().toUpperCase();
     const normalized = raw.startsWith('QZ-') ? raw : (raw.startsWith('QZ') ? ('QZ-' + raw.slice(2)) : ('QZ-' + raw));
-    const room = DB.mpRooms[raw] || Object.values(DB.mpRooms).find(r => r && (r.roomCode === raw || r.roomCode === normalized || r.roomId === raw));
+    const room = DB.mpRooms[raw] || Object.values(DB.mpRooms).reverse().find(r => r && (r.roomCode === raw || r.roomCode === normalized || r.roomId === raw));
     if (!room) {
       sendJson(req, res, 404, { ok: false, error: 'Sala não encontrada.' });
       return;
@@ -1309,7 +1317,7 @@ async function handleApi(req, res, urlObj) {
       const body = await readJsonBody(req);
       const roomId = cleanId(body.roomId || '');
       const code = String(body.roomCode || '').trim().toUpperCase();
-      const room = (roomId && DB.mpRooms[roomId]) || Object.values(DB.mpRooms).find(r => r && r.roomCode === code);
+      const room = (roomId && DB.mpRooms[roomId]) || Object.values(DB.mpRooms).reverse().find(r => r && (r.roomCode === code || r.roomId === roomId));
       if (!room) {
         sendJson(req, res, 404, { ok: false, error: 'Sala não encontrada.' });
         return;
@@ -1334,7 +1342,7 @@ async function handleApi(req, res, urlObj) {
       const body = await readJsonBody(req);
       const roomId = cleanId(body.roomId || '');
       const code = String(body.roomCode || '').trim().toUpperCase();
-      const room = (roomId && DB.mpRooms[roomId]) || Object.values(DB.mpRooms).find(r => r && r.roomCode === code);
+      const room = (roomId && DB.mpRooms[roomId]) || Object.values(DB.mpRooms).reverse().find(r => r && (r.roomCode === code || r.roomId === roomId));
       if (!room) {
         sendJson(req, res, 404, { ok: false, error: 'Sala não encontrada.' });
         return;

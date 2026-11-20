@@ -3457,6 +3457,90 @@ function updateSupportAuras(){
     }
   }
 }
+let _coopAiTimer=0;
+function updateCoopAiAllies(h){
+  if(!COOP.active||G.mode!=='play'||G.paused)return;
+  const aiPlayers=(COOP.players||[]).filter(p=>p&&p.isAi);
+  if(aiPlayers.length===0)return;
+
+  _coopAiTimer+=h;
+  if(_coopAiTimer<3.6)return;
+  _coopAiTimer=0;
+
+  for(const p of aiPlayers){
+    // 1. Doação inteligente para o jogador se o saldo do jogador estiver baixo
+    if(G.money<160&&(p.money||0)>=360&&srand()<0.65){
+      const donation=Math.min(Math.floor((p.money||0)*0.35),300);
+      if(donation>=50){
+        p.money-=donation;
+        G.money+=donation;
+        SecurityGuard.syncVault();
+        FX.popup(W/2,90,'💸 +'+donation+' ● ('+p.name+')','#4ade80',true);
+        toast('💸 '+p.name+' doou '+donation+' moedas táticas para você!','good');
+        Snd.play('coin');
+        renderCoopHud();
+        continue;
+      }
+    }
+
+    // 2. Se tiver dinheiro, decide entre melhorar uma torre existente ou construir uma nova
+    const myTowers=towers.filter(t=>(t.ownerSlot||0)===p.slot);
+    const canUpgrade=myTowers.filter(t=>t.tier<5&&nextUpgrade(t).length>0);
+
+    if(canUpgrade.length>0&&(srand()<0.52||(p.money||0)>=600)){
+      const t=canUpgrade[Math.floor(srand()*canUpgrade.length)];
+      const ups=nextUpgrade(t);
+      if(ups.length>0){
+        const choice=Math.floor(srand()*ups.length);
+        const entry=ups[choice];
+        const cost=entry.up&&entry.up.cost?entry.up.cost:200;
+        if((p.money||0)>=cost){
+          p.money-=cost;
+          upgradeTower(t,0,entry.path,true);
+          FX.popup(t.x,t.y-18,'MELHORIA ['+p.name.slice(0,8)+']','#38bdf8',true);
+          continue;
+        }
+      }
+    }
+
+    // 3. Construir torre em posição válida no setor do aliado
+    const availableKeys=['gunner','shotgun','flame','sniper','rocket','laser','ice','dartgun'];
+    const affordable=availableKeys.filter(k=>TOWERS[k]&&(p.money||0)>=TOWERS[k].cost);
+    if(affordable.length>0&&myTowers.length<10){
+      const pickKey=affordable[Math.floor(srand()*affordable.length)];
+      const d=TOWERS[pickKey];
+      let placed=false;
+      for(let attempt=0;attempt<16;attempt++){
+        let candX,candY;
+        if(COOP.division==='sectors'&&window.QZ_COOP&&typeof window.QZ_COOP.getPointSectorOwner==='function'){
+          candX=Math.round(60+srand()*(W-120));
+          candY=Math.round(60+srand()*(H-120));
+          const owner=window.QZ_COOP.getPointSectorOwner(candX,candY,W,H,COOP.maxPlayers,COOP.division);
+          if(owner!==p.slot)continue;
+        }else{
+          candX=Math.round(60+srand()*(W-120));
+          candY=Math.round(60+srand()*(H-120));
+        }
+        if(distToPath(candX,candY)<CFG.pathClear)continue;
+        if(towers.some(t=>dist(t.x,t.y,candX,candY)<CFG.towerR*2.1))continue;
+        if(obstacles.some(ob=>!ob.cleared&&dist(ob.x,ob.y,candX,candY)<ob.r+CFG.towerR))continue;
+
+        p.money-=d.cost;
+        COOP._towerSeq=(COOP._towerSeq||0)+1;
+        const newTid=((p.slot+1)*100000)+COOP._towerSeq;
+        const nt=placeTower(pickKey,candX,candY,p.slot,true,newTid);
+        if(nt){
+          FX.popup(candX,candY-20,d.name+' ['+p.name.slice(0,8)+']','#4ade80',true);
+          toast('🛡 '+p.name+' posicionou '+d.name+' no flanco!','good');
+          placed=true;
+          break;
+        }
+      }
+      if(placed)renderCoopHud();
+    }
+  }
+}
+
 function update(h){
   SecurityGuard.verifyVault();
   G.tick++;
@@ -3468,6 +3552,7 @@ function update(h){
   for(const p of projs)p.alive=p.update(h);
   updateMinesBombsHazards(h);
   updateFX(h);
+  updateCoopAiAllies(h);
   pruneArr(projs,p=>{if(p.alive)return true;releaseProj(p);return false;});
   pruneArr(zombies,z=>{if(!z.dead&&!z.reached)return true;releaseZombie(z);return false;});
   WM.checkClear();
@@ -6686,11 +6771,18 @@ function detectCoopServer(){
           tag.title='Endereço de conexão ativo';
         }
       }else if(progress.status==='timeout'){
-        if(notice)notice.classList.remove('hidden');
-        if(noticeTitle)noticeTitle.textContent='SERVIDOR NÃO RESPONDEU';
-        if(noticeText)noticeText.textContent='Verifique sua internet ou clique em CONFIGURAR SERVIDOR para conferir o endereço.';
-        if(dot)dot.className='coop-status-dot offline';
-        if(lbl)lbl.textContent='MODO LOCAL OFFLINE';
+        if(notice)notice.classList.add('hidden');
+        if(dot)dot.className='coop-status-dot local';
+        if(lbl)lbl.textContent='MODO MULTIPLAYER ATIVO (LOCAL)';
+        if(tag){
+          tag.textContent='ENLACE: STANDALONE / P2P';
+          tag.title='Modo local direto ativo';
+        }
+        const fb=$('coopHostFeedback');
+        if(fb&&!COOP.guestOf&&(!fb.textContent||fb.classList.contains('bad'))){
+          fb.className='coop-feedback-text local-info';
+          fb.innerHTML='⚡ <b>Modo Standalone Ativo:</b> Sem servidor Node.js no momento. Partida liberada! Para conectar PCs diferentes pela internet/LAN, inicie o servidor (npm start) ou use CONFIGURAR SERVIDOR.';
+        }
       }
     });
   }
@@ -6919,7 +7011,11 @@ function voteCoopAction(voteType,speedVal,remote){
 
 function setCoopLobbyStatus(kind,text){
   const dot=$('coopServerDot'),lbl=$('coopServerStatusLabel');
-  if(dot)dot.className='coop-status-dot '+(kind==='ok'?'online':'offline');
+  if(dot){
+    if(kind==='ok')dot.className='coop-status-dot online';
+    else if(kind==='local')dot.className='coop-status-dot local';
+    else dot.className='coop-status-dot offline';
+  }
   if(lbl)lbl.textContent=text;
 }
 
@@ -6932,18 +7028,6 @@ async function ensureCoopHostRoom(force){
   if(COOP._creatingRoom)return;
   COOP._creatingRoom=true;
   try{
-    // Aguarda o servidor acordar (planos gratuitos na nuvem demoram ~30s no 1º acesso)
-    if(typeof window.QZ_NET_MP.wakeServer==='function'){
-      const w=await window.QZ_NET_MP.wakeServer(()=>{});
-      if(!w||!w.ok){
-        setCoopLobbyStatus('bad','SERVIDOR OFFLINE');
-        const em='Servidor não respondeu em '+window.QZ_NET_MP.getEffectiveServerUrl()+'. Inicie o servidor (npm start) ou ajuste o endereço em CONFIGURAR SERVIDOR.';
-        toast('⚠ '+em,'bad');
-        const fb0=$('coopHostFeedback');
-        if(fb0){fb0.className='coop-feedback-text bad';fb0.textContent='❌ '+em;}
-        return;
-      }
-    }
     const n=Math.max(2,Math.min(4,Number($('coopPlayersSelect')&&$('coopPlayersSelect').value)||COOP.maxPlayers||2));
     const div=($('coopDivisionSelect')&&$('coopDivisionSelect').value)||COOP.division||'sectors';
     const res=await window.QZ_NET_MP.createRoom({
@@ -6966,16 +7050,32 @@ async function ensureCoopHostRoom(force){
       COOP.mySlot=0;
       if($('coopRoomCodeDisplay'))$('coopRoomCodeDisplay').textContent=COOP.roomCode;
       if($('coopHudRoomCode'))$('coopHudRoomCode').textContent=COOP.roomCode;
-      setCoopLobbyStatus('ok','SALA ABERTA NO SERVIDOR');
+      if(res.localMode){
+        setCoopLobbyStatus('local','MODO MULTIPLAYER ATIVO (LOCAL)');
+        const fb=$('coopHostFeedback');
+        if(fb){
+          fb.className='coop-feedback-text local-info';
+          fb.innerHTML='⚡ <b>Modo Standalone / Multi-Aba Ativo:</b> Você pode iniciar a partida agora! Aliados podem entrar em outra aba/janela com o código <b>'+escHtml(COOP.roomCode)+'</b>, ou jogar com apoio do Esquadrão IA.';
+        }
+      }else{
+        setCoopLobbyStatus('ok','SALA ABERTA NO SERVIDOR');
+        const fb=$('coopHostFeedback');
+        if(fb){
+          fb.className='coop-feedback-text good';
+          fb.textContent='🟢 Sala sincronizada com sucesso no servidor de rede! Compartilhe o código com o 2º PC.';
+        }
+      }
       renderCoopModalSlots();
     }else{
-      COOP.roomId=null;
-      COOP.hostRegisteredCode=null;
-      const msg=(res&&res.error)?res.error:'Servidor indisponível.';
-      setCoopLobbyStatus('bad','SERVIDOR OFFLINE');
-      toast('⚠ '+msg,'bad');
+      COOP.roomId='local_'+COOP.roomCode;
+      COOP.hostRegisteredCode=COOP.roomCode;
+      setCoopLobbyStatus('local','MODO MULTIPLAYER ATIVO (LOCAL)');
       const fb=$('coopHostFeedback');
-      if(fb){fb.className='coop-feedback-text bad';fb.textContent='❌ '+msg;}
+      if(fb){
+        fb.className='coop-feedback-text local-info';
+        fb.innerHTML='⚡ <b>Modo Standalone Ativo:</b> Partida liberada! Para conectar PCs pela rede, inicie o servidor ou use CONFIGURAR SERVIDOR.';
+      }
+      renderCoopModalSlots();
     }
   }finally{
     COOP._creatingRoom=false;
@@ -7080,13 +7180,11 @@ async function joinCoopRoom(){
 }
 
 async function launchCoopHostMatch(){
-  // A partida só pode começar se a sala existir no servidor (senão o 2º PC nunca entra).
   if(!COOP.roomId||COOP.hostRegisteredCode!==COOP.roomCode){
     await ensureCoopHostRoom(true);
     if(!COOP.roomId){
-      toast('❌ Não foi possível abrir a sala no servidor. Verifique a conexão em CONFIGURAR SERVIDOR.','bad');
-      Snd.play('err');
-      return;
+      COOP.roomId='local_'+COOP.roomCode;
+      COOP.hostRegisteredCode=COOP.roomCode;
     }
   }
   COOP.guestOf=null;
@@ -7101,6 +7199,18 @@ async function launchCoopHostMatch(){
   COOP.isMultiplayer=true;
   COOP.isHost=true;
   COOP.mySlot=0;
+
+  // Se algum slot de aliado não estiver ocupado por um humano conectado, ativar Comandante IA Tático
+  for(let i=1;i<n;i++){
+    const p=COOP.players[i];
+    if(p&&!p.connected){
+      p.isAi=true;
+      p.connected=true;
+      p.ready=true;
+      p.name=i===1?'Tenente Bravo [IA]':(i===2?'Sargento Charlie [IA]':'Cabo Delta [IA]');
+    }
+  }
+
   const seed=((Date.now()^(Math.random()*0x7fffffff))&0x7fffffff)||20260101;
   COOP.seed=seed;
   selectMap(chosenMap);
@@ -7444,6 +7554,30 @@ function bindEvents(){
       toast('Servidor configurado: Localhost!','good');
       Snd.play('ui');
     }
+  });
+  if($('btnPresetStandalone'))$('btnPresetStandalone').addEventListener('click',()=>{
+    const input=$('coopServerInput');
+    if(input)input.value='';
+    if(window.QZ_NET_MP&&typeof window.QZ_NET_MP.setServerUrl==='function'){
+      window.QZ_NET_MP.setServerUrl('');
+    }
+    const notice=$('coopColdStartNotice');
+    if(notice)notice.classList.add('hidden');
+    setCoopLobbyStatus('local','MODO MULTIPLAYER ATIVO (LOCAL)');
+    const tag=$('coopServerAddressTag');
+    if(tag){tag.textContent='ENLACE: STANDALONE / P2P';tag.title='Modo local direto ativo';}
+    const fb=$('coopHostFeedback');
+    if(fb){
+      fb.className='coop-feedback-text local-info';
+      fb.innerHTML='⚡ <b>Modo Standalone Ativo:</b> Sem servidor Node.js. Você pode iniciar a partida normalmente ou abrir outra aba com o código <b>'+escHtml(COOP.roomCode)+'</b>.';
+    }
+    toast('⚡ Modo Standalone ativado! Partida liberada.','good');
+    Snd.play('ui');
+  });
+  if($('btnTestServerNow'))$('btnTestServerNow').addEventListener('click',()=>{
+    detectCoopServer();
+    toast('Testando conexão com o servidor...','good');
+    Snd.play('ui');
   });
   if($('btnCoopToggleReadyHost'))$('btnCoopToggleReadyHost').addEventListener('click',()=>{
     toggleCoopReady(true);

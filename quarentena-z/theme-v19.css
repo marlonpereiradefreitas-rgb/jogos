@@ -2157,6 +2157,15 @@ body:not(.menu-mode) #rankScreen {
   box-shadow: 0 0 8px #10b981;
   animation: coopPulseDot 1.8s infinite ease-in-out;
 }
+.coop-status-dot.local {
+  background: #38bdf8;
+  box-shadow: 0 0 8px #38bdf8;
+  animation: coopPulseDot 2.2s infinite ease-in-out;
+}
+.coop-status-dot.offline {
+  background: #64748b;
+  box-shadow: none;
+}
 @keyframes coopPulseDot {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.55; transform: scale(1.18); }
@@ -2505,6 +2514,16 @@ body:not(.menu-mode) #rankScreen {
 }
 .coop-feedback-text.good { color: #34d399; font-weight: 700; }
 .coop-feedback-text.bad { color: #f87171; font-weight: 700; }
+.coop-feedback-text.local-info {
+  background: rgba(14, 165, 233, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #bae6fd;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 11px;
+  line-height: 1.4;
+  margin: 6px 0 10px;
+}
 .coop-joined-card {
   background: linear-gradient(135deg, rgba(6, 78, 59, 0.65), rgba(15, 23, 42, 0.95));
   border: 1px solid #34d399;

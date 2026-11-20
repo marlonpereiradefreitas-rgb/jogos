@@ -270,6 +270,72 @@
     }
   }
 
+  let bc = null;
+  let isLocalVirtualMode = false;
+
+  function closeBroadcastChannel() {
+    if (bc) {
+      try { bc.close(); } catch (_) {}
+      bc = null;
+    }
+  }
+
+  function setupBroadcastChannel(roomCode) {
+    if (typeof BroadcastChannel === 'undefined') return;
+    closeBroadcastChannel();
+    const cleanCode = String(roomCode || '').replace(/[^2-9A-Z]/g, '');
+    if (!cleanCode) return;
+    try {
+      bc = new BroadcastChannel('qz_coop_' + cleanCode);
+      bc.onmessage = (ev) => {
+        try {
+          const msg = ev.data;
+          if (!msg || typeof msg !== 'object') return;
+
+          // Se eu for o Host e outro cliente pedir para entrar via BroadcastChannel:
+          if (msg.type === 'p2p_join_req' && activeRoom && (activeRoom.mySlot === 0 || !activeRoom.mySlot)) {
+            const currentPlayers = Array.isArray(activeRoom.players) ? activeRoom.players : [];
+            let guestSlot = currentPlayers.findIndex((p, idx) => idx > 0 && !p.connected);
+            if (guestSlot === -1) guestSlot = currentPlayers.length;
+            if (guestSlot < (activeRoom.maxPlayers || 4)) {
+              const guestPlayer = {
+                slot: guestSlot,
+                name: msg.playerName || ('Aliado P' + (guestSlot + 1)),
+                ready: false,
+                connected: true
+              };
+              currentPlayers[guestSlot] = guestPlayer;
+              activeRoom.players = currentPlayers;
+              // Responde com o estado completo da sala e o slot atribuído ao convidado
+              bc.postMessage({
+                type: 'p2p_room_state',
+                room: Object.assign({}, activeRoom),
+                assignedSlot: guestSlot
+              });
+              emit('player_joined', { slot: guestSlot, player: guestPlayer, room: activeRoom });
+              emit('room_state', { room: activeRoom });
+            }
+            return;
+          }
+
+          // Se a mensagem for sincronização de sala:
+          if ((msg.type === 'room_state' || msg.type === 'room_update' || msg.type === 'player_joined' ||
+               msg.type === 'player_ready' || msg.type === 'game_start') && msg.room && activeRoom) {
+            const keepSlot = activeRoom.mySlot;
+            activeRoom = Object.assign(activeRoom, msg.room);
+            activeRoom.mySlot = keepSlot;
+          }
+
+          // Emite o evento localmente para o frontend consumir
+          if (msg.type) {
+            emit(msg.type, msg);
+          }
+          emit('message', msg);
+        } catch (_) {}
+      };
+    } catch (_) {}
+  }
+
   function disconnectWebSocket() {
     wsWanted = false;
     pendingQueue = [];
@@ -279,30 +345,37 @@
     ws = null;
     wsConnected = false;
     if (sock) { try { sock.close(); } catch (_) {} }
+    closeBroadcastChannel();
   }
 
   function leaveRoom() {
     disconnectWebSocket();
+    closeBroadcastChannel();
     activeRoom = null;
   }
 
   function sendWsMessage(payload) {
-    if (typeof WebSocket === 'undefined') return false;
-    if (ws && wsConnected && ws.readyState === WebSocket.OPEN) {
+    let sent = false;
+    if (typeof WebSocket !== 'undefined' && ws && wsConnected && ws.readyState === WebSocket.OPEN) {
       try {
         ws.send(JSON.stringify(payload));
-        return true;
-      } catch (_) {
-        return false;
-      }
+        sent = true;
+      } catch (_) {}
     }
-    // Ainda conectando/reconectando: guarda (exceto pings) para enviar assim que abrir
-    if (wsWanted && payload && payload.type !== 'ping') {
+    // Sincroniza também via BroadcastChannel para abas no mesmo navegador
+    if (bc && payload) {
+      try {
+        bc.postMessage(payload);
+        sent = true;
+      } catch (_) {}
+    }
+    // Ainda conectando/reconectando no WebSocket: guarda (exceto pings) para enviar assim que abrir
+    if (!sent && wsWanted && payload && payload.type !== 'ping') {
       if (pendingQueue.length >= 60) pendingQueue.shift();
       pendingQueue.push(payload);
       return true;
     }
-    return false;
+    return sent;
   }
 
   // --- API Multiplayer: Salas, Pareamento (Matchmaking), Sincronização e Placares ---
@@ -318,26 +391,58 @@
 
   async function createRoom(opts) {
     const o = opts || {};
-    const res = await apiReq('/api/mp/rooms', 'POST', {
-      name: o.name || 'Esquadrão Alfa',
-      roomCode: o.roomCode,
+    let res = null;
+    try {
+      res = await apiReq('/api/mp/rooms', 'POST', {
+        name: o.name || 'Esquadrão Alfa',
+        roomCode: o.roomCode,
+        mode: o.mode || 'coop',
+        division: o.division || 'sectors',
+        map: o.map || 'four',
+        diff: o.diff || 'normal',
+        seed: o.seed,
+        maxPlayers: o.maxPlayers || 2,
+        playerName: o.playerName || 'Comandante',
+        isPublic: o.isPublic !== false
+      });
+    } catch (_) {}
+
+    if (res && res.ok && res.room) {
+      isLocalVirtualMode = false;
+      activeRoom = res.room;
+      activeRoom.mySlot = 0;
+      myPlayerName = o.playerName || myPlayerName;
+      setupBroadcastChannel(res.room.roomCode);
+      attachToRoomSocket();
+      emit('room_joined', activeRoom);
+      return res;
+    }
+
+    // Se o servidor backend estiver offline, CRIA SALA LOCAL IMEDIATAMENTE (NUNCA TRAVA O JOGADOR!)
+    isLocalVirtualMode = true;
+    const rCode = o.roomCode || ('QZ-' + Math.random().toString(36).slice(2, 8).toUpperCase());
+    const n = Math.max(2, Math.min(4, Number(o.maxPlayers) || 2));
+    const localRoom = {
+      roomId: 'local_' + rCode,
+      roomCode: rCode,
+      name: o.name || ('Esquadrão ' + rCode),
       mode: o.mode || 'coop',
       division: o.division || 'sectors',
       map: o.map || 'four',
       diff: o.diff || 'normal',
-      seed: o.seed,
-      maxPlayers: o.maxPlayers || 2,
-      playerName: o.playerName || 'Comandante',
-      isPublic: o.isPublic !== false
-    });
-    if (res && res.ok && res.room) {
-      activeRoom = res.room;
-      activeRoom.mySlot = 0;
-      myPlayerName = o.playerName || myPlayerName;
-      attachToRoomSocket();
-      emit('room_joined', activeRoom);
-    }
-    return res;
+      seed: o.seed || ((Date.now() ^ 0x7fffffff) & 0x7fffffff),
+      maxPlayers: n,
+      status: 'waiting',
+      players: [{ slot: 0, name: o.playerName || 'Comandante', ready: true, connected: true }],
+      isLocalMode: true,
+      createdAt: Date.now()
+    };
+    activeRoom = localRoom;
+    activeRoom.mySlot = 0;
+    myPlayerName = o.playerName || myPlayerName;
+    setupBroadcastChannel(rCode);
+    emit('room_joined', activeRoom);
+    return { ok: true, room: activeRoom, localMode: true };
   }
 
   // Conecta (ou reaproveita) o WebSocket e entra na sala ativa.
@@ -351,19 +456,64 @@
 
   async function joinRoom(opts) {
     const o = opts || {};
-    const res = await apiReq('/api/mp/rooms/join', 'POST', {
-      roomId: o.roomId,
-      roomCode: o.roomCode,
-      playerName: o.playerName || 'Comandante'
-    });
+    let res = null;
+    try {
+      res = await apiReq('/api/mp/rooms/join', 'POST', {
+        roomId: o.roomId,
+        roomCode: o.roomCode,
+        playerName: o.playerName || 'Comandante'
+      });
+    } catch (_) {}
+
     if (res && res.ok && res.room) {
+      isLocalVirtualMode = false;
       activeRoom = res.room;
       activeRoom.mySlot = res.slot !== undefined ? res.slot : (activeRoom.players ? activeRoom.players.length - 1 : 1);
       myPlayerName = o.playerName || myPlayerName;
+      setupBroadcastChannel(res.room.roomCode);
       attachToRoomSocket();
       emit('room_joined', activeRoom);
+      return res;
     }
-    return res;
+
+    // Se o servidor backend estiver offline, tenta conectar diretamente com a aba Host via BroadcastChannel
+    if (typeof BroadcastChannel !== 'undefined' && (o.roomCode || o.roomId)) {
+      const code = String(o.roomCode || o.roomId);
+      setupBroadcastChannel(code);
+      if (bc) {
+        return new Promise((resolve) => {
+          let resolved = false;
+          const timeout = setTimeout(() => {
+            if (resolved) return;
+            resolved = true;
+            // Se não encontrou Host na rede ou no navegador:
+            resolve({
+              ok: false,
+              error: 'Sala não encontrada. Verifique se o Host está com a sala aberta (código ' + code + ') ou se o servidor está ativo.'
+            });
+          }, 900);
+
+          const tmpHandler = (ev) => {
+            const msg = ev.data;
+            if (msg && msg.type === 'p2p_room_state' && msg.room) {
+              if (resolved) return;
+              resolved = true;
+              clearTimeout(timeout);
+              isLocalVirtualMode = true;
+              activeRoom = msg.room;
+              activeRoom.mySlot = msg.assignedSlot !== undefined ? msg.assignedSlot : 1;
+              myPlayerName = o.playerName || myPlayerName;
+              emit('room_joined', activeRoom);
+              resolve({ ok: true, room: activeRoom, slot: activeRoom.mySlot, localMode: true });
+            }
+          };
+          bc.addEventListener('message', tmpHandler);
+          bc.postMessage({ type: 'p2p_join_req', playerName: o.playerName || 'Comandante' });
+        });
+      }
+    }
+
+    return res || { ok: false, error: 'Servidor indisponível e nenhuma aba Host encontrada com o código ' + (o.roomCode || '') };
   }
 
   async function updateRoom(opts) {
@@ -372,6 +522,13 @@
       roomId: activeRoom ? activeRoom.roomId : undefined,
       roomCode: activeRoom ? activeRoom.roomCode : undefined
     }, o);
+    if (activeRoom) {
+      if (o.map) activeRoom.map = o.map;
+      if (o.diff) activeRoom.diff = o.diff;
+      if (o.division) activeRoom.division = o.division;
+      if (o.maxPlayers) activeRoom.maxPlayers = o.maxPlayers;
+    }
+    sendWsMessage({ type: 'room_update', room: activeRoom });
     return await apiReq('/api/mp/rooms/update', 'POST', payload);
   }
 
@@ -381,13 +538,10 @@
       roomId: activeRoom ? activeRoom.roomId : undefined,
       roomCode: activeRoom ? activeRoom.roomCode : undefined
     }, o);
-    // Caminho principal: REST (o servidor dispara 'game_start' para todos na sala, uma única vez).
+    // Dispara via WebSocket + BroadcastChannel para todas as abas
+    sendWsMessage(Object.assign({ type: 'game_start' }, payload));
     const res = await apiReq('/api/mp/rooms/start', 'POST', payload);
-    if (!res || !res.ok) {
-      // Fallback: pede o início pelo WebSocket (servidor deduplica início repetido).
-      sendWsMessage(Object.assign({ type: 'game_start' }, payload));
-    }
-    return res;
+    return res && res.ok ? res : { ok: true, room: activeRoom };
   }
 
   function broadcastCommand(cmd) {
