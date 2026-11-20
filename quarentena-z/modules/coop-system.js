@@ -59,21 +59,84 @@
   }
 
   /**
-   * Verifica se uma coordenada (x, y) pertence ao setor do jogador no modo Setores Divididos
+   * Retorna os limites retangulares {x, y, width, height, pct, label} da área atribuída ao jogador.
+   * Varia estritamente de acordo com a quantidade de players (2P = 50%, 3P = 33/34%, 4P = 25%).
+   */
+  function getSectorBounds(slot, mapW, mapH, playerCount, divisionMode) {
+    const w = mapW || 960;
+    const h = mapH || 640;
+    const n = Math.max(2, Math.min(4, playerCount || 2));
+    const s = Math.max(0, Math.min(n - 1, slot || 0));
+
+    if (divisionMode === 'free') {
+      return { x: 0, y: 0, width: w, height: h, pct: 100, label: 'Livre' };
+    }
+
+    if (divisionMode === 'horizontal') {
+      const stepH = h / n;
+      const pct = Math.round(100 / n);
+      return { x: 0, y: Math.round(s * stepH), width: w, height: Math.round(stepH), pct, label: `Faixa ${s + 1}` };
+    }
+
+    if (divisionMode === 'vertical') {
+      const stepW = w / n;
+      const pct = Math.round(100 / n);
+      return { x: Math.round(s * stepW), y: 0, width: Math.round(stepW), height: h, pct, label: `Coluna ${s + 1}` };
+    }
+
+    // Setores Adaptativos Padrão: 2P = 2 metades (50%), 3P = 3 faixas verticais (33%), 4P = 4 quadrantes (25%)
+    if (n === 2) {
+      const halfW = Math.round(w * 0.5);
+      return s === 0
+        ? { x: 0, y: 0, width: halfW, height: h, pct: 50, label: 'Oeste (50%)' }
+        : { x: halfW, y: 0, width: w - halfW, height: h, pct: 50, label: 'Leste (50%)' };
+    }
+
+    if (n === 3) {
+      const colW = Math.round(w / 3);
+      if (s === 0) return { x: 0, y: 0, width: colW, height: h, pct: 33, label: 'Flanco Oeste (33%)' };
+      if (s === 1) return { x: colW, y: 0, width: colW, height: h, pct: 34, label: 'Centro (34%)' };
+      return { x: colW * 2, y: 0, width: w - (colW * 2), height: h, pct: 33, label: 'Flanco Leste (33%)' };
+    }
+
+    // 4 jogadores: 4 quadrantes exatos (25% cada)
+    const midX = Math.round(w * 0.5);
+    const midY = Math.round(h * 0.5);
+    if (s === 0) return { x: 0, y: 0, width: midX, height: midY, pct: 25, label: 'Noroeste (25%)' };
+    if (s === 1) return { x: midX, y: 0, width: w - midX, height: midY, pct: 25, label: 'Nordeste (25%)' };
+    if (s === 2) return { x: 0, y: midY, width: midX, height: h - midY, pct: 25, label: 'Sudoeste (25%)' };
+    return { x: midX, y: midY, width: w - midX, height: h - midY, pct: 25, label: 'Sudeste (25%)' };
+  }
+
+  /**
+   * Verifica a qual jogador pertence a coordenada (x, y) de acordo com o modo e contagem de players
    */
   function getPointSectorOwner(x, y, mapW, mapH, playerCount, divisionMode) {
     if (divisionMode === 'free' || !playerCount || playerCount <= 1) return 0;
     const w = mapW || 960;
     const h = mapH || 640;
-    if (playerCount === 2) {
+    const n = Math.max(2, Math.min(4, playerCount || 2));
+
+    if (divisionMode === 'horizontal') {
+      const idx = Math.floor((y / h) * n);
+      return Math.max(0, Math.min(n - 1, idx));
+    }
+
+    if (divisionMode === 'vertical') {
+      const idx = Math.floor((x / w) * n);
+      return Math.max(0, Math.min(n - 1, idx));
+    }
+
+    // Setores adaptativos padrão
+    if (n === 2) {
       return x < w * 0.5 ? 0 : 1;
     }
-    if (playerCount === 3) {
+    if (n === 3) {
       if (x < w / 3) return 0;
       if (x < (w * 2) / 3) return 1;
       return 2;
     }
-    // 4 jogadores: quadrantes (0: sup-esq, 1: sup-dir, 2: inf-esq, 3: inf-dir)
+    // 4 jogadores: quadrantes
     const right = x >= w * 0.5 ? 1 : 0;
     const bottom = y >= h * 0.5 ? 2 : 0;
     return bottom + right;
@@ -118,61 +181,111 @@
 
   function getSectorName(slot, playerCount, divisionMode) {
     if (divisionMode === 'free' || !playerCount || playerCount <= 1) {
-      return 'Zona Livre (Toda a Extensão)';
+      return 'Zona Livre (100% Compartilhado)';
     }
     const p = (slot | 0) + 1;
-    if (playerCount === 2) {
-      return slot === 0 ? `Setor Alfa · Oeste (P1)` : `Setor Bravo · Leste (P2)`;
+    const n = Math.max(2, Math.min(4, playerCount || 2));
+    if (divisionMode === 'horizontal') {
+      const pct = Math.round(100 / n);
+      const hNames = [
+        ['Norte · Vanguarda', 'Sul · Retaguarda'],
+        ['Zona Norte', 'Zona Central', 'Zona Sul'],
+        ['Faixa 1 (Norte)', 'Faixa 2 (Centro-Norte)', 'Faixa 3 (Centro-Sul)', 'Faixa 4 (Sul)']
+      ];
+      const desc = (hNames[n - 2] && hNames[n - 2][slot]) || `Faixa ${p}`;
+      return `${desc} (${pct}% do mapa)`;
     }
-    if (playerCount === 3) {
-      const names = ['Flanco Oeste (P1)', 'Setor Central (P2)', 'Flanco Leste (P3)'];
-      return names[slot] || `Setor P${p}`;
+    if (divisionMode === 'vertical') {
+      const pct = Math.round(100 / n);
+      const vNames = [
+        ['Setor Oeste', 'Setor Leste'],
+        ['Flanco Oeste', 'Setor Central', 'Flanco Leste'],
+        ['Coluna 1 (Oeste)', 'Coluna 2 (Centro-Oeste)', 'Coluna 3 (Centro-Leste)', 'Coluna 4 (Leste)']
+      ];
+      const desc = (vNames[n - 2] && vNames[n - 2][slot]) || `Coluna ${p}`;
+      return `${desc} (${pct}% do mapa)`;
     }
-    const qNames = ['Quadrante Noroeste (P1)', 'Quadrante Nordeste (P2)', 'Quadrante Sudoeste (P3)', 'Quadrante Sudeste (P4)'];
-    return qNames[slot] || `Quadrante P${p}`;
+    // sectors (adaptativo padrão)
+    if (n === 2) {
+      return slot === 0 ? 'Setor Alfa · Oeste (50% do mapa)' : 'Setor Bravo · Leste (50% do mapa)';
+    }
+    if (n === 3) {
+      const names = ['Flanco Oeste (33% do mapa)', 'Setor Central (34% do mapa)', 'Flanco Leste (33% do mapa)'];
+      return names[slot] || `Setor P${p} (33% do mapa)`;
+    }
+    // 4 jogadores: quadrantes
+    const qNames = [
+      'Quadrante Noroeste (25% do mapa)',
+      'Quadrante Nordeste (25% do mapa)',
+      'Quadrante Sudoeste (25% do mapa)',
+      'Quadrante Sudeste (25% do mapa)'
+    ];
+    return qNames[slot] || `Quadrante P${p} (25% do mapa)`;
   }
 
   /**
    * Renderiza os limites táticos de setores no canvas durante a batalha
    */
-  function drawSectorLines(ctx, w, h, playerCount, divisionMode, localSlot) {
+  function drawSectorLines(ctx, w, h, playerCount, divisionMode, localSlot, isPlacing) {
     if (divisionMode === 'free' || !playerCount || playerCount <= 1) return;
+    const n = Math.max(2, Math.min(4, playerCount || 2));
     ctx.save();
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([8, 6]);
 
-    if (playerCount === 2) {
-      const midX = w * 0.5;
-      // Linha vertical divisória
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
-      ctx.beginPath();
-      ctx.moveTo(midX, 0);
-      ctx.lineTo(midX, h);
-      ctx.stroke();
+    for (let slot = 0; slot < n; slot++) {
+      const b = getSectorBounds(slot, w, h, n, divisionMode);
+      const col = SECTOR_COLORS[slot] || '#38bdf8';
+      const isMine = slot === (localSlot || 0);
 
-      // Indicadores de setor nas bordas superiores
+      // Se o jogador estiver posicionando uma torre, destaca suavemente o setor dele
+      if (isPlacing && isMine) {
+        ctx.fillStyle = col === '#38bdf8' ? 'rgba(56, 189, 248, 0.08)' : (col + '14');
+        ctx.fillRect(b.x, b.y, b.width, b.height);
+      }
+
+      // Linhas de perímetro e bordas
+      ctx.lineWidth = isMine ? 2 : 1.2;
+      ctx.strokeStyle = isMine ? col : 'rgba(148, 163, 184, 0.35)';
+      ctx.setLineDash(isMine ? [8, 6] : [6, 8]);
+      ctx.strokeRect(b.x + 0.5, b.y + 0.5, b.width - 1, b.height - 1);
+
+      // Cantos táticos reforçados
       ctx.setLineDash([]);
-      ctx.font = 'bold 11px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillStyle = localSlot === 0 ? 'rgba(56, 189, 248, 0.75)' : 'rgba(148, 163, 184, 0.45)';
-      ctx.fillText('[ SETOR P1 · VOCÊ ]', midX * 0.5, 20);
-      ctx.fillStyle = localSlot === 1 ? 'rgba(74, 222, 128, 0.75)' : 'rgba(148, 163, 184, 0.45)';
-      ctx.fillText('[ SETOR P2 · ALIADO ]', midX * 1.5, 20);
-    } else if (playerCount === 3) {
-      const x1 = w / 3, x2 = (w * 2) / 3;
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = col;
+      const cornerSize = 14;
       ctx.beginPath();
-      ctx.moveTo(x1, 0); ctx.lineTo(x1, h);
-      ctx.moveTo(x2, 0); ctx.lineTo(x2, h);
+      ctx.moveTo(b.x + 2, b.y + 2 + cornerSize);
+      ctx.lineTo(b.x + 2, b.y + 2);
+      ctx.lineTo(b.x + 2 + cornerSize, b.y + 2);
       ctx.stroke();
-    } else if (playerCount === 4) {
-      const midX = w * 0.5, midY = h * 0.5;
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+
       ctx.beginPath();
-      ctx.moveTo(midX, 0); ctx.lineTo(midX, h);
-      ctx.moveTo(0, midY); ctx.lineTo(w, midY);
+      ctx.moveTo(b.x + b.width - 2 - cornerSize, b.y + b.height - 2);
+      ctx.lineTo(b.x + b.width - 2, b.y + b.height - 2);
+      ctx.lineTo(b.x + b.width - 2, b.y + b.height - 2 - cornerSize);
       ctx.stroke();
+
+      // Plaqueta tática com o nome do setor e porcentagem
+      const tagW = Math.min(180, Math.max(120, b.width - 20));
+      const tagH = 18;
+      const tagX = b.x + 12;
+      const tagY = b.y + 10;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+      ctx.fillRect(tagX, tagY, tagW, tagH);
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(tagX, tagY, tagW, tagH);
+
+      ctx.font = 'bold 10px monospace';
+      ctx.fillStyle = col;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      const labelText = isMine
+        ? `[ SEU SETOR · P${slot + 1} (${b.pct}%) ]`
+        : `[ P${slot + 1} ALIADO (${b.pct}%) ]`;
+      ctx.fillText(labelText, tagX + 6, tagY + tagH / 2);
     }
+
     ctx.restore();
   }
 
@@ -183,6 +296,7 @@
     formatRoomCode,
     getSectorColor,
     getSectorName,
+    getSectorBounds,
     drawSectorLines,
     calculatePercentageDonation,
     getPointSectorOwner,

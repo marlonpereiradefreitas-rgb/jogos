@@ -272,6 +272,186 @@
 
   let bc = null;
   let isLocalVirtualMode = false;
+  let webrtcPeer = null;
+  let webrtcConns = [];
+
+  function closeWebRTC() {
+    if (webrtcConns && webrtcConns.length) {
+      for (const c of webrtcConns) {
+        try { c.close(); } catch (_) {}
+      }
+      webrtcConns = [];
+    }
+    if (webrtcPeer) {
+      try { webrtcPeer.destroy(); } catch (_) {}
+      webrtcPeer = null;
+    }
+  }
+
+  function getCleanRoomPeerId(code) {
+    const clean = String(code || '').replace(/[^2-9a-zA-Z]/g, '').toLowerCase();
+    return 'qz-coop-' + clean;
+  }
+
+  function setupHostWebRTC(roomCode, playerName) {
+    if (typeof Peer === 'undefined') return;
+    closeWebRTC();
+    const peerId = getCleanRoomPeerId(roomCode);
+    try {
+      webrtcPeer = new Peer(peerId, {
+        debug: 0,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+          ]
+        }
+      });
+
+      webrtcPeer.on('connection', (conn) => {
+        if (!webrtcConns.includes(conn)) webrtcConns.push(conn);
+
+        conn.on('data', (data) => {
+          try {
+            const msg = (typeof data === 'string') ? JSON.parse(data) : data;
+            if (!msg || typeof msg !== 'object') return;
+
+            // Se for requisição de entrada de jogador pela internet (outra casa / Wi-Fi)
+            if (msg.type === 'p2p_join_req' && activeRoom) {
+              const currentPlayers = Array.isArray(activeRoom.players) ? activeRoom.players : [];
+              let guestSlot = currentPlayers.findIndex((p, idx) => idx > 0 && (!p.connected || p.isAi));
+              if (guestSlot === -1) guestSlot = currentPlayers.length;
+              if (guestSlot < (activeRoom.maxPlayers || 4)) {
+                const guestPlayer = {
+                  slot: guestSlot,
+                  name: msg.playerName || ('Comandante P' + (guestSlot + 1)),
+                  ready: false,
+                  connected: true
+                };
+                currentPlayers[guestSlot] = guestPlayer;
+                activeRoom.players = currentPlayers;
+                conn.send({
+                  type: 'p2p_room_state',
+                  room: Object.assign({}, activeRoom),
+                  assignedSlot: guestSlot
+                });
+                emit('player_joined', { slot: guestSlot, player: guestPlayer, room: activeRoom });
+                emit('room_state', { room: activeRoom });
+
+                // Notifica outros membros do esquadrão
+                for (const other of webrtcConns) {
+                  if (other !== conn && other.open) {
+                    try { other.send({ type: 'room_state', room: activeRoom }); } catch (_) {}
+                  }
+                }
+              }
+              return;
+            }
+
+            // Repassa mensagem para outros peers e emite localmente
+            for (const other of webrtcConns) {
+              if (other !== conn && other.open) {
+                try { other.send(msg); } catch (_) {}
+              }
+            }
+            if (msg.type) emit(msg.type, msg);
+            emit('message', msg);
+          } catch (_) {}
+        });
+
+        conn.on('close', () => {
+          webrtcConns = webrtcConns.filter(c => c !== conn);
+        });
+      });
+
+      webrtcPeer.on('error', (err) => {
+        if (err && err.type === 'unavailable-id') {
+          console.warn('[WebRTC P2P] Código de sala em uso recente no broker.');
+        }
+      });
+    } catch (e) {
+      console.warn('[WebRTC P2P] Erro ao instanciar Host Peer:', e);
+    }
+  }
+
+  function connectGuestWebRTC(roomCode, playerName) {
+    if (typeof Peer === 'undefined') return Promise.resolve(null);
+    return new Promise((resolve) => {
+      closeWebRTC();
+      const targetPeerId = getCleanRoomPeerId(roomCode);
+      let resolved = false;
+
+      try {
+        webrtcPeer = new Peer(null, {
+          debug: 0,
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' },
+              { urls: 'stun:global.stun.twilio.com:3478' }
+            ]
+          }
+        });
+
+        const timeout = setTimeout(() => {
+          if (!resolved) {
+            resolved = true;
+            resolve(null);
+          }
+        }, 3500);
+
+        webrtcPeer.on('open', () => {
+          const conn = webrtcPeer.connect(targetPeerId, { reliable: true });
+          webrtcConns.push(conn);
+
+          conn.on('open', () => {
+            conn.send({
+              type: 'p2p_join_req',
+              playerName: playerName || 'Comandante Aliado'
+            });
+          });
+
+          conn.on('data', (data) => {
+            try {
+              const msg = (typeof data === 'string') ? JSON.parse(data) : data;
+              if (msg && msg.type === 'p2p_room_state' && msg.room) {
+                if (!resolved) {
+                  resolved = true;
+                  clearTimeout(timeout);
+                  isLocalVirtualMode = true;
+                  activeRoom = msg.room;
+                  activeRoom.mySlot = msg.assignedSlot !== undefined ? msg.assignedSlot : 1;
+                  myPlayerName = playerName || myPlayerName;
+                  emit('room_joined', activeRoom);
+                  resolve({ ok: true, room: activeRoom, slot: activeRoom.mySlot, localMode: true });
+                }
+              }
+              if (msg.type) emit(msg.type, msg);
+              emit('message', msg);
+            } catch (_) {}
+          });
+
+          conn.on('close', () => {
+            webrtcConns = webrtcConns.filter(c => c !== conn);
+          });
+        });
+
+        webrtcPeer.on('error', () => {
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timeout);
+            resolve(null);
+          }
+        });
+      } catch (_) {
+        if (!resolved) {
+          resolved = true;
+          resolve(null);
+        }
+      }
+    });
+  }
 
   function closeBroadcastChannel() {
     if (bc) {
@@ -346,11 +526,13 @@
     wsConnected = false;
     if (sock) { try { sock.close(); } catch (_) {} }
     closeBroadcastChannel();
+    closeWebRTC();
   }
 
   function leaveRoom() {
     disconnectWebSocket();
     closeBroadcastChannel();
+    closeWebRTC();
     activeRoom = null;
   }
 
@@ -361,6 +543,17 @@
         ws.send(JSON.stringify(payload));
         sent = true;
       } catch (_) {}
+    }
+    // Sincroniza também via WebRTC DataChannel (para computadores e internets diferentes)
+    if (webrtcConns && webrtcConns.length > 0) {
+      for (const c of webrtcConns) {
+        if (c && c.open) {
+          try {
+            c.send(payload);
+            sent = true;
+          } catch (_) {}
+        }
+      }
     }
     // Sincroniza também via BroadcastChannel para abas no mesmo navegador
     if (bc && payload) {
@@ -413,6 +606,7 @@
       activeRoom.mySlot = 0;
       myPlayerName = o.playerName || myPlayerName;
       setupBroadcastChannel(res.room.roomCode);
+      setupHostWebRTC(res.room.roomCode, o.playerName);
       attachToRoomSocket();
       emit('room_joined', activeRoom);
       return res;
@@ -441,6 +635,7 @@
     activeRoom.mySlot = 0;
     myPlayerName = o.playerName || myPlayerName;
     setupBroadcastChannel(rCode);
+    setupHostWebRTC(rCode, o.playerName);
     emit('room_joined', activeRoom);
     return { ok: true, room: activeRoom, localMode: true };
   }
@@ -476,29 +671,25 @@
       return res;
     }
 
-    // Se o servidor backend estiver offline, tenta conectar diretamente com a aba Host via BroadcastChannel
-    if (typeof BroadcastChannel !== 'undefined' && (o.roomCode || o.roomId)) {
-      const code = String(o.roomCode || o.roomId);
+    // Se o servidor backend estiver offline, tenta conectar via WebRTC (P2P entre diferentes internets/casas)
+    // e via BroadcastChannel (abas no mesmo computador)
+    const code = String(o.roomCode || o.roomId || '').trim();
+    if (code) {
       setupBroadcastChannel(code);
-      if (bc) {
-        return new Promise((resolve) => {
-          let resolved = false;
-          const timeout = setTimeout(() => {
-            if (resolved) return;
-            resolved = true;
-            // Se não encontrou Host na rede ou no navegador:
-            resolve({
-              ok: false,
-              error: 'Sala não encontrada. Verifique se o Host está com a sala aberta (código ' + code + ') ou se o servidor está ativo.'
-            });
-          }, 900);
 
+      // 1. Tenta enlace direto WebRTC pela internet
+      const p2pPromise = connectGuestWebRTC(code, o.playerName);
+
+      // 2. Tenta enlace BroadcastChannel no mesmo navegador
+      let bcPromise = Promise.resolve(null);
+      if (typeof BroadcastChannel !== 'undefined' && bc) {
+        bcPromise = new Promise((resolve) => {
+          let resolved = false;
           const tmpHandler = (ev) => {
             const msg = ev.data;
             if (msg && msg.type === 'p2p_room_state' && msg.room) {
               if (resolved) return;
               resolved = true;
-              clearTimeout(timeout);
               isLocalVirtualMode = true;
               activeRoom = msg.room;
               activeRoom.mySlot = msg.assignedSlot !== undefined ? msg.assignedSlot : 1;
@@ -509,11 +700,23 @@
           };
           bc.addEventListener('message', tmpHandler);
           bc.postMessage({ type: 'p2p_join_req', playerName: o.playerName || 'Comandante' });
+          setTimeout(() => { if (!resolved) { resolved = true; resolve(null); } }, 1200);
         });
+      }
+
+      // Aguarda qualquer um dos enlaces diretos conectar
+      const directRes = await Promise.race([
+        p2pPromise.then(r => r ? r : new Promise(() => {})),
+        bcPromise.then(r => r ? r : new Promise(() => {})),
+        new Promise(r => setTimeout(() => r(null), 3600))
+      ]);
+
+      if (directRes && directRes.ok) {
+        return directRes;
       }
     }
 
-    return res || { ok: false, error: 'Servidor indisponível e nenhuma aba Host encontrada com o código ' + (o.roomCode || '') };
+    return res || { ok: false, error: 'Sala não encontrada. Verifique o código com o Host ou se o servidor/internet está ativo.' };
   }
 
   async function updateRoom(opts) {

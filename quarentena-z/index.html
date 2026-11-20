@@ -859,8 +859,10 @@
           </label>
           <label>DIVISÃO DE TERRITÓRIO
             <select id="coopDivisionSelect">
-              <option value="sectors" selected>Setores Divididos (Defesa coordenada por área)</option>
-              <option value="free">Mapa Livre (Construção compartilhada)</option>
+              <option value="sectors" selected>Setores Adaptativos (Varia por players: 2P=50%, 3P=33%, 4P=25%)</option>
+              <option value="vertical">Faixas Verticais (Colunas de defesa por jogador)</option>
+              <option value="horizontal">Faixas Horizontais (Linhas de defesa por jogador)</option>
+              <option value="free">Construção Livre (Todo o mapa compartilhado)</option>
             </select>
           </label>
         </div>
@@ -933,6 +935,7 @@
   </div>
 </div>
 
+<script src="modules/peerjs.min.js"></script>
 <script src="modules/security-vault.js?v=19.30"></script>
 <script src="modules/cloud-db.js?v=19.30"></script>
 <script src="modules/network-multiplayer.js?v=19.30"></script>

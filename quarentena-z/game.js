@@ -3512,7 +3512,7 @@ function updateCoopAiAllies(h){
       let placed=false;
       for(let attempt=0;attempt<16;attempt++){
         let candX,candY;
-        if(COOP.division==='sectors'&&window.QZ_COOP&&typeof window.QZ_COOP.getPointSectorOwner==='function'){
+        if(COOP.division!=='free'&&window.QZ_COOP&&typeof window.QZ_COOP.getPointSectorOwner==='function'){
           candX=Math.round(60+srand()*(W-120));
           candY=Math.round(60+srand()*(H-120));
           const owner=window.QZ_COOP.getPointSectorOwner(candX,candY,W,H,COOP.maxPlayers,COOP.division);
@@ -5075,8 +5075,8 @@ function drawEffects(){
   // Divisão de Setores Co-op (2 a 4 jogadores) e Marcadores Visuais de Alerta na Pista
   if(COOP.active){
     if(window.QZ_COOP&&typeof window.QZ_COOP.drawSectorLines==='function'){
-      window.QZ_COOP.drawSectorLines(ctx,W,H,COOP.maxPlayers,COOP.division,COOP.mySlot);
-    }else if(COOP.division==='sectors'){
+      window.QZ_COOP.drawSectorLines(ctx,W,H,COOP.maxPlayers,COOP.division,COOP.mySlot,!!G.placing);
+    }else if(COOP.division!=='free'){
       ctx.save();
       ctx.strokeStyle='rgba(56,189,248,0.32)';
       ctx.lineWidth=1.5;
@@ -5120,10 +5120,11 @@ function validSpot(x,y){
   for(const [bx,by,bw,bh] of (MAPS[activeMap].blocked||[]))if(x>bx-14&&x<bx+bw+14&&y>by-14&&y<by+bh+14)return 'Terreno bloqueado (água)';
   for(const ob of obstacles)if(!ob.cleared&&dist(ob.x,ob.y,x,y)<ob.r+CFG.towerR)return 'Obstáculo no terreno (clique para demolir)';
   for(const t of towers)if(dist(t.x,t.y,x,y)<CFG.towerR*2)return 'Sobreposição com outra torre';
-  if(COOP.active&&COOP.division==='sectors'&&window.QZ_COOP&&typeof window.QZ_COOP.getPointSectorOwner==='function'){
+  if(COOP.active&&COOP.division!=='free'&&window.QZ_COOP&&typeof window.QZ_COOP.getPointSectorOwner==='function'){
     const ownerSlot=window.QZ_COOP.getPointSectorOwner(x,y,W,H,COOP.maxPlayers,COOP.division);
     if(ownerSlot!==(COOP.mySlot||0)){
-      return 'Setor exclusivo do Comandante P'+(ownerSlot+1);
+      const secName=(typeof window.QZ_COOP.getSectorName==='function')?window.QZ_COOP.getSectorName(ownerSlot,COOP.maxPlayers,COOP.division):('P'+(ownerSlot+1));
+      return '⛔ FORA DO SEU SETOR ('+secName+')';
     }
   }
   return null;
@@ -6817,7 +6818,9 @@ function renderCoopModalSlots(){
   }
 
   box.innerHTML=COOP.players.map((p,i)=>{
-    const secLbl=divMode==='free'?'Mapa Livre (Construção Compartilhada)':('Setor Tático P'+(i+1));
+    const secLbl=(window.QZ_COOP&&typeof window.QZ_COOP.getSectorName==='function')
+      ? window.QZ_COOP.getSectorName(i,n,divMode)
+      : (divMode==='free'?'Mapa Livre (Construção Compartilhada)':('Setor Tático P'+(i+1)));
     const pCol=(window.QZ_COOP&&typeof window.QZ_COOP.getSectorColor==='function')?window.QZ_COOP.getSectorColor(i):p.color;
     const isOnline=p.isLocal||p.connected;
     const isReady=!!p.ready;
