@@ -124,11 +124,52 @@
       <div id="towerPanel" class="hidden"></div>
       <div id="pauseOv" class="hidden">PAUSADO</div>
 
+      <!-- Alerta Climático Tático de Bioma -->
+      <div id="weatherAlertBanner" class="weather-alert-banner hidden" aria-live="polite">
+        <span class="wab-icon" id="wabIcon">⚡</span>
+        <div class="wab-content">
+          <strong id="wabTitle">TEMPESTADE EMP DETECTADA</strong>
+          <small id="wabDesc">Sobrecarga elétrica: torres de choque causam +50% de dano e desarmam zumbis.</small>
+        </div>
+      </div>
+
+      <!-- Barra de Chamadas Táticas do Comandante (PC: Z / X / C | Mobile: Toque) -->
+      <div id="tacticalCallinBar" class="tactical-callin-bar hidden" aria-label="Chamadas táticas do comandante">
+        <button type="button" class="callin-btn" id="btnCallinNapalm" data-callin="napalm" title="Bombardeio Napalm (Atalho: Z) - Incinera a pista e elimina infectados comuns">
+          <span class="cb-key">Z</span>
+          <span class="cb-ico">🔥</span>
+          <div class="cb-meta">
+            <b class="cb-title">NAPALM</b>
+            <span class="cb-cd-lbl" id="cdNapalm">PRONTO</span>
+          </div>
+          <div class="cb-cooldown-fill" id="fillNapalm"></div>
+        </button>
+        <button type="button" class="callin-btn" id="btnCallinOverclock" data-callin="overclock" title="Overclock do Reator (Atalho: X) - +45% cadência de disparo em todas as torres por 8s">
+          <span class="cb-key">X</span>
+          <span class="cb-ico">⚡</span>
+          <div class="cb-meta">
+            <b class="cb-title">OVERCLOCK</b>
+            <span class="cb-cd-lbl" id="cdOverclock">PRONTO</span>
+          </div>
+          <div class="cb-cooldown-fill" id="fillOverclock"></div>
+        </button>
+        <button type="button" class="callin-btn" id="btnCallinBarricade" data-callin="barricade" title="Barricada Eletroestática (Atalho: C) - Barreira que desacelera e eletrifica zumbis por 10s">
+          <span class="cb-key">C</span>
+          <span class="cb-ico">🛡️</span>
+          <div class="cb-meta">
+            <b class="cb-title">BARRICADA</b>
+            <span class="cb-cd-lbl" id="cdBarricade">PRONTO</span>
+          </div>
+          <div class="cb-cooldown-fill" id="fillBarricade"></div>
+        </button>
+      </div>
+
       <!-- Barra de Ação Rápida Exclusiva para Mobile / Toque durante a partida -->
       <div id="mobileQuickBar" class="mobile-quick-bar" aria-label="Controles rápidos mobile">
         <button type="button" id="btnMobWave" class="mob-qbtn mob-qbtn-wave" title="Enviar próxima onda">▶ ONDA</button>
         <button type="button" id="btnMobSpeed" class="mob-qbtn" title="Alternar velocidade (1x/2x/3x)">⚡ 1x</button>
         <button type="button" id="btnMobPause" class="mob-qbtn" title="Pausar ou retomar">❚❚</button>
+        <button type="button" id="btnMobCallins" class="mob-qbtn mob-qbtn-tactical" title="Abrir/Recolher Chamadas Táticas">🎯 TÁTICA</button>
         <button type="button" id="btnMobCancel" class="mob-qbtn mob-qbtn-cancel hidden" title="Cancelar ação atual">✕ CANCELAR</button>
       </div>
 
@@ -192,6 +233,10 @@
               <div class="hq-pill" title="Conquistas desbloqueadas">
                 <span class="hq-lbl">CONQUISTAS</span>
                 <b id="homeStatAch">0 / 50</b>
+              </div>
+              <div class="hq-pill hq-tech-pill" title="Pontos de Tecnologia (Biocélulas Alfa)">
+                <span class="hq-lbl">TECNOLOGIA</span>
+                <b id="homeStatTech">0 🔬</b>
               </div>
               <button type="button" id="btnMenuMusic" class="hq-pill hq-music-pill active" title="Ativar/Desativar música da tela de menu">
                 <span class="hq-lbl">TRILHA SONORA</span>
@@ -258,6 +303,14 @@
                   <span class="mb-text">
                     <span class="mb-title">MODO COOPERATIVO (2–4P)</span>
                     <small class="mb-sub">Salas privadas com código, doação % e Ascensão em Equipe</small>
+                  </span>
+                  <span class="mb-arrow">→</span>
+                </button>
+                <button id="btnHomeTech" class="menu-button tech-menu">
+                  <span class="mb-ico">🔬</span>
+                  <span class="mb-text">
+                    <span class="mb-title">LABORATÓRIO ALFA</span>
+                    <small id="homeTechSub" class="mb-sub">Pesquisa militar e vantagens permanentes</small>
                   </span>
                   <span class="mb-arrow">→</span>
                 </button>
@@ -371,6 +424,33 @@
             </div>
             <div class="hf-version">QUARENTENA Z · DEFESA DE PERÍMETRO</div>
           </div>
+        </div>
+      </div>
+
+      <!-- Tela do Laboratório Alfa (Árvore de Tecnologias Militares) -->
+      <div id="techScreen" class="screen hidden tech-screen">
+        <div class="ach-head tech-head">
+          <div class="screen-title-group">
+            <span class="screen-kicker">🔬 PESQUISA &amp; DESENVOLVIMENTO TÁTICO</span>
+            <h1>LABORATÓRIO MILITAR ALFA</h1>
+          </div>
+          <div class="tech-points-banner">
+            <span class="tpb-label">BIOCÉLULAS DISPONÍVEIS:</span>
+            <strong id="techPointsDisplay" class="tpb-points">0 🔬</strong>
+            <button id="btnResetTech" type="button" class="tech-reset-btn" title="Reembolsar todos os pontos gastos sem custo">↺ REINICIAR PONTOS</button>
+          </div>
+          <button id="btnTechBack" class="menu-button btn-back-compact">← VOLTAR AO MENU</button>
+        </div>
+
+        <div class="tech-body">
+          <div class="tech-intro-card">
+            <div class="ti-icon">🧬</div>
+            <div>
+              <h3>UPGRADES PERMANENTES PARA TODAS AS OPERAÇÕES</h3>
+              <p>Ganhe Biocélulas a cada 5 ondas superadas e ao vencer missões em qualquer dificuldade. Os aprimoramentos têm efeito permanente em partidas Solo e Cooperativas!</p>
+            </div>
+          </div>
+          <div id="techGrid" class="tech-grid"></div>
         </div>
       </div>
 

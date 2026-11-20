@@ -22,6 +22,261 @@
 (function () {
 'use strict';
 
+// Blindagem global contra falhas não tratadas, extensões de terceiros ou falhas de áudio
+if (typeof window !== 'undefined') {
+  window.onerror = function (msg, url, line, col, err) {
+    if (typeof console !== 'undefined' && console.warn) {
+      console.warn('[Quarentena-Z Guard]', msg, url, line);
+    }
+    return true;
+  };
+  window.addEventListener('unhandledrejection', function (e) {
+    if (typeof console !== 'undefined' && console.warn) {
+      console.warn('[Quarentena-Z Rejection Guard]', e.reason);
+    }
+    e.preventDefault();
+  });
+}
+
+/* ===================== LABORATÓRIO MILITAR ALFA (TECH TREE) ===================== */
+const TECH_DEFS = [
+  { id: 'initial_coins', name: 'Suprimentos Iniciais', ico: '💰', max: 5, cost: [1, 2, 3, 4, 5], desc: l => 'Comece partidas com +$' + (l * 50) + ' créditos de combate adicionais.' },
+  { id: 'sell_refund', name: 'Logística de Desmonte', ico: '♻️', max: 5, cost: [1, 2, 3, 4, 5], desc: l => 'Aumenta o reembolso ao vender torres em +' + (l * 3) + '% (até +15%).' },
+  { id: 'crit_chance', name: 'Munição Perfurante', ico: '🎯', max: 5, cost: [2, 3, 4, 5, 6], desc: l => '+' + (l * 2) + '% de chance de acerto crítico (2x dano) para todas as torres.' },
+  { id: 'tower_range', name: 'Radares Amplificados', ico: '📡', max: 5, cost: [2, 3, 4, 5, 6], desc: l => '+' + (l * 3) + '% de alcance de detecção e disparo para todas as torres.' },
+  { id: 'base_armor', name: 'Bunker Fortificado', ico: '🛡️', max: 5, cost: [1, 2, 3, 4, 5], desc: l => 'Aumenta a vida máxima inicial da base em +' + (l * 5) + ' pontos de blindagem.' },
+  { id: 'emergency_cash', name: 'Financiamento de Crise', ico: '🚨', max: 3, cost: [3, 5, 7], desc: l => 'Ao sofrer dano no perímetro, receba imediatamente +$' + (l === 1 ? 75 : l === 2 ? 150 : 250) + ' moedas (1x por onda).' },
+  { id: 'elemental_combo', name: 'Sinergia Elemental', ico: '⚡', max: 5, cost: [2, 3, 4, 5, 6], desc: l => '+' + (l * 8) + '% de dano extra em reações de Vapor Tóxico, Supercondutor e Explosão Térmica.' },
+  { id: 'callin_cdr', name: 'Comunicações Militares', ico: '📻', max: 5, cost: [2, 3, 4, 5, 6], desc: l => 'Reduz em -' + (l * 5) + '% o tempo de recarga das Chamadas Táticas do Comandante.' }
+];
+
+function getTechBonus(id) {
+  if (typeof career === 'undefined' || !career.techPerks) return 0;
+  return career.techPerks[id] || 0;
+}
+
+function resetTechPerks() {
+  if (typeof career === 'undefined') return;
+  career.techPerks = career.techPerks || {};
+  let refunded = 0;
+  for (const def of TECH_DEFS) {
+    const lvl = career.techPerks[def.id] || 0;
+    for (let i = 0; i < lvl; i++) refunded += def.cost[i] || 1;
+  }
+  career.techPoints = (career.techPoints || 0) + refunded;
+  career.techPerks = {};
+  saveCareer();
+  renderTechScreen();
+  updateHomeStats();
+  toast('Pesquisa reorganizada: +' + refunded + ' biocélulas devolvidas!', 'good');
+}
+
+function buyTechPerk(perkId) {
+  if (typeof career === 'undefined') return;
+  const def = TECH_DEFS.find(d => d.id === perkId);
+  if (!def) return;
+  career.techPerks = career.techPerks || {};
+  const currentLvl = career.techPerks[perkId] || 0;
+  if (currentLvl >= def.max) return;
+  const cost = def.cost[currentLvl] || 1;
+  if ((career.techPoints || 0) < cost) {
+    toast('Biocélulas insuficientes para esta pesquisa!', 'bad');
+    return;
+  }
+  career.techPoints -= cost;
+  career.techPerks[perkId] = currentLvl + 1;
+  saveCareer();
+  renderTechScreen();
+  updateHomeStats();
+  Snd.play('upgrade');
+  toast('Pesquisa concluída: ' + def.name + ' Nível ' + (currentLvl + 1) + '!', 'good');
+}
+
+function renderTechScreen() {
+  if (typeof document === 'undefined') return;
+  const screen = $('techScreen');
+  if (!screen) return;
+  const tp = (typeof career !== 'undefined' && career.techPoints) ? career.techPoints : 0;
+  if ($('techPointsDisplay')) $('techPointsDisplay').textContent = tp + ' 🔬';
+  const grid = $('techGrid');
+  if (!grid) return;
+  const perks = (typeof career !== 'undefined' && career.techPerks) ? career.techPerks : {};
+  let html = '';
+  for (const def of TECH_DEFS) {
+    const curLvl = perks[def.id] || 0;
+    const isMax = curLvl >= def.max;
+    const nextCost = isMax ? 0 : (def.cost[curLvl] || 1);
+    const canAfford = !isMax && tp >= nextCost;
+
+    let pipsHtml = '';
+    for (let i = 0; i < def.max; i++) {
+      pipsHtml += '<div class="tc-pip' + (i < curLvl ? ' filled' : '') + '"></div>';
+    }
+
+    const descTxt = def.desc(Math.max(1, curLvl));
+    const btnTxt = isMax ? 'MÁXIMO ALCANÇADO ✓' : ('PESQUISAR (NÍVEL ' + (curLvl + 1) + ') · ' + nextCost + ' 🔬');
+
+    html += '<div class="tech-card' + (isMax ? ' maxed' : '') + '">';
+    html += '<div class="tc-top">';
+    html += '<div class="tc-icon">' + def.ico + '</div>';
+    html += '<div class="tc-title-wrap">';
+    html += '<div class="tc-name">' + def.name + '</div>';
+    html += '<div class="tc-tier-label">' + (isMax ? 'DOMINADO' : ('NÍVEL ' + curLvl + ' / ' + def.max)) + '</div>';
+    html += '</div>';
+    html += '</div>';
+    html += '<div class="tc-desc">' + descTxt + '</div>';
+    html += '<div class="tc-pips-row">' + pipsHtml + '</div>';
+    html += '<button type="button" class="tc-btn-buy' + (isMax ? ' maxed-btn' : '') + '" data-tech="' + def.id + '"' + (!canAfford || isMax ? ' disabled' : '') + '>';
+    html += btnTxt;
+    html += '</button>';
+    html += '</div>';
+  }
+  grid.innerHTML = html;
+}
+
+/* ===================== CHAMADAS TÁTICAS DO COMANDANTE ===================== */
+const CALLIN_DEFS = {
+  napalm: { name: 'Bombardeio Napalm', cd: 40, ico: '🔥' },
+  overclock: { name: 'Overclock do Reator', cd: 35, ico: '⚡' },
+  barricade: { name: 'Barricada Eletroestática', cd: 30, ico: '🛡️' }
+};
+
+const callinState = {
+  napalm: { cd: 0 },
+  overclock: { cd: 0 },
+  barricade: { cd: 0 },
+  activeOverclock: 0,
+  barricades: []
+};
+
+function triggerCommanderCallin(type, remote) {
+  if (G.mode !== 'play') return false;
+  const def = CALLIN_DEFS[type];
+  if (!def) return false;
+  if (!remote && callinState[type].cd > 0) {
+    toast(def.name + ' em recarga (' + Math.ceil(callinState[type].cd) + 's)', 'bad');
+    return false;
+  }
+
+  const cdrMult = 1 - getTechBonus('callin_cdr') * 0.05;
+  const maxCd = def.cd * cdrMult;
+  callinState[type].cd = maxCd;
+
+  if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+    try { window.navigator.vibrate(25); } catch (e) {}
+  }
+
+  if (type === 'napalm') {
+    Snd.play('bomb');
+    G.shake = Math.max(G.shake, 14);
+    G.flash = 0.45;
+    G.flashCol = 'rgba(249, 115, 22, 0.45)';
+    FX.popup(W / 2, H / 2 - 40, '🔥 BOMBARDEIO NAPALM ATIVO!', '#f97316', true);
+    toast('Comando Aéreo: Bombardeio Napalm atingiu o campo de batalha!', 'good');
+    for (const z of zombies) {
+      if (!z.dead && !z.reached) {
+        applyDamage(z, 280, 'fire');
+        ignite(z, 40, 5);
+      }
+    }
+  } else if (type === 'overclock') {
+    Snd.play('shock');
+    G.shake = Math.max(G.shake, 6);
+    G.flash = 0.35;
+    G.flashCol = 'rgba(56, 189, 248, 0.4)';
+    callinState.activeOverclock = 8;
+    FX.popup(W / 2, H / 2 - 40, '⚡ OVERCLOCK DE REATOR ATIVO (+45% CADÊNCIA)!', '#38bdf8', true);
+    toast('Reator Tático: Todas as torres operando com sobrecarga por 8s!', 'good');
+  } else if (type === 'barricade') {
+    Snd.play('upgrade');
+    G.flash = 0.25;
+    G.flashCol = 'rgba(168, 85, 247, 0.35)';
+    FX.popup(W / 2, H / 2 - 40, '🛡️ BARRICADA ELETROESTÁTICA ATIVADA!', '#a855f7', true);
+    toast('Barreira Tática: Bloqueio e contenção de horda erguido por 10s!', 'good');
+    const p1 = pathPos(PATH_LEN * 0.35, {});
+    const p2 = pathPos(PATH_LEN * 0.65, {});
+    callinState.barricades.push({ x: p1.x, y: p1.y, duration: 10, maxDur: 10 });
+    callinState.barricades.push({ x: p2.x, y: p2.y, duration: 10, maxDur: 10 });
+  }
+
+  updateCallinUI();
+  return true;
+}
+
+function updateCallinUI() {
+  if (typeof document === 'undefined') return;
+  const bar = $('tacticalCallinBar');
+  if (!bar) return;
+  if (G.mode !== 'play') {
+    bar.classList.add('hidden');
+    return;
+  }
+  bar.classList.remove('hidden');
+
+  const cdrMult = 1 - getTechBonus('callin_cdr') * 0.05;
+  const items = [
+    { key: 'napalm', btn: $('btnCallinNapalm'), cdLbl: $('cdNapalm'), fill: $('fillNapalm'), maxCd: CALLIN_DEFS.napalm.cd * cdrMult },
+    { key: 'overclock', btn: $('btnCallinOverclock'), cdLbl: $('cdOverclock'), fill: $('fillOverclock'), maxCd: CALLIN_DEFS.overclock.cd * cdrMult },
+    { key: 'barricade', btn: $('btnCallinBarricade'), cdLbl: $('cdBarricade'), fill: $('fillBarricade'), maxCd: CALLIN_DEFS.barricade.cd * cdrMult }
+  ];
+
+  for (const it of items) {
+    if (!it.btn) continue;
+    const cd = callinState[it.key].cd;
+    if (cd > 0) {
+      it.btn.classList.add('on-cd');
+      it.btn.disabled = true;
+      if (it.cdLbl) it.cdLbl.textContent = Math.ceil(cd) + 's';
+      if (it.fill) it.fill.style.transform = 'scaleY(' + Math.min(1, cd / it.maxCd) + ')';
+    } else {
+      it.btn.classList.remove('on-cd');
+      it.btn.disabled = false;
+      if (it.cdLbl) it.cdLbl.textContent = 'PRONTO';
+      if (it.fill) it.fill.style.transform = 'scaleY(0)';
+    }
+  }
+}
+
+/* ===================== EVENTOS CLIMÁTICOS DE BIOMA ===================== */
+function updateWeatherUI(weather) {
+  if (typeof document === 'undefined') return;
+  const banner = $('weatherAlertBanner');
+  if (!banner) return;
+  if (!weather) {
+    banner.classList.add('hidden');
+    return;
+  }
+  const iconEl = $('wabIcon');
+  const titleEl = $('wabTitle');
+  const descEl = $('wabDesc');
+
+  const DEFS = {
+    emp_storm: { ico: '⚡', title: 'TEMPESTADE EMP DETECTADA', desc: 'Sobrecarga de rede: Torres de choque e plasma causam +40% de dano.' },
+    acid_rain: { ico: '🌧️', title: 'CHUVA ÁCIDA CORROSIVA', desc: 'Precipitação tóxica: Zumbis sofrem corrosão e perdem 30% da armadura.' },
+    blizzard: { ico: '❄️', title: 'NEVASCA CRIOGÊNICA', desc: 'Frio extremo: Velocidade de locomoção dos infectados reduzida em 20%.' },
+    toxic_fog: { ico: '🌫️', title: 'NÉVOA BIOLÓGICA TÓXICA', desc: 'Visibilidade afetada: Torres de Sniper e Radares causam +30% de crítico.' }
+  };
+
+  const info = DEFS[weather];
+  if (!info) {
+    banner.classList.add('hidden');
+    return;
+  }
+  if (iconEl) iconEl.textContent = info.ico;
+  if (titleEl) titleEl.textContent = info.title;
+  if (descEl) descEl.textContent = info.desc;
+
+  banner.classList.remove('hidden');
+  banner.style.opacity = '1';
+  Snd.play('alarm');
+
+  setTimeout(() => {
+    if (banner && G.weather === weather) {
+      banner.style.opacity = '0.35';
+    }
+  }, 6000);
+}
+
 /* ===================== 1. CONFIGURAÇÃO E PLATAFORMA HÍBRIDA (PC + MOBILE) ===================== */
 const W = 960, H = 640;
 const PLATFORM_KEY = 'quarentenaz_platform_pref';
@@ -598,6 +853,7 @@ function selectMap(id){
 function difficultySettings(){return ({easy:{hp:.85,speed:.92,reward:1.12},normal:{hp:1.08,speed:1.03,reward:.96},hard:{hp:1.48,speed:1.16,reward:1.05},apocalypse:{hp:2.05,speed:1.32,reward:1.15}})[activeDifficulty]||{hp:1.08,speed:1.03,reward:.96};}
 
 function pathPos(d,o){
+  o=o||{};
   if(d<0)d=0; let s=PATH[PATH.length-1];
   for(let i=0;i<PATH.length;i++){ if(d<=PATH[i].start+PATH[i].len){s=PATH[i];break;} }
   const t=Math.min(d-s.start,s.len);
@@ -1653,15 +1909,19 @@ function applyDamage(z,amount,dtype,o){
   let d=amount;
   if(dtype==='phys'||dtype==='expl'){
     let a=z.armor*(1-((o&&o.armorPen)||0)); if(dtype==='expl')a*=.5;
+    if(G.weather==='acid_rain')a*=.7;
     d*=(1-clamp(a,0,.92));
   }
+  if(G.weather==='emp_storm'&&(dtype==='elec'||(o&&o.elec)))d*=1.4;
+  if(G.weather==='toxic_fog'&&o&&o.crit)d*=1.3;
   if(o&&o.bigMult&&z.D.big)d*=o.bigMult;
   if(z.vulnT>0&&z.vulnAmt>0)d*=(1+z.vulnAmt);
   // Combos Elementais: bônus quando aliados combinam Fogo, Gelo, Eletricidade e Veneno
   if(COOP.active||z._comboEnabled){
     const combo=evaluateElementalCombo(z,dtype);
     if(combo.count>=2){
-      d*=combo.mult;
+      const synBonus=1+getTechBonus('elemental_combo')*0.08;
+      d*=(combo.mult*synBonus);
       z._lastCombo=combo.count;
       if(Math.random()<0.18)FX.popup(z.x,z.y-22,'⚡ COMBO ELEMENTAL x'+combo.count+'!','#38bdf8',false);
     }
@@ -1674,6 +1934,7 @@ function applyDamage(z,amount,dtype,o){
 }
 function slowZ(z,amt,dur){
   if(!z||z.dead||z.reached)return;
+  if(G.weather==='blizzard')dur*=1.5;
   if(z.D.speedBoss||z.D.slowResist){
     const res=z.D.slowResist||0.85;
     amt*=(1-res);
@@ -1816,7 +2077,8 @@ class Zombie {
       if(this.roar<=0){this.roar=10;for(const t of towers)if(dist(t.x,t.y,this.x,this.y)<150)t.weak=Math.max(t.weak,2.5);FX.ring(this.x,this.y,10,150,.6,'#c04080',4);G.shake=Math.max(G.shake,5);}
     }
     const paralyzed=(this.freezeT>0||this.stunT>0);
-    const sp=paralyzed?0:this.speed*(this.turboT>0?1.35:1)*(1-this.slowAmt);
+    let sp=paralyzed?0:this.speed*(this.turboT>0?1.35:1)*(1-this.slowAmt);
+    if(G.weather==='blizzard')sp*=0.80;
     this.cur=sp; this.dist+=sp*h;
     if(this.dist>=PATH_LEN){this.reach();return;}
     this.place();
@@ -1840,6 +2102,14 @@ class Zombie {
     if(this.reached||this.dead)return;
     this.reached=true; WM.done++; G.stats.leaks++;
     G.life=Math.max(0,G.life-this.D.leak);
+    const ecashLvl=getTechBonus('emergency_cash');
+    if(ecashLvl>0&&G.emergencyCashWave!==WM.num&&G.life>0){
+      G.emergencyCashWave=WM.num;
+      const ecash=[0,75,150,250][ecashLvl]||75;
+      G.money+=ecash;G.earned+=ecash;coinBump();
+      FX.popup(W/2,H/2+20,'🚨 FINANCIAMENTO DE CRISE: +$'+ecash,'#38bdf8',true);
+      toast('Financiamento de Crise ativado: +$'+ecash+' moedas!','good');
+    }
     syncCoopBase();
     G.flash=.55; G.flashCol='#d00000'; G.shake=Math.max(G.shake,8);
     FX.popup(880,236,'-'+this.D.leak,'#ff5040',true); Snd.play('hurt');
@@ -2009,6 +2279,8 @@ class Tower {
     if(this.s.burnDps)this.s.burnDps*=1.2;
     if(this.s.poisonDps)this.s.poisonDps*=1.2;
     if(this.key==='sniper')this.s.range=1400;
+    const rangeBoost=1+getTechBonus('tower_range')*0.03;
+    this.s.range*=rangeBoost;
     if(this._teslaBoost)this.s.dmg*=1.8;
     if(this._supportBoost)this.s.rate*=1.45;
     if(this.paragon)applyParagonStats(this);
@@ -2026,7 +2298,7 @@ class Tower {
     if(this.recoil>0)this.recoil=Math.max(0,this.recoil-h*7);
     if(this.pulse>0)this.pulse-=h;
     if(this.spawnFlash>0)this.spawnFlash=Math.max(0,this.spawnFlash-h*1.8);
-    const s=this.s, rate=s.rate*(1+(this._auraRate||0))*(this.weak>0?.5:1), k=this.def.kind;
+    const s=this.s, rate=s.rate*(1+(this._auraRate||0))*(this.weak>0?.5:1)*(callinState.activeOverclock>0?1.45:1), k=this.def.kind;
 
     if(k==='support_eco'){ // Base de Suprimentos: gera moedas durante a onda ativa
       if(WM.state==='active'){
@@ -2219,7 +2491,8 @@ class Tower {
     const spread=(s.spread||0.05)*(this.paragon?0.5:1);
     const a=this.angle+(srand()-0.5)*spread*2;
     let dmg=s.dmg*dMult, crit=false;
-    if(s.crit&&srand()<s.crit){dmg*=s.critMult||2.2;crit=true;}
+    const critRate=(s.crit||0)+getTechBonus('crit_chance')*0.02;
+    if(critRate>0&&srand()<critRate){dmg*=s.critMult||2.2;crit=true;}
     projs.push(acquireProj({
       x:m.x,y:m.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,dmg,dtype:'phys',
       pierce:s.pierce||2,armorPen:s.armorPen||.12,bigMult:s.bigMult||0,
@@ -2288,7 +2561,9 @@ class Tower {
       pathPos(Math.min(PATH_LEN,tg.dist+tg.cur*t),_pp);
       const px=_pp.x-_pp.dy*tg.off, py=_pp.y+_pp.dx*tg.off;
       const a=Math.atan2(py-m.y,px-m.x); this.angle=a;
-      let dmg=s.dmg*dMult,crit=false; if(s.crit&&srand()<s.crit){dmg*=s.critMult;crit=true;}
+      let dmg=s.dmg*dMult,crit=false;
+      const critRate=(s.crit||0)+getTechBonus('crit_chance')*0.02;
+      if(critRate>0&&srand()<critRate){dmg*=s.critMult;crit=true;}
       const heavy=this.key==='antitank',sn=this.key==='sniper',isPortal=k==='portal';
       projs.push(acquireProj({x:m.x,y:m.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,dmg,dtype:'phys',pierce:s.pierce||1,armorPen:s.armorPen||0,bigMult:s.bigMult||0,
         splash:s.splash||0,crit,stun:s.stun||0,slow:isPortal?(s.slow||.24):0,slowT:isPortal?(s.slowT||1.4):0,warpMini:isPortal?26:0,
@@ -2407,6 +2682,15 @@ const WM = {
     this.queue.sort((a,b)=>a.t-b.t);
     this.total+=list.length; this.pending.push(this.num); this.state='active'; this.prep=null;
     const isBoss=(this.num%10===0&&this.num>=10)||this.num===15||this.num===25||this.num===35;
+    let weather=null;
+    if(this.num>=6){
+      if(this.num%8===6)weather='emp_storm';
+      else if(this.num%8===0)weather='acid_rain';
+      else if(this.num%8===2)weather='blizzard';
+      else if(this.num%8===4)weather='toxic_fog';
+    }
+    G.weather=weather;
+    updateWeatherUI(weather);
     toast('ONDA '+this.num+(isBoss?' — CHEFE!':this.num%5===0?' — DESAFIO!':''),isBoss?'bad':'');
     if(isBoss)Snd.play('alarm'); else Snd.play('horn');
     syncCoopBase();
@@ -2436,10 +2720,21 @@ const WM = {
     if(totalHeal>0&&G.life<CFG.baseLife){const bf=G.life;G.life=Math.min(CFG.baseLife,G.life+totalHeal);if(G.life>bf){FX.popup(860,220,'+'+(G.life-bf)+' VIDA (NANO)','#2be3a1',true);syncCoopBase();}}
     FX.popup(W/2,H/2,'+'+bonus+' BÔNUS','#f2c230',true); Snd.play('coin');
     toast('Onda '+this.num+' concluída! +'+bonus+' moedas','good');
+    if(this.num%5===0&&!G.replay){
+      career.techPoints=(career.techPoints||0)+1;
+      saveCareer();
+      FX.popup(W/2,H/2+30,'+1 BIOCÉLULA ALFA 🔬','#c084fc',true);
+      toast('Pesquisa Militar: +1 Biocélula obtida na Onda '+this.num+'!','good');
+    }
     this.state='idle'; this.total=0; this.done=0; this.prep=G.auto?CFG.prepTime:null;
     syncCoopBase();
     if(this.num>=CFG.victoryWave&&!G.won){
       G.won=true;G.paused=true;
+      const winTech=activeDifficulty==='apocalypse'?12:activeDifficulty==='hard'?8:activeDifficulty==='normal'?5:3;
+      if(!G.replay){
+        career.techPoints=(career.techPoints||0)+winTech;
+        toast('Vitória na Missão: +'+winTech+' Biocélulas Alfa concedidas!','good');
+      }
       career.bestWave=Math.max(career.bestWave,WM.num);
       career.totalKills+=G.kills;
       career.games++;
@@ -2616,6 +2911,7 @@ const CMDS={
   portal_exit:c=>{const t=towerById(c.id);return t?setPortalExit(t,c.x,c.y):false;},
   clearObs:c=>clearObstacle(c.id,c.remote),
   donate:c=>donateCoopCoins(c.toSlot|0,+c.pct,c.remote,c.fromSlot,c.amount),
+  callin:c=>triggerCommanderCallin(c.callin,c.remote),
   wave:()=>WM.send(),
   power:c=>{
     // Aliado usou um poder: aplica só o EFEITO (quem paga é quem comprou).
@@ -3374,6 +3670,9 @@ function updateHomeStats(){
   if($('homeStatTime'))$('homeStatTime').textContent=fmtTime(tt);
   if($('homeStatAch'))$('homeStatAch').textContent=got+' / '+ACH.length;
   if($('homeAchSub'))$('homeAchSub').textContent=got+' de '+ACH.length+' medalhas desbloqueadas';
+  const tp=career.techPoints||0;
+  if($('homeStatTech'))$('homeStatTech').textContent=tp+' 🔬';
+  if($('homeTechSub'))$('homeTechSub').textContent=tp+' biocélulas disponíveis · Upgrades permanentes';
   if($('homeRankSub'))$('homeRankSub').textContent=pName+' · Recorde: Onda '+bw+' · '+Math.floor(tk).toLocaleString('pt-BR')+' mortos';
   if($('homeMiniRankList')){
     const top=sortedRankList('wave').slice(0,3);
@@ -3545,6 +3844,22 @@ function update(h){
   SecurityGuard.verifyVault();
   G.tick++;
   G.simT+=h;
+  if(callinState.napalm.cd>0)callinState.napalm.cd=Math.max(0,callinState.napalm.cd-h);
+  if(callinState.overclock.cd>0)callinState.overclock.cd=Math.max(0,callinState.overclock.cd-h);
+  if(callinState.barricade.cd>0)callinState.barricade.cd=Math.max(0,callinState.barricade.cd-h);
+  if(callinState.activeOverclock>0)callinState.activeOverclock=Math.max(0,callinState.activeOverclock-h);
+  for(let bi=callinState.barricades.length-1;bi>=0;bi--){
+    const b=callinState.barricades[bi];
+    b.duration-=h;
+    for(const z of zombies){
+      if(!z.dead&&!z.reached&&Math.hypot(z.x-b.x,z.y-b.y)<65){
+        slowZ(z,0.65,0.5);
+        applyDamage(z,30*h,'elec');
+      }
+    }
+    if(b.duration<=0)callinState.barricades.splice(bi,1);
+  }
+  updateCallinUI();
   WM.update(h);
   updateSupportAuras();
   for(const z of zombies)z.update(h);
@@ -5218,6 +5533,31 @@ function render(){
     R(890,194,52,6,'#000');R(891,195,Math.round(50*f),4,f>.5?'#5fc030':f>.25?'#e0b020':'#d03020');
   }
   drawFX();
+  if(callinState.barricades.length>0){
+    ctx.save();
+    for(const b of callinState.barricades){
+      const a=Math.min(1,b.duration/1.5);
+      ctx.globalAlpha=a*0.35;
+      ctx.fillStyle='#38bdf8';
+      ctx.beginPath();ctx.arc(b.x,b.y,55,0,6.283);ctx.fill();
+      ctx.globalAlpha=a*0.9;
+      ctx.lineWidth=2;
+      ctx.strokeStyle=(Math.floor(G.simT*12)%2===0)?'#38bdf8':'#c084fc';
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  if(callinState.activeOverclock>0){
+    ctx.save();
+    ctx.lineWidth=1.5;
+    ctx.strokeStyle='rgba(56, 189, 248, 0.7)';
+    for(const t of towers){
+      ctx.beginPath();
+      ctx.arc(t.x,t.y,24+Math.sin(G.simT*8)*3,0,6.283);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
   if(G.selected){ctx.fillStyle='rgba(255,255,255,.08)';ctx.strokeStyle='rgba(39,201,255,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(G.selected.x,G.selected.y,G.selected.s.range,0,6.283);ctx.fill();ctx.stroke();}
   for(const t of towers)drawTower(t);
   if(G.selected){ctx.strokeStyle='#27c9ff';ctx.shadowColor='#27c9ff';ctx.shadowBlur=IS_MOBILE?0:10;ctx.lineWidth=2;ctx.beginPath();ctx.arc(G.selected.x,G.selected.y,19,0,6.283);ctx.stroke();ctx.shadowBlur=0;}
@@ -5625,7 +5965,8 @@ function activateTowerAbility(t,remote){
 }
 function sellTower(t,remote){
   if(t.tier>=5)psAdd('soldMax');
-  const refund=Math.floor(t.spent*CFG.sellRatio);
+  const refundRatio=CFG.sellRatio+getTechBonus('sell_refund')*0.03;
+  const refund=Math.floor(t.spent*refundRatio);
   if(!remote){
     G.money+=refund;
   } else if(COOP.active&&typeof t.ownerSlot==='number'&&COOP.players[t.ownerSlot]){
@@ -5999,7 +6340,7 @@ function updateUI(){
 
 /* --- progresso local, medalhas de dificuldade e recordes --- */
 const SAVE_KEY='quarentenaz_career_v4';
-let career={bestWave:0,totalKills:0,games:0,lastMap:'four',lastDifficulty:'normal',medals:{}};
+let career={bestWave:0,totalKills:0,games:0,lastMap:'four',lastDifficulty:'normal',medals:{},techPoints:0,techPerks:{}};
 function loadCareer(){
   try{
     const raw=localStorage.getItem(SAVE_KEY);
@@ -6016,6 +6357,8 @@ function loadCareer(){
           if(typeof d.lastMap==='string'&&MAPS[d.lastMap])career.lastMap=d.lastMap;
           if(['easy','normal','hard','apocalypse'].includes(d.lastDifficulty))career.lastDifficulty=d.lastDifficulty;
           if(d.medals&&typeof d.medals==='object')career.medals=d.medals;
+          if(Number.isFinite(d.techPoints)&&d.techPoints>=0&&d.techPoints<=999999)career.techPoints=Math.floor(d.techPoints);
+          if(d.techPerks&&typeof d.techPerks==='object')career.techPerks=d.techPerks;
         }
       }
     }
@@ -6030,7 +6373,9 @@ function saveCareer(){
       games:Math.max(0,Math.min(1000000,Math.floor(career.games||0))),
       lastMap:MAPS[career.lastMap]?career.lastMap:'four',
       lastDifficulty:['easy','normal','hard','apocalypse'].includes(career.lastDifficulty)?career.lastDifficulty:'normal',
-      medals:career.medals&&typeof career.medals==='object'?career.medals:{}
+      medals:career.medals&&typeof career.medals==='object'?career.medals:{},
+      techPoints:Math.max(0,Math.min(999999,Math.floor(career.techPoints||0))),
+      techPerks:(career.techPerks&&typeof career.techPerks==='object')?career.techPerks:{}
     };
     const js=JSON.stringify(sanitized);
     localStorage.setItem(SAVE_KEY,js);
@@ -6062,7 +6407,11 @@ function renderMapMedals(){
     }).join('');
   });
 }
-function updateCareerLabel(){const el=$('careerRecord');if(el)el.textContent='Recorde: onda '+career.bestWave+' · Zumbis eliminados: '+career.totalKills+' · Partidas: '+career.games;}
+function updateCareerLabel(){
+  const el=$('careerRecord');
+  if(el)el.textContent='Recorde: onda '+career.bestWave+' · Zumbis eliminados: '+career.totalKills+' · Partidas: '+career.games+' · Biocélulas: '+(career.techPoints||0);
+  if($('homeStatTech'))$('homeStatTech').textContent=(career.techPoints||0)+' 🔬';
+}
 
 /* --- fim de jogo --- */
 function endGame(){ if(G.mode==='over')return; G.mode='over'; try{localStorage.removeItem(GAME_SAVE_KEY);}catch(e){} refreshContinue(); career.bestWave=Math.max(career.bestWave,WM.num);career.totalKills+=G.kills;career.games++;career.lastMap=activeMap;career.lastDifficulty=activeDifficulty;saveCareer();showEnd(false); }
@@ -6098,7 +6447,14 @@ function resetGame(seed){
   G.seed=(seed>>>0)||(COOP.active&&COOP.seed?(COOP.seed>>>0):(((Math.random()*4294967296)>>>0)||1));seedRng(G.seed);G.tick=0;TID=0;COOP._towerSeq=0;CMDLOG.length=0;
   G.auto0=G.auto;ACC=0;G.replay=null;G.newAch=[];G.stats={bosses:0,leaks:0,paragons:0};G.banner=null;G.tips=null;
   try{if(!localStorage.getItem('ztd_v19_tut'))G.tips=[[3,'Escolha uma torre na lista à direita e clique no mapa para construir.'],[30,'Clique numa torre construída para melhorá-la: são 3 caminhos de upgrade.'],[70,'Camuflados e voadores só são atacados por Radar e Drone.'],[140,'3 torres iguais no nível máximo do mesmo caminho formam uma ASCENSÃO.']];}catch(e){}
-  G.money=CFG.startMoney;G.life=CFG.baseLife;G.kills=0;G.earned=0;G.time=0;G.simT=0;G.shake=0;G.flash=0;
+  const extraMoney=getTechBonus('initial_coins')*50;
+  const extraLife=getTechBonus('base_armor')*5;
+  G.money=CFG.startMoney+extraMoney;G.life=CFG.baseLife+extraLife;G.kills=0;G.earned=0;G.time=0;G.simT=0;G.shake=0;G.flash=0;
+  G.emergencyCashWave=0;
+  G.weather=null;
+  callinState.napalm.cd=0;callinState.overclock.cd=0;callinState.barricade.cd=0;callinState.activeOverclock=0;callinState.barricades.length=0;
+  updateCallinUI();
+  updateWeatherUI(null);
   G.paused=false;G.speed=1;G.placing=null;G.targeting=null;G.selected=null;G.selectedObs=null;G.won=false;G.mode='play';
   for(const a of [towers,zombies,projs,parts,popups,rings,bolts,hazards,mines,bombs,areas,allies,portals])a.length=0;
   spawnMapObstacles();
@@ -7417,7 +7773,7 @@ function bindEvents(){
   $('btnFullscreen').addEventListener('click',()=>{if(window.steamBridge){window.steamBridge.fullscreen();}else if(document.fullscreenElement)document.exitFullscreen();else if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen();});
   const cv=$('game');
   const showScreen=id=>{
-    ['homeScreen','aboutScreen','settingsScreen','startScreen','achScreen','rankScreen'].forEach(k=>{
+    ['homeScreen','aboutScreen','settingsScreen','startScreen','achScreen','rankScreen','techScreen'].forEach(k=>{
       const el=$(k);
       if(el)setElementHidden(el,k!==id);
     });
@@ -7703,6 +8059,34 @@ function bindEvents(){
   });
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();_deferredInstallPrompt=e;refreshInstallUI();});
   window.addEventListener('appinstalled',()=>{_deferredInstallPrompt=null;refreshInstallUI();toast('App Quarentena Z instalado!','good');});
+  const openTechScreen=()=>{Snd.init();renderTechScreen();showScreen('techScreen');};
+  if($('btnHomeTech'))$('btnHomeTech').addEventListener('click',openTechScreen);
+  if($('btnTechBack'))$('btnTechBack').addEventListener('click',()=>showScreen('homeScreen'));
+  if($('btnResetTech'))$('btnResetTech').addEventListener('click',()=>{resetTechPerks();Snd.play('ui');});
+  if($('techGrid')){
+    $('techGrid').addEventListener('click',e=>{
+      const btn=e.target.closest('.tc-btn-buy');
+      if(!btn||btn.disabled||!btn.dataset.tech)return;
+      buyTechPerk(btn.dataset.tech);
+    });
+  }
+  ['napalm','overclock','barricade'].forEach(key=>{
+    const btn=$('btnCallin'+key.charAt(0).toUpperCase()+key.slice(1));
+    if(btn){
+      btn.addEventListener('click',()=>{
+        if(!G.paused&&G.mode==='play'){
+          dispatch({type:'callin',callin:key});
+        }
+      });
+    }
+  });
+  if($('btnMobCallins')){
+    $('btnMobCallins').addEventListener('click',()=>{
+      const bar=$('tacticalCallinBar');
+      if(bar)bar.classList.toggle('hidden');
+      Snd.play('ui');
+    });
+  }
   $('btnHomeAch').addEventListener('click',()=>{checkAch();renderAch();showScreen('achScreen');});
   const openRankScreen=()=>{Snd.init();renderRank();OnlineAPI.sync();showScreen('rankScreen');};
   $('btnHomeRank').addEventListener('click',openRankScreen);
@@ -7835,7 +8219,7 @@ function bindEvents(){
     selectMap($('mapSelect').value||'four');
     career.lastMap=activeMap;
     saveCareer();
-    ['homeScreen','aboutScreen','settingsScreen','startScreen','achScreen','rankScreen'].forEach(k=>{
+    ['homeScreen','aboutScreen','settingsScreen','startScreen','achScreen','rankScreen','techScreen'].forEach(k=>{
       setElementHidden($(k),true);
     });
     resetGame();
@@ -7925,6 +8309,9 @@ function bindEvents(){
     if(e.key===' '){e.preventDefault();togglePause();}
     else if(e.key==='n'||e.key==='N'){if(!G.paused)dispatch({type:'wave'});}
     else if(e.key==='f'||e.key==='F'){setSpeed(G.speed%3+1);}
+    else if(e.key==='z'||e.key==='Z'){if(!G.paused)dispatch({type:'callin',callin:'napalm'});}
+    else if(e.key==='x'||e.key==='X'){if(!G.paused)dispatch({type:'callin',callin:'overclock'});}
+    else if(e.key==='c'||e.key==='C'){if(!G.paused)dispatch({type:'callin',callin:'barricade'});}
     else { const ix=TOWER_KEYS.indexOf(e.key.toLowerCase()); if(ix>=0&&TOWER_ORDER[ix]&&!G.paused)pickTower(TOWER_ORDER[ix]); }
   });
   window.addEventListener('resize',()=>{fitCanvas();if($('startScreen')&&!$('startScreen').classList.contains('hidden'))renderMapPagination(true);});
@@ -8028,7 +8415,7 @@ function init(){
 }
 
 // Pequena API para depuração/testes automatizados
-window.ZTD={G,UI,CFG,MAPS,TOWERS,ZOMBIES,WM,Powers,powerState,towers,zombies,projs,mines,bombs,hazards,allies,obstacles,portals,COOP,generateCoopRoomCode,donateCoopCoins,triggerCoopPing,voteCoopAction,evaluateElementalCombo,buildWave,placeTower,upgradeTower,sellTower,setTowerAim,setPortalExit,clearObstacle,stunZ,getTowerPortrait,select,selectMap,refreshPanel,renderMapMedals,update,resetGame,validSpot,applyDamage,pathPos,PATH_LEN,endGame:()=>endGame(),POWERS,dispatch,CMDLOG,stateHash,seedRng,srand,rngState:()=>_s,achievements:()=>ACH,achLoad,ps:()=>PS,psSave,career:()=>career,loadCareer,saveCareer,computeLocalSig,renderAch,checkAch,saveGame,readSave,loadRank,renderRank,getPlayerName,setPlayerName,recordRankEntry,clearRanks,deleteRankEntry,OnlineAPI,SecurityGuard,detectDevice,applyPlatformMode,isMobile:()=>IS_MOBILE};
+window.ZTD={G,UI,CFG,MAPS,TOWERS,ZOMBIES,WM,Powers,powerState,towers,zombies,projs,mines,bombs,hazards,allies,obstacles,portals,COOP,generateCoopRoomCode,donateCoopCoins,triggerCoopPing,voteCoopAction,evaluateElementalCombo,buildWave,placeTower,upgradeTower,sellTower,setTowerAim,setPortalExit,clearObstacle,stunZ,getTowerPortrait,select,selectMap,refreshPanel,renderMapMedals,update,resetGame,validSpot,applyDamage,pathPos,PATH_LEN,endGame:()=>endGame(),POWERS,dispatch,CMDLOG,stateHash,seedRng,srand,rngState:()=>_s,achievements:()=>ACH,achLoad,ps:()=>PS,psSave,career:()=>career,loadCareer,saveCareer,computeLocalSig,renderAch,checkAch,saveGame,readSave,loadRank,renderRank,getPlayerName,setPlayerName,recordRankEntry,clearRanks,deleteRankEntry,OnlineAPI,SecurityGuard,detectDevice,applyPlatformMode,isMobile:()=>IS_MOBILE,TECH_DEFS,getTechBonus,buyTechPerk,resetTechPerks,renderTechScreen,callinState,triggerCommanderCallin};
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

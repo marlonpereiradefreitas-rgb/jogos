@@ -2968,3 +2968,361 @@ body.menu-mode .coop-hud-widget {
 
 
 
+
+/* ==========================================================================
+   LABORATÓRIO MILITAR ALFA (TECH TREE) & CHAMADAS TÁTICAS & CLIMA DE BIOMA
+   ========================================================================== */
+
+.hq-tech-pill {
+  border-color: rgba(168, 85, 247, 0.45) !important;
+  background: rgba(168, 85, 247, 0.08) !important;
+}
+.hq-tech-pill b {
+  color: #c084fc !important;
+}
+.menu-button.tech-menu {
+  border-color: rgba(168, 85, 247, 0.35);
+}
+.menu-button.tech-menu:hover {
+  border-color: #c084fc;
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.25);
+  background: rgba(168, 85, 247, 0.12);
+}
+
+.tech-screen {
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+.tech-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(168, 85, 247, 0.25);
+  margin-bottom: 20px;
+}
+.tech-points-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(168, 85, 247, 0.12);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  padding: 8px 16px;
+  border-radius: 8px;
+}
+.tpb-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #d8b4fe;
+}
+.tpb-points {
+  font-size: 18px;
+  font-weight: 900;
+  color: #c084fc;
+  text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+}
+.tech-reset-btn {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tech-reset-btn:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: #fff;
+  border-color: #ef4444;
+}
+.tech-intro-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+.ti-icon {
+  font-size: 36px;
+  line-height: 1;
+}
+.tech-intro-card h3 {
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  color: #e9d5ff;
+  margin: 0 0 4px;
+}
+.tech-intro-card p {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.4;
+}
+.tech-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+.tech-card {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+.tech-card:hover {
+  border-color: rgba(168, 85, 247, 0.6);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(168, 85, 247, 0.2);
+  transform: translateY(-2px);
+}
+.tech-card.maxed {
+  border-color: rgba(34, 197, 94, 0.5);
+  background: rgba(15, 23, 42, 0.95);
+}
+.tc-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.tc-icon {
+  font-size: 28px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(168, 85, 247, 0.15);
+  border-radius: 8px;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+.tc-title-wrap {
+  flex: 1;
+}
+.tc-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #f1f5f9;
+  letter-spacing: 0.5px;
+}
+.tc-tier-label {
+  font-size: 10px;
+  color: #c084fc;
+  font-weight: 700;
+}
+.tc-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.4;
+  min-height: 32px;
+}
+.tc-pips-row {
+  display: flex;
+  gap: 4px;
+}
+.tc-pip {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  transition: background 0.3s;
+}
+.tc-pip.filled {
+  background: #a855f7;
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.6);
+}
+.tech-card.maxed .tc-pip.filled {
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+}
+.tc-btn-buy {
+  background: linear-gradient(135deg, #7e22ce, #9333ea);
+  border: 1px solid #c084fc;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+.tc-btn-buy:hover:not(:disabled) {
+  background: linear-gradient(135deg, #9333ea, #a855f7);
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
+}
+.tc-btn-buy:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(0.6);
+}
+.tc-btn-buy.maxed-btn {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: #22c55e;
+  color: #86efac;
+  cursor: default;
+}
+
+.tactical-callin-bar {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  display: flex;
+  gap: 10px;
+  z-index: 25;
+  pointer-events: auto;
+}
+.callin-btn {
+  position: relative;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: 8px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s;
+  min-width: 110px;
+}
+.callin-btn:hover:not(:disabled) {
+  border-color: #38bdf8;
+  transform: translateY(-2px);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
+}
+.callin-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+.callin-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.cb-key {
+  font-family: monospace;
+  font-size: 10px;
+  font-weight: 900;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+.cb-ico {
+  font-size: 20px;
+  line-height: 1;
+}
+.cb-meta {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+.cb-title {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #f1f5f9;
+}
+.cb-cd-lbl {
+  font-size: 9px;
+  font-weight: 700;
+  color: #34d399;
+}
+.callin-btn.on-cd .cb-cd-lbl {
+  color: #f87171;
+}
+.cb-cooldown-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.75);
+  transform-origin: bottom;
+  transform: scaleY(0);
+  pointer-events: none;
+  transition: transform 0.1s linear;
+}
+
+.weather-alert-banner {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.94);
+  border: 1px solid #38bdf8;
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.35);
+  border-radius: 8px;
+  padding: 8px 18px;
+  pointer-events: none;
+  animation: wabPulse 2s infinite ease-in-out;
+  transition: opacity 0.5s ease;
+}
+@keyframes wabPulse {
+  0%, 100% { border-color: rgba(56, 189, 248, 0.6); box-shadow: 0 0 15px rgba(56, 189, 248, 0.3); }
+  50% { border-color: #38bdf8; box-shadow: 0 0 25px rgba(56, 189, 248, 0.6); }
+}
+.wab-icon {
+  font-size: 24px;
+}
+.wab-content {
+  display: flex;
+  flex-direction: column;
+}
+.wab-content strong {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #38bdf8;
+}
+.wab-content small {
+  font-size: 10px;
+  color: #cbd5e1;
+}
+.mob-qbtn-tactical {
+  background: rgba(168, 85, 247, 0.15) !important;
+  border-color: rgba(168, 85, 247, 0.5) !important;
+  color: #c084fc !important;
+}
+
+@media (max-width: 768px) {
+  .tactical-callin-bar {
+    bottom: 60px;
+    left: 8px;
+    gap: 6px;
+  }
+  .callin-btn {
+    min-width: 80px;
+    padding: 4px 6px;
+  }
+  .cb-key {
+    display: none;
+  }
+  .tech-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
