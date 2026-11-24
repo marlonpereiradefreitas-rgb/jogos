@@ -263,6 +263,226 @@
     });
   }
 
+  const ACCOUNT_SESSION_KEY = 'quarentenaz_operator_session_v1';
+  const LOCAL_ACCOUNTS_KEY = 'quarentenaz_local_accounts_v1';
+
+  function simpleHash(str) {
+    let h1 = 0xdeadbeef ^ str.length;
+    let h2 = 0x41c6ce57 ^ str.length;
+    for (let i = 0; i < str.length; i++) {
+      const ch = str.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (h2 >>> 0).toString(16).padStart(8, '0') + (h1 >>> 0).toString(16).padStart(8, '0');
+  }
+
+  const _memStore = {};
+  function getStoreItem(k) {
+    try {
+      const ls = root.localStorage || (typeof localStorage !== 'undefined' ? localStorage : null);
+      if (ls && typeof ls.getItem === 'function') return ls.getItem(k);
+    } catch (_) {}
+    return _memStore[k] || null;
+  }
+  function setStoreItem(k, v) {
+    _memStore[k] = String(v);
+    try {
+      const ls = root.localStorage || (typeof localStorage !== 'undefined' ? localStorage : null);
+      if (ls && typeof ls.setItem === 'function') ls.setItem(k, String(v));
+    } catch (_) {}
+  }
+  function removeStoreItem(k) {
+    delete _memStore[k];
+    try {
+      const ls = root.localStorage || (typeof localStorage !== 'undefined' ? localStorage : null);
+      if (ls && typeof ls.removeItem === 'function') ls.removeItem(k);
+    } catch (_) {}
+  }
+
+  function loadLocalAccounts() {
+    try {
+      const raw = getStoreItem(LOCAL_ACCOUNTS_KEY);
+      return raw ? (JSON.parse(raw) || {}) : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function saveLocalAccounts(map) {
+    try {
+      setStoreItem(LOCAL_ACCOUNTS_KEY, JSON.stringify(map || {}));
+    } catch (_) {}
+  }
+
+  function getCurrentAccount() {
+    try {
+      const raw = getStoreItem(ACCOUNT_SESSION_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return (parsed && parsed.operatorName) ? parsed : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function setCurrentAccount(acct) {
+    try {
+      if (!acct) {
+        removeStoreItem(ACCOUNT_SESSION_KEY);
+      } else {
+        setStoreItem(ACCOUNT_SESSION_KEY, JSON.stringify(acct));
+      }
+    } catch (_) {}
+  }
+
+  async function registerAccount(opts) {
+    const o = opts || {};
+    const operatorName = String(o.operatorName || '').trim().slice(0, 22);
+    const email = String(o.email || '').trim().toLowerCase().slice(0, 80);
+    const password = String(o.password || '');
+    const avatar = String(o.avatar || '🦅').slice(0, 8);
+    const commander = String(o.commander || 'vance').slice(0, 20);
+    const migrateData = o.migrateData || null;
+
+    if (operatorName.length < 2) {
+      return { ok: false, error: 'O Nome de Operador deve ter pelo menos 2 caracteres.' };
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return { ok: false, error: 'Digite um endereço de e-mail válido.' };
+    }
+    if (password.length < 4) {
+      return { ok: false, error: 'A senha deve ter pelo menos 4 caracteres.' };
+    }
+
+    // 1. Tenta registrar no Servidor Online / Cloud
+    if (isBrowserOnline()) {
+      const natRes = await requestNative('/api/auth/register', 'POST', {
+        operatorName,
+        email,
+        password,
+        avatar,
+        commander,
+        migrateData
+      });
+      if (natRes && natRes.ok) {
+        if (natRes.clientToken) config.clientToken = natRes.clientToken;
+        const session = {
+          operatorName: natRes.profile.player || operatorName,
+          email,
+          avatar: natRes.profile.avatar || avatar,
+          commander: natRes.profile.commander || commander,
+          verifiedOnline: true,
+          loggedAt: Date.now()
+        };
+        setCurrentAccount(session);
+        // Também salva no cofre local para login offline
+        const accts = loadLocalAccounts();
+        accts[email] = Object.assign({}, session, { passHash: simpleHash(email + ':' + password) });
+        saveLocalAccounts(accts);
+        return { ok: true, account: session, profile: natRes.profile, clientToken: natRes.clientToken };
+      } else if (natRes && natRes.error) {
+        return { ok: false, error: natRes.error };
+      }
+    }
+
+    // 2. Fallback Offline-First / Standalone Cloud Vault (ex: GitHub Pages sem backend ativo)
+    const accts = loadLocalAccounts();
+    for (const k of Object.keys(accts)) {
+      const existing = accts[k];
+      if (existing.email === email) {
+        return { ok: false, error: 'Este e-mail já está cadastrado neste dispositivo.' };
+      }
+      if ((existing.operatorName || '').toLowerCase() === operatorName.toLowerCase()) {
+        return { ok: false, error: 'Este Nome de Operador já está reservado.' };
+      }
+    }
+
+    const session = {
+      operatorName,
+      email,
+      avatar,
+      commander,
+      verifiedOnline: isBrowserOnline(),
+      loggedAt: Date.now()
+    };
+    accts[email] = Object.assign({}, session, {
+      passHash: simpleHash(email + ':' + password),
+      migrateData
+    });
+    saveLocalAccounts(accts);
+    setCurrentAccount(session);
+    if (migrateData) {
+      enqueueOfflineAction('profile_sync', Object.assign({ player: operatorName, email, avatar, commander }, migrateData));
+    }
+    return { ok: true, account: session };
+  }
+
+  async function loginAccount(opts) {
+    const o = opts || {};
+    const identifier = String(o.identifier || o.email || o.operatorName || '').trim().toLowerCase();
+    const password = String(o.password || '');
+
+    if (!identifier || !password) {
+      return { ok: false, error: 'Informe seu Nome de Operador (ou E-mail) e Senha.' };
+    }
+
+    if (isBrowserOnline()) {
+      const natRes = await requestNative('/api/auth/login', 'POST', { identifier, password });
+      if (natRes && natRes.ok && natRes.profile) {
+        if (natRes.clientToken) config.clientToken = natRes.clientToken;
+        const session = {
+          operatorName: natRes.profile.player,
+          email: natRes.profile.email || identifier,
+          avatar: natRes.profile.avatar || '🦅',
+          commander: natRes.profile.commander || 'vance',
+          verifiedOnline: true,
+          loggedAt: Date.now()
+        };
+        setCurrentAccount(session);
+        return { ok: true, account: session, profile: natRes.profile, clientToken: natRes.clientToken };
+      }
+    }
+
+    const accts = loadLocalAccounts();
+    let found = null;
+    for (const k of Object.keys(accts)) {
+      const a = accts[k];
+      if (!a) continue;
+      if (a.email === identifier || (a.operatorName || '').toLowerCase() === identifier) {
+        found = a;
+        break;
+      }
+    }
+
+    if (!found) {
+      return { ok: false, error: 'Conta não encontrada. Crie sua conta na aba CRIAR CONTA.' };
+    }
+
+    const expectedHash = simpleHash(found.email + ':' + password);
+    if (found.passHash !== expectedHash) {
+      return { ok: false, error: 'Senha tática incorreta.' };
+    }
+
+    const session = {
+      operatorName: found.operatorName,
+      email: found.email,
+      avatar: found.avatar || '🦅',
+      commander: found.commander || 'vance',
+      verifiedOnline: isBrowserOnline(),
+      loggedAt: Date.now()
+    };
+    setCurrentAccount(session);
+    return { ok: true, account: session };
+  }
+
+  function logoutAccount() {
+    setCurrentAccount(null);
+    return { ok: true };
+  }
+
   const QZ_CLOUD_DB = {
     configure(opts) {
       if (opts && typeof opts === 'object') Object.assign(config, opts);
@@ -277,14 +497,20 @@
         provider: getActiveProvider(),
         online: isBrowserOnline(),
         queuedItems: loadOfflineQueue().length,
-        lastSyncAt
+        lastSyncAt,
+        account: getCurrentAccount()
       };
     },
     enqueueOfflineAction,
     loadOfflineQueue,
     flushOfflineQueue,
     syncProfileAndAchievements,
-    submitRunToCloud
+    submitRunToCloud,
+    registerAccount,
+    loginAccount,
+    logoutAccount,
+    getCurrentAccount,
+    setCurrentAccount
   };
 
   root.QZ_CLOUD_DB = QZ_CLOUD_DB;

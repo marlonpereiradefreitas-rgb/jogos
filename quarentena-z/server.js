@@ -525,6 +525,10 @@ function validateLeaderboardEntry(body) {
     }
   }
 
+  const mode = (body.mode === 'coop' || body.mode === 'solo') ? body.mode : 'solo';
+  const avatar = String(body.avatar || '🦅').slice(0, 8);
+  const commander = String(body.commander || 'vance').slice(0, 20);
+
   return {
     ok: true,
     entry: {
@@ -536,6 +540,9 @@ function validateLeaderboardEntry(body) {
       kills,
       map,
       diff,
+      mode,
+      avatar,
+      commander,
       date: Date.now()
     }
   };
@@ -554,6 +561,9 @@ function publicEntry(entry) {
     kills: entry.kills,
     map: entry.map,
     diff: entry.diff,
+    mode: entry.mode || 'solo',
+    avatar: entry.avatar || '🎖',
+    commander: entry.commander || 'vance',
     date: entry.date
   };
 }
@@ -896,15 +906,23 @@ async function handleApi(req, res, urlObj) {
     return;
   }
 
-  // 2. GET /api/leaderboard
+  // 2. GET /api/leaderboard (suporta filtros por mapa, dificuldade e modo solo/coop)
   if (pathname === '/api/leaderboard' && req.method === 'GET') {
     const sort = urlObj.searchParams.get('sort') || 'wave';
     const mapFilter = urlObj.searchParams.get('map') || 'all';
+    const diffFilter = urlObj.searchParams.get('diff') || 'all';
+    const modeFilter = urlObj.searchParams.get('mode') || 'all';
     const limit = Math.max(1, Math.min(100, Number(urlObj.searchParams.get('limit')) || 50));
 
     let list = DB.leaderboard;
     if (mapFilter !== 'all' && VALID_MAPS.has(mapFilter)) {
       list = list.filter(r => r.map === mapFilter);
+    }
+    if (diffFilter !== 'all' && VALID_DIFFS.has(diffFilter)) {
+      list = list.filter(r => r.diff === diffFilter);
+    }
+    if (modeFilter === 'solo' || modeFilter === 'coop') {
+      list = list.filter(r => (r.mode || 'solo') === modeFilter);
     }
     const sorted = sortLeaderboard(list, sort).slice(0, limit).map(publicEntry);
     sendJson(req, res, 200, {
@@ -1164,6 +1182,136 @@ async function handleApi(req, res, urlObj) {
       DB.users[key] = profile;
       persistDb();
       sendJson(req, res, 200, { ok: true, profile: Object.assign({}, profile, { ownerHash: undefined }) });
+    } catch (err) {
+      sendJson(req, res, 400, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  // 8B. POST /api/auth/register — Cadastro de Conta de Operador com Nome Único + E-mail/Senha + Migração de Progresso
+  if (pathname === '/api/auth/register' && req.method === 'POST') {
+    try {
+      const body = await readJsonBody(req);
+      const operatorName = cleanName(body.operatorName || body.player || '');
+      const email = String(body.email || '').trim().toLowerCase().slice(0, 80);
+      const password = String(body.password || '');
+      const avatar = String(body.avatar || '🦅').slice(0, 8);
+      const commander = String(body.commander || 'vance').slice(0, 20);
+
+      if (!operatorName || operatorName.length < 2) {
+        sendJson(req, res, 400, { ok: false, error: 'Informe um Nome de Operador válido (mínimo 2 caracteres).' });
+        return;
+      }
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        sendJson(req, res, 400, { ok: false, error: 'Informe um endereço de e-mail válido.' });
+        return;
+      }
+      if (!password || password.length < 4) {
+        sendJson(req, res, 400, { ok: false, error: 'A senha tática deve ter pelo menos 4 caracteres.' });
+        return;
+      }
+
+      // Verifica unicidade do Nome de Operador e E-mail
+      const opLower = operatorName.toLowerCase();
+      for (const u of Object.values(DB.users)) {
+        if (!u || !u.email) continue;
+        if (u.email === email) {
+          sendJson(req, res, 409, { ok: false, error: 'Este e-mail já está vinculado a um Operador.' });
+          return;
+        }
+        if ((u.player || '').toLowerCase() === opLower) {
+          sendJson(req, res, 409, { ok: false, error: 'Este Nome de Operador já está em uso por outro Comandante.' });
+          return;
+        }
+      }
+
+      const clientId = sha256Hex('acct:' + email + ':' + opLower).slice(0, 32);
+      const clientToken = issueClientToken(clientId);
+      const ownerHash = sha256Hex('owner:' + clientId);
+      const salt = crypto.randomBytes(16).toString('hex');
+      const passHash = crypto.pbkdf2Sync(password, salt, 10000, 32, 'sha256').toString('hex');
+
+      const mig = (body.migrateData && typeof body.migrateData === 'object') ? body.migrateData : {};
+      const bestWave = Math.max(0, Math.min(5000, Math.floor(Number(mig.bestWave) || 0)));
+      const totalKills = Math.max(0, Math.min(100000000, Math.floor(Number(mig.totalKills) || 0)));
+      const games = Math.max(0, Math.min(1000000, Math.floor(Number(mig.games) || 0)));
+
+      const profile = {
+        player: operatorName,
+        email,
+        avatar,
+        commander,
+        ownerHash,
+        salt,
+        passHash,
+        bestWave,
+        totalKills,
+        games,
+        achievements: (mig.achievements && typeof mig.achievements === 'object') ? mig.achievements : {},
+        medals: (mig.medals && typeof mig.medals === 'object') ? mig.medals : {},
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
+
+      DB.users[ownerHash] = profile;
+      persistDb();
+
+      const safeProfile = Object.assign({}, profile, { ownerHash: undefined, salt: undefined, passHash: undefined });
+      sendJson(req, res, 200, {
+        ok: true,
+        clientToken,
+        profile: safeProfile
+      });
+    } catch (err) {
+      sendJson(req, res, 400, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  // 8C. POST /api/auth/login — Autenticação de Operador por E-mail ou Callsign + Senha
+  if (pathname === '/api/auth/login' && req.method === 'POST') {
+    try {
+      const body = await readJsonBody(req);
+      const identifier = String(body.identifier || body.email || body.operatorName || '').trim().toLowerCase();
+      const password = String(body.password || '');
+
+      if (!identifier || !password) {
+        sendJson(req, res, 400, { ok: false, error: 'Informe seu Nome de Operador/E-mail e senha.' });
+        return;
+      }
+
+      let foundUser = null;
+      for (const u of Object.values(DB.users)) {
+        if (!u || !u.passHash || !u.salt) continue;
+        if (u.email === identifier || (u.player || '').toLowerCase() === identifier) {
+          foundUser = u;
+          break;
+        }
+      }
+
+      if (!foundUser) {
+        sendJson(req, res, 401, { ok: false, error: 'Operador não encontrado ou credenciais inválidas.' });
+        return;
+      }
+
+      const computedHash = crypto.pbkdf2Sync(password, foundUser.salt, 10000, 32, 'sha256').toString('hex');
+      if (!timingSafeHexEqual(computedHash, foundUser.passHash)) {
+        recordViolation(ip);
+        sendJson(req, res, 401, { ok: false, error: 'Senha incorreta.' });
+        return;
+      }
+
+      const clientId = sha256Hex('acct:' + foundUser.email + ':' + (foundUser.player || '').toLowerCase()).slice(0, 32);
+      const clientToken = issueClientToken(clientId);
+      foundUser.lastLoginAt = Date.now();
+      persistDb();
+
+      const safeProfile = Object.assign({}, foundUser, { ownerHash: undefined, salt: undefined, passHash: undefined });
+      sendJson(req, res, 200, {
+        ok: true,
+        clientToken,
+        profile: safeProfile
+      });
     } catch (err) {
       sendJson(req, res, 400, { ok: false, error: err.message });
     }

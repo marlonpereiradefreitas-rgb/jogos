@@ -112,6 +112,203 @@
     ]
   };
 
+  // =========================================================
+  // SISTEMA DE 3 COMANDANTES JOGÁVEIS (NÍVEL 1 A 15)
+  // =========================================================
+  const COMMANDERS = Object.freeze({
+    vance: {
+      id: 'vance',
+      name: 'Comandante Vance',
+      title: 'Bastião Blindado',
+      icon: '🛡️',
+      accent: '#38bdf8',
+      role: 'Artilharia Balística & Fortificação',
+      desc: 'Aumenta o dano de torres balísticas/explosivas e reforça a blindagem máxima da Base Alfa.',
+      perkSummary: lv => `+${Math.round(3 + lv * 1.5)}% Dano Balístico · +${lv * 2} Vida da Base`
+    },
+    elena: {
+      id: 'elena',
+      name: 'Dra. Elena Kovács',
+      title: 'Valquíria Bio-Tech',
+      icon: '⚡',
+      accent: '#a855f7',
+      role: 'Energia, Elementos & Recarga Tática',
+      desc: 'Amplifica o dano elemental/químico/laser e reduz o tempo de recarga das habilidades ativas.',
+      perkSummary: lv => `+${Math.round(4 + lv * 1.7)}% Dano Elemental · -${Math.round(3 + lv * 1.3)}% Recarga`
+    },
+    marcus: {
+      id: 'marcus',
+      name: 'Major Marcus Sterling',
+      title: 'Fantasma Tático',
+      icon: '🎯',
+      accent: '#10b981',
+      role: 'Operações Especiais, Alcance & Economia',
+      desc: 'Expande o alcance de radar das torres, concede moedas extras iniciais e fortalece Sniper, Dino e Direcional.',
+      perkSummary: lv => `+${Math.round(2 + lv * 1.2)}% Alcance Global · +$${10 + lv * 8} Moedas Iniciais`
+    }
+  });
+
+  function getCommanderLevelInfo(xp) {
+    const safeXp = Math.max(0, Math.floor(Number(xp) || 0));
+    let level = 1;
+    let neededForNext = 100;
+    let accum = 0;
+    for (let lv = 1; lv < 15; lv++) {
+      const step = Math.round(100 * Math.pow(1.26, lv - 1));
+      if (safeXp >= accum + step) {
+        accum += step;
+        level = lv + 1;
+      } else {
+        neededForNext = step;
+        break;
+      }
+    }
+    const currentInLevel = level >= 15 ? neededForNext : Math.max(0, safeXp - accum);
+    const progressPct = level >= 15 ? 100 : Math.min(100, Math.round((currentInLevel / Math.max(1, neededForNext)) * 100));
+    return {
+      level: Math.max(1, Math.min(15, level)),
+      maxLevel: 15,
+      xp: safeXp,
+      currentInLevel,
+      neededForNext,
+      progressPct
+    };
+  }
+
+  function getCommanderBonuses(commanderId, xpOrLevel) {
+    const id = COMMANDERS[commanderId] ? commanderId : 'vance';
+    const lv = (xpOrLevel >= 1 && xpOrLevel <= 15 && xpOrLevel === Math.floor(xpOrLevel))
+      ? xpOrLevel
+      : getCommanderLevelInfo(xpOrLevel).level;
+    return {
+      id,
+      level: lv,
+      ballisticDmgMult: id === 'vance' ? 1 + (0.03 + lv * 0.015) : 1,
+      baseLifeBonus: id === 'vance' ? lv * 2 : 0,
+      elementalDmgMult: id === 'elena' ? 1 + (0.04 + lv * 0.017) : 1,
+      abilityCdMult: id === 'elena' ? Math.max(0.70, 1 - (0.03 + lv * 0.013)) : 1,
+      rangeMult: id === 'marcus' ? 1 + (0.02 + lv * 0.012) : 1,
+      startMoneyBonus: id === 'marcus' ? (10 + lv * 8) : 0,
+      specOpsDmgMult: id === 'marcus' ? 1 + (0.04 + lv * 0.016) : 1
+    };
+  }
+
+  // =========================================================
+  // SISTEMA GEOMÉTRICO DE LINHA DE VISÃO (RAYCASTING 2D — ESTILO BTD6 SNIPER)
+  // =========================================================
+  const LOS_TOWER_KEYS = new Set(['sniper', 'dartgun', 'gunner', 'shotgun', 'antitank', 'railgun', 'archer']);
+
+  function isTowerAffectedByLoS(tower) {
+    if (!tower) return false;
+    if (tower.paragon) return false; // Ascendidas enxergam sobre barreiras
+    if (tower.s && tower.s.ignoreLoS) return false; // Upgrades de Mira Térmica / Satélite / Perfuração Total
+    const lv = tower.levels || [0, 0, 0];
+    // Tier 4+ na linha de Tecnologia/Óptica (caminho 2 ou 3 no Sniper/Direcional) contorna barreiras menores
+    if ((tower.key === 'sniper' || tower.key === 'dartgun') && (lv[1] >= 4 || lv[2] >= 4)) return false;
+    return LOS_TOWER_KEYS.has(tower.key);
+  }
+
+  /**
+   * Verifica se o segmento de reta (x1,y1)->(x2,y2) intercepta um círculo (cx,cy,r)
+   */
+  function segmentIntersectsCircle(x1, y1, x2, y2, cx, cy, r) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq < 1e-6) return false;
+    let t = ((cx - x1) * dx + (cy - y1) * dy) / lenSq;
+    // Ignora extremidades exatas (0..0.04) para não auto-bloquear na própria base
+    if (t < 0.04 || t > 0.98) return false;
+    const px = x1 + t * dx;
+    const py = y1 + t * dy;
+    const distSq = (cx - px) * (cx - px) + (cy - py) * (cy - py);
+    return distSq <= r * r;
+  }
+
+  /**
+   * Retorna true se há linha de visão livre entre (x1,y1) e (x2,y2)
+   */
+  function hasLineOfSight(x1, y1, x2, y2, obstacles, tower) {
+    if (!Array.isArray(obstacles) || obstacles.length === 0) return true;
+    if (tower && !isTowerAffectedByLoS(tower)) return true;
+    for (let i = 0; i < obstacles.length; i++) {
+      const obs = obstacles[i];
+      if (!obs || obs.blocksLoS === false) continue;
+      const rad = Math.max(10, (obs.r || 18) * 0.88);
+      if (segmentIntersectsCircle(x1, y1, x2, y2, obs.x, obs.y, rad)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Calcula o primeiro ponto de impacto de um raio direcional (ex: Torre Direcional) contra uma barreira
+   */
+  function raycastFirstBarrierHit(x1, y1, angle, maxDist, obstacles, tower) {
+    if (!Array.isArray(obstacles) || obstacles.length === 0) return null;
+    if (tower && !isTowerAffectedByLoS(tower)) return null;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    let bestT = maxDist + 1;
+    let hitObs = null;
+
+    for (let i = 0; i < obstacles.length; i++) {
+      const obs = obstacles[i];
+      if (!obs || obs.blocksLoS === false) continue;
+      const r = Math.max(10, (obs.r || 18) * 0.9);
+      const fx = obs.x - x1;
+      const fy = obs.y - y1;
+      const proj = fx * cos + fy * sin;
+      if (proj <= 6 || proj > maxDist) continue;
+      const perpSq = (fx * fx + fy * fy) - proj * proj;
+      if (perpSq <= r * r) {
+        const offset = Math.sqrt(Math.max(0, r * r - perpSq));
+        const tHit = Math.max(6, proj - offset);
+        if (tHit < bestT) {
+          bestT = tHit;
+          hitObs = obs;
+        }
+      }
+    }
+    if (!hitObs) return null;
+    return {
+      x: x1 + cos * bestT,
+      y: y1 + sin * bestT,
+      dist: bestT,
+      obstacle: hitObs
+    };
+  }
+
+  /**
+   * Calcula os cones de sombra 2D projetados pelas barreiras dentro do alcance da torre
+   */
+  function computeShadowCones(tx, ty, range, obstacles) {
+    const cones = [];
+    if (!Array.isArray(obstacles) || !obstacles.length) return cones;
+    const maxR = Math.min(980, Math.max(120, range || 260));
+    for (let i = 0; i < obstacles.length; i++) {
+      const obs = obstacles[i];
+      if (!obs || obs.blocksLoS === false) continue;
+      const dx = obs.x - tx;
+      const dy = obs.y - ty;
+      const d = Math.hypot(dx, dy);
+      const r = Math.max(10, (obs.r || 18) * 0.92);
+      if (d <= r + 4 || d > maxR + r) continue;
+      const centerAng = Math.atan2(dy, dx);
+      const halfSpread = Math.asin(Math.min(0.98, r / d));
+      cones.push({
+        obs,
+        dist: d,
+        r,
+        a1: centerAng - halfSpread,
+        a2: centerAng + halfSpread,
+        maxR: Math.max(maxR, d + 120)
+      });
+    }
+    return cones;
+  }
+
   function getTowerSkinInfo(tower) {
     if (!tower) return { tier: 0, dominantPath: -1, palette: SKIN_PALETTES[0], pathSkin: null, portraitIcon: '🗼' };
     const lv = tower.levels || tower.pathLevels || [0, 0, 0];
@@ -139,6 +336,15 @@
     PATH_SKINS,
     NEW_TOWER_BALANCE,
     MAP_OBSTACLE_PRESETS,
+    COMMANDERS,
+    LOS_TOWER_KEYS,
+    getCommanderLevelInfo,
+    getCommanderBonuses,
+    isTowerAffectedByLoS,
+    segmentIntersectsCircle,
+    hasLineOfSight,
+    raycastFirstBarrierHit,
+    computeShadowCones,
     getTowerSkinInfo
   };
 })(typeof globalThis !== 'undefined' ? globalThis : window);

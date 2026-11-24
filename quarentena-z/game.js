@@ -406,7 +406,7 @@ const TOWERS = {
       {name:'Mira Térmica', cost:400, desc:'Ignora 50% da armadura (Sniper: alcance global; demais: +30% alcance)', apply:s=>{s.range=s.global?Math.max(s.range,1400):s.range*1.3; s.armorPen=.5;}},
       {choices:[
         {name:'Tiro Crítico', cost:720, desc:'32% de chance de dano x2,8', apply:s=>{s.crit=.32; s.critMult=2.8; s.dmg+=18;}},
-        {name:'Perfuração Total', cost:720, desc:'Ignora armadura, atravessa 3, x1,5 vs gigantes/chefes', apply:s=>{s.armorPen=1; s.pierce=3; s.bigMult=1.5;}}
+        {name:'Perfuração Total', cost:720, desc:'Ignora armadura e barreiras de visão, atravessa 3, x1,5 vs gigantes/chefes', apply:s=>{s.armorPen=1; s.pierce=3; s.bigMult=1.5; s.ignoreLoS=true;}}
       ]}
     ]
   },
@@ -2154,6 +2154,21 @@ class Proj {
     }
     const px=this.x,py=this.y; this.x+=this.vx*h; this.y+=this.vy*h; this.life-=h;
     if(this.life<=0||this.x<-80||this.x>W+80||this.y<-80||this.y>H+80)return false;
+    // Bloqueio geométrico de Linha de Visão (Barreiras Táticas interceptam tiros rasos de Sniper/Direcional sem contorno)
+    if(this.kind!=='shell'&&this.kind!=='glob'&&obstacles.length>0&&this.owner){
+      const btd=window.QZ_BTD6_TOWERS;
+      if(btd&&typeof btd.isTowerAffectedByLoS==='function'&&btd.isTowerAffectedByLoS(this.owner)){
+        for(let oi=0;oi<obstacles.length;oi++){
+          const ob=obstacles[oi];
+          if(!ob||ob.blocksLoS===false)continue;
+          const obr=Math.max(10,(ob.r||18)*0.85);
+          if(segDist2(px,py,this.x,this.y,ob.x,ob.y)<=obr*obr){
+            FX.spark(this.x,this.y,'#94a3b8',3);
+            return false;
+          }
+        }
+      }
+    }
     for(const z of zombies){
       if(z.dead||z.reached||this.hit.includes(z.id))continue;
       const rr=z.r+this.r;
@@ -2198,15 +2213,18 @@ function releaseProj(p){
   if(p&&_projPool.length<600)_projPool.push(p);
 }
 
-// Seleção de alvo: first | last | strong | close
+// Seleção de alvo: first | last | strong | close (com verificação de Linha de Visão estilo BTD6 Sniper)
 function findTarget(t){
   let best=null,bv=-1e12; const r=t.s.range*(1+(t._auraRange||0)), pr=t.priority, canCamo=t.def.detectCamo||t._auraCamo, canAir=t.def.canAir||t._auraCamo;
+  const btd=window.QZ_BTD6_TOWERS;
+  const checkLoS=!!(obstacles.length>0&&btd&&typeof btd.isTowerAffectedByLoS==='function'&&btd.isTowerAffectedByLoS(t));
   for(const z of zombies){
     if(z.dead||z.reached)continue;
     if(z.D.camo&&!canCamo)continue;
     if(z.D.flying&&!canAir)continue;
     const dx=z.x-t.x,dy=z.y-t.y,d2=dx*dx+dy*dy,rr=r+z.r*.5;
     if(d2>rr*rr)continue;
+    if(checkLoS&&!btd.hasLineOfSight(t.x,t.y,z.x,z.y,obstacles,t))continue;
     const v=pr==='first'?z.dist:pr==='last'?-z.dist:pr==='strong'?z.hp:-d2;
     if(v>bv){bv=v;best=z;}
   }
@@ -3649,16 +3667,37 @@ function deleteRankEntry(id){
   renderRank();
   updateHomeStats();
 }
-function recordRankEntry(wave,timeSec,kills,mapId,diffId){
+function getActiveOperatorAccount(){
+  if(window.QZ_CLOUD_DB&&typeof window.QZ_CLOUD_DB.getCurrentAccount==='function'){
+    const acct=window.QZ_CLOUD_DB.getCurrentAccount();
+    if(acct&&acct.operatorName)return acct;
+  }
+  return null;
+}
+
+function getOperatorAccountLevel(){
+  const bw=Math.max(career.bestWave||0,PS.bestWave||0);
+  const tk=Math.max(career.totalKills||0,PS.kills||0);
+  const games=Math.max(career.games||0,(PS.wins||0)+(PS.losses||0));
+  const xp=bw*45+Math.floor(tk*0.6)+games*35;
+  return Math.max(1,Math.min(100,1+Math.floor(Math.sqrt(xp/25))));
+}
+
+function recordRankEntry(wave,timeSec,kills,mapId,diffId,customMode){
   try{localStorage.removeItem(RANK_KEY+'_cleared');}catch(e){}
   const list=loadRank();
-  const pName=getPlayerName();
+  const acct=getActiveOperatorAccount();
+  const pName=acct?acct.operatorName:getPlayerName();
   const id='run_'+Date.now()+'_'+Math.floor(Math.random()*1000);
   lastRecordedRankId=id;
+  const runMode=customMode||((COOP&&COOP.active)?'coop':'solo');
   const entry={
     id,
     isProfile:false,
     name:pName,
+    avatar:(acct&&acct.avatar)||'🦅',
+    commander:career.activeCommander||'vance',
+    mode:runMode,
     wave:Math.max(0,wave|0),
     time:Math.max(0,Math.floor(timeSec||0)),
     kills:Math.max(0,kills|0),
@@ -3671,6 +3710,8 @@ function recordRankEntry(wave,timeSec,kills,mapId,diffId){
   const prof=list.find(r=>r.isProfile);
   if(prof){
     prof.name=pName;
+    prof.avatar=entry.avatar;
+    prof.mode=runMode;
     prof.wave=Math.max(prof.wave||0,wave|0,career.bestWave||0,PS.bestWave||0);
     prof.kills=Math.max(prof.kills||0,career.totalKills||0,PS.kills||0);
     prof.time=Math.max(prof.time||0,Math.floor(PS.time||0),Math.floor(timeSec||0));
@@ -3685,7 +3726,19 @@ function recordRankEntry(wave,timeSec,kills,mapId,diffId){
 function sortedRankList(mode){
   const list=loadRank();
   const runs=list.filter(r=>!r.isProfile);
-  const pool=runs.length?runs:list;
+  let pool=runs.length?runs:list;
+  const fMode=$('rankFilterMode')?$('rankFilterMode').value:'all';
+  const fMap=$('rankFilterMap')?$('rankFilterMap').value:'all';
+  const fDiff=$('rankFilterDiff')?$('rankFilterDiff').value:'all';
+  if(fMode==='solo'||fMode==='coop'){
+    pool=pool.filter(r=>(r.mode||'solo')===fMode);
+  }
+  if(fMap&&fMap!=='all'&&MAPS[fMap]){
+    pool=pool.filter(r=>r.map===fMap);
+  }
+  if(fDiff&&fDiff!=='all'){
+    pool=pool.filter(r=>(r.diff||'normal')===fDiff);
+  }
   const s=mode||rankSort||'wave';
   return pool.slice().sort((a,b)=>{
     if(s==='kills')return (b.kills-a.kills)||(b.wave-a.wave)||(b.time-a.time);
@@ -3694,8 +3747,20 @@ function sortedRankList(mode){
   });
 }
 function escHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function populateRankMapFilter(){
+  const sel=$('rankFilterMap');
+  if(!sel||sel.options.length>2)return;
+  for(const k of Object.keys(MAPS)){
+    const opt=document.createElement('option');
+    opt.value=k;
+    opt.textContent='🗺 '+(MAPS[k].name||k);
+    sel.appendChild(opt);
+  }
+}
 function renderRank(){
-  const pName=getPlayerName();
+  populateRankMapFilter();
+  const acct=getActiveOperatorAccount();
+  const pName=acct?acct.operatorName:getPlayerName();
   const list=loadRank();
   const bw=Math.max(career.bestWave||0,PS.bestWave||0,...list.map(r=>r.wave||0),0);
   const tk=Math.max(career.totalKills||0,PS.kills||0,...list.map(r=>r.kills||0),0);
@@ -3705,7 +3770,7 @@ function renderRank(){
 
   if($('playerNameInput'))$('playerNameInput').value=pName;
   if($('rankPlayerName'))$('rankPlayerName').textContent=pName;
-  if($('rankPlayerPatent'))$('rankPlayerPatent').textContent='Patente: '+getPatent(bw);
+  if($('rankPlayerPatent'))$('rankPlayerPatent').textContent='Nível '+getOperatorAccountLevel()+' · '+getPatent(bw);
   if($('rankBestWave'))$('rankBestWave').textContent='Onda '+bw;
   if($('rankTotalTime'))$('rankTotalTime').textContent=fmtTime(totalTime);
   if($('rankBestRunTime'))$('rankBestRunTime').textContent='Maior partida: '+fmtTime(bestRunTime);
@@ -3713,25 +3778,37 @@ function renderRank(){
   if($('rankBestRunKills'))$('rankBestRunKills').textContent='Recorde em 1 partida: '+Math.floor(bestRunKills).toLocaleString('pt-BR');
 
   const rows=sortedRankList(rankSort);
+  const pNameLower=(pName||'').toLowerCase();
+  const myPosIdx=rows.findIndex(r=>(r.name||'').toLowerCase()===pNameLower);
+  if($('rankPlayerPositionBanner')){
+    $('rankPlayerPositionBanner').innerHTML=myPosIdx>=0
+      ?('🏆 Sua Posição no Placar Filtrado: <b style="color:#34d399">#'+(myPosIdx+1)+'</b> de '+rows.length+' registros ('+escHtml(pName)+')')
+      :('🏆 Operador Ativo: <b>'+escHtml(pName)+'</b> · Complete uma operação neste filtro para ranquear');
+  }
+
   const dLab={easy:'Fácil',normal:'Normal',hard:'Difícil',apocalypse:'Apocalipse'};
   let html='';
   if(!rows.length){
-    html='<tr><td colspan="8" class="rank-empty">Nenhum registro no ranking. Inicie uma operação para registrar sua marca!</td></tr>';
+    html='<tr><td colspan="8" class="rank-empty">Nenhum registro encontrado para este filtro. Inicie uma operação para registrar sua marca no Top Global!</td></tr>';
   } else {
-    rows.slice(0,25).forEach((r,idx)=>{
+    rows.slice(0,30).forEach((r,idx)=>{
       const pos=idx+1;
       const medal=pos===1?'🥇 1º':pos===2?'🥈 2º':pos===3?'🥉 3º':pos+'º';
       const mName=(MAPS[r.map]&&MAPS[r.map].name)||'Cidade Abandonada';
       const df=dLab[r.diff]||'Normal';
       const dtStr=r.date?new Date(r.date).toLocaleDateString('pt-BR'):'—';
-      const cls=pos<=3?'rank-row top-'+pos:'rank-row';
+      const isMe=(r.name||'').toLowerCase()===pNameLower;
+      const modeTag=(r.mode==='coop')?'<span class="rk-mode-tag coop">🤝 CO-OP</span>':'<span class="rk-mode-tag solo">SOLO</span>';
+      const youTag=isMe?'<span class="rk-you-tag">VOCÊ</span>':'';
+      const av=escHtml(r.avatar||(isMe&&acct?acct.avatar:'🎖'));
+      const cls=(pos<=3?'rank-row top-'+pos:'rank-row')+(isMe?' rank-row-me':'');
       html+='<tr class="'+cls+'">'
         +'<td class="rk-pos"><b>'+medal+'</b></td>'
-        +'<td class="rk-name"><span class="rk-avatar">🎖</span><div><b>'+escHtml(r.name||'Comandante')+'</b><small>'+(r.isProfile?'Registro Geral da Carreira':getPatent(r.wave||0))+'</small></div></td>'
+        +'<td class="rk-name"><span class="rk-avatar">'+av+'</span><div><b>'+escHtml(r.name||'Comandante')+youTag+'</b><small>'+(r.isProfile?'Registro Geral da Carreira':getPatent(r.wave||0))+'</small></div></td>'
         +'<td class="rk-wave"><b>Onda '+(r.wave||0)+'</b></td>'
         +'<td class="rk-time"><b>'+fmtTime(r.time||0)+'</b></td>'
         +'<td class="rk-kills"><b>'+Math.floor(r.kills||0).toLocaleString('pt-BR')+'</b></td>'
-        +'<td class="rk-map"><span>'+escHtml(mName)+'</span><small class="rk-diff diff-'+(r.diff||'normal')+'">'+df+'</small></td>'
+        +'<td class="rk-map"><span>'+escHtml(mName)+'</span><div style="display:flex;gap:4px;margin-top:2px;"><small class="rk-diff diff-'+(r.diff||'normal')+'">'+df+'</small>'+modeTag+'</div></td>'
         +'<td class="rk-date">'+dtStr+'</td>'
         +'<td class="rk-act"><button type="button" class="btn-del-rank" data-id="'+escHtml(r.id)+'" title="Excluir este registro">✕</button></td>'
         +'</tr>';
@@ -3742,11 +3819,17 @@ function renderRank(){
 function updateHomeStats(){
   const d=achLoad(),got=ACH.filter(a=>d[a.id]).length;
   const list=loadRank();
-  const pName=getPlayerName();
+  const acct=getActiveOperatorAccount();
+  const pName=acct?acct.operatorName:getPlayerName();
+  const av=(acct&&acct.avatar)||'🦅';
+  const lv=getOperatorAccountLevel();
   const bw=Math.max(career.bestWave||0,PS.bestWave||0,...list.map(r=>r.wave||0),0);
   const tk=Math.max(career.totalKills||0,PS.kills||0,...list.map(r=>r.kills||0),0);
   const tt=Math.max(Math.floor(PS.time||0),...list.map(r=>r.time||0),0);
-  if($('homeStatPlayer'))$('homeStatPlayer').textContent=pName;
+  if($('homeStatPlayer'))$('homeStatPlayer').textContent=av+' '+pName;
+  if($('homeOperatorLevel'))$('homeOperatorLevel').textContent='Nv.'+lv+' · '+getPatent(bw);
+  if($('homeOperatorStatus'))$('homeOperatorStatus').textContent=acct?'🟢 CONTA VERIFICADA':'⚡ OPERADOR LOCAL';
+  if($('homeAccountSub'))$('homeAccountSub').textContent=acct?('Logado como '+pName+' (Nv.'+lv+')'):'Entre ou crie sua conta para o Top Global';
   if($('homeStatWave'))$('homeStatWave').textContent='Onda '+bw;
   if($('homeStatKills'))$('homeStatKills').textContent=Math.floor(tk).toLocaleString('pt-BR');
   if($('homeStatTime'))$('homeStatTime').textContent=fmtTime(tt);
@@ -5526,14 +5609,99 @@ function validSpot(x,y){
   }
   return null;
 }
+function drawLoSShadows(tx,ty,range,towerObj){
+  const btd=window.QZ_BTD6_TOWERS;
+  if(!btd||typeof btd.isTowerAffectedByLoS!=='function'||typeof btd.computeShadowCones!=='function')return;
+  if(!btd.isTowerAffectedByLoS(towerObj))return;
+  const cones=btd.computeShadowCones(tx,ty,range,obstacles);
+  if(!cones||!cones.length)return;
+  ctx.save();
+  for(let i=0;i<cones.length;i++){
+    const c=cones[i];
+    const r0=Math.max(12,c.dist);
+    const r1=Math.min(720,Math.max(r0+80,c.maxR));
+    // Cone de sombra 2D projetado atrás da barreira tática
+    ctx.fillStyle='rgba(239, 68, 68, 0.22)';
+    ctx.beginPath();
+    ctx.arc(tx,ty,r0,c.a1,c.a2,false);
+    ctx.arc(tx,ty,r1,c.a2,c.a1,true);
+    ctx.closePath();
+    ctx.fill();
+    // Linhas tangentes tracejadas do bloqueio de visão
+    ctx.strokeStyle='rgba(248, 113, 113, 0.78)';
+    ctx.lineWidth=1.5;
+    ctx.setLineDash([5,4]);
+    ctx.beginPath();
+    ctx.moveTo(tx+Math.cos(c.a1)*r0,ty+Math.sin(c.a1)*r0);
+    ctx.lineTo(tx+Math.cos(c.a1)*r1,ty+Math.sin(c.a1)*r1);
+    ctx.moveTo(tx+Math.cos(c.a2)*r0,ty+Math.sin(c.a2)*r0);
+    ctx.lineTo(tx+Math.cos(c.a2)*r1,ty+Math.sin(c.a2)*r1);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Destaque na barreira que está bloqueando a visão
+    ctx.strokeStyle='#ef4444';
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.arc(c.obs.x,c.obs.y,(c.obs.r||18)+3,0,6.283);
+    ctx.stroke();
+    ctx.font='bold 9px "Courier New",monospace';
+    ctx.textAlign='center';
+    ctx.fillStyle='#fca5a5';
+    ctx.fillText('🚫 VISÃO BLOQUEADA',c.obs.x,c.obs.y-(c.obs.r||18)-6);
+  }
+  ctx.restore();
+}
+
 function drawPreview(){
   if(!M.in)return;
   if(G.placing){
     const d=TOWERS[G.placing],bad=validSpot(M.x,M.y),ok=!bad;
-    ctx.fillStyle=ok?'rgba(80,255,80,.16)':'rgba(255,60,60,.18)';ctx.strokeStyle=ok?'rgba(120,255,120,.8)':'rgba(255,90,90,.8)';ctx.lineWidth=2;
-    ctx.beginPath();ctx.arc(M.x,M.y,d.base.range,0,6.283);ctx.fill();ctx.stroke();
-    ctx.globalAlpha=.85;drawTowerSprite(G.placing,M.x,M.y,-.6,0,1,-1,G.anim);ctx.globalAlpha=1;
-    ctx.strokeStyle=ok?'#6f6':'#f55';ctx.lineWidth=2;ctx.beginPath();ctx.arc(M.x,M.y,CFG.towerR+2,0,6.283);ctx.stroke();
+    const rangeR=d.base.range*(1+getTechBonus('tower_range')*0.03);
+    // 1. Sombra de Linha de Visão em tempo real (Sniper / Torre Direcional / Balísticas)
+    drawLoSShadows(M.x,M.y,rangeR,{key:G.placing,levels:[0,0,0],s:d.base});
+    // 2. Círculo de alcance em tempo real (Verde/Ciano = válido, Vermelho = proibido)
+    ctx.fillStyle=ok?'rgba(16, 185, 129, 0.18)':'rgba(239, 68, 68, 0.22)';
+    ctx.strokeStyle=ok?'rgba(56, 189, 248, 0.92)':'rgba(248, 113, 113, 0.92)';
+    ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(M.x,M.y,rangeR,0,6.283);ctx.fill();ctx.stroke();
+    // 3. Linha de Laser em Tempo Real para a Torre Direcional (dartgun)
+    let previewAng=-0.6;
+    if(G.placing==='dartgun'){
+      const np=nearestPathProg(M.x,M.y);pathPos(np.d,_pp);
+      previewAng=Math.atan2(_pp.y-M.y,_pp.x-M.x);
+      const btd=window.QZ_BTD6_TOWERS;
+      const hit=btd&&typeof btd.raycastFirstBarrierHit==='function'
+        ?btd.raycastFirstBarrierHit(M.x,M.y,previewAng,380,obstacles,{key:'dartgun',levels:[0,0,0],s:d.base})
+        :null;
+      const endX=hit?hit.x:(M.x+Math.cos(previewAng)*360);
+      const endY=hit?hit.y:(M.y+Math.sin(previewAng)*360);
+      ctx.save();
+      ctx.strokeStyle=hit?'#ef4444':'#38bdf8';
+      ctx.lineWidth=2.2;
+      ctx.setLineDash([7,4]);
+      ctx.beginPath();ctx.moveTo(M.x,M.y);ctx.lineTo(endX,endY);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle=hit?'#ef4444':'#38bdf8';
+      ctx.beginPath();ctx.arc(endX,endY,5,0,6.283);ctx.fill();
+      ctx.restore();
+    }
+    // 4. Raio de Patrulha em Tempo Real para o Domador Jurássico (dino)
+    if(G.placing==='dino'){
+      const np=nearestPathProg(M.x,M.y);pathPos(np.d,_pp);
+      ctx.save();
+      ctx.strokeStyle='rgba(74, 222, 128, 0.75)';
+      ctx.fillStyle='rgba(74, 222, 128, 0.16)';
+      ctx.lineWidth=1.8;
+      ctx.setLineDash([6,4]);
+      ctx.beginPath();ctx.moveTo(M.x,M.y);ctx.lineTo(_pp.x,_pp.y);ctx.stroke();
+      ctx.beginPath();ctx.arc(_pp.x,_pp.y,90,0,6.283);ctx.fill();ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font='bold 10px "Courier New",monospace';ctx.textAlign='center';ctx.fillStyle='#86efac';
+      ctx.fillText('🦖 RAIO DE PATRULHA',_pp.x,_pp.y-4);
+      ctx.restore();
+    }
+    ctx.globalAlpha=.88;drawTowerSprite(G.placing,M.x,M.y,previewAng,0,1,-1,G.anim);ctx.globalAlpha=1;
+    ctx.strokeStyle=ok?'#34d399':'#ef4444';ctx.lineWidth=2.2;ctx.beginPath();ctx.arc(M.x,M.y,CFG.towerR+2,0,6.283);ctx.stroke();
     if(bad){ctx.fillStyle='#ff9080';ctx.font='bold 12px "Courier New",monospace';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText(bad,M.x,M.y-26);ctx.fillText(bad,M.x,M.y-26);ctx.textAlign='left';}
   } else if(G.targeting==='aim'&&G.selected){
     ctx.strokeStyle='#38bdf8';ctx.lineWidth=2;ctx.setLineDash([6,4]);
@@ -5636,7 +5804,10 @@ function render(){
     }
     ctx.restore();
   }
-  if(G.selected){ctx.fillStyle='rgba(255,255,255,.08)';ctx.strokeStyle='rgba(39,201,255,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(G.selected.x,G.selected.y,G.selected.s.range,0,6.283);ctx.fill();ctx.stroke();}
+  if(G.selected){
+    drawLoSShadows(G.selected.x,G.selected.y,G.selected.s.range,G.selected);
+    ctx.fillStyle='rgba(255,255,255,.08)';ctx.strokeStyle='rgba(39,201,255,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(G.selected.x,G.selected.y,G.selected.s.range,0,6.283);ctx.fill();ctx.stroke();
+  }
   for(const t of towers)drawTower(t);
   if(G.selected){ctx.strokeStyle='#27c9ff';ctx.shadowColor='#27c9ff';ctx.shadowBlur=IS_MOBILE?0:10;ctx.lineWidth=2;ctx.beginPath();ctx.arc(G.selected.x,G.selected.y,19,0,6.283);ctx.stroke();ctx.shadowBlur=0;}
   _renderZombies.length=zombies.length;
@@ -6340,9 +6511,70 @@ function buildSidebar(){
   });
   for(const host of [list,supList]){
     if(!host)continue;
-    host.addEventListener('click',e=>{const c=e.target.closest('.tcard');if(c)pickTower(c.dataset.key);});
+    host.addEventListener('click',e=>{
+      if(window.__qzSuppressNextCardClick){window.__qzSuppressNextCardClick=false;return;}
+      const c=e.target.closest('.tcard');
+      if(c)pickTower(c.dataset.key);
+    });
+    host.addEventListener('pointerdown',e=>{
+      if(e.button===2||G.mode!=='play')return;
+      const c=e.target.closest('.tcard');
+      if(!c||!c.dataset.key)return;
+      window.__qzTowerDrag={
+        key:c.dataset.key,
+        startX:e.clientX,
+        startY:e.clientY,
+        pointerId:e.pointerId,
+        pointerType:e.pointerType,
+        active:false
+      };
+    });
     host.addEventListener('pointerover',e=>{const c=e.target.closest('.tcard');if(c&&e.pointerType==='mouse')tip(towerTip(c.dataset.key),c);});
     host.addEventListener('pointerout',hideTip);
+  }
+  if(!window.__qzGlobalDragBound){
+    window.__qzGlobalDragBound=true;
+    window.addEventListener('pointermove',e=>{
+      const dg=window.__qzTowerDrag;
+      if(!dg)return;
+      const distMoved=Math.hypot(e.clientX-dg.startX,e.clientY-dg.startY);
+      if(!dg.active&&distMoved>10){
+        const d=TOWERS[dg.key];
+        if(!d||!Number.isFinite(G.money)||G.money<d.cost){
+          noMoney();
+          window.__qzTowerDrag=null;
+          return;
+        }
+        dg.active=true;
+        G.placing=dg.key;G.targeting=null;select(null);hideTip();
+        if(IS_MOBILE)setSidebarMobileOpen(false);
+        setHint(IS_MOBILE
+          ?('Arraste para posicionar '+d.name+' (solte no verde para construir).')
+          :('Arraste e solte no mapa para construir '+d.name+'.'));
+      }
+      if(dg.active){
+        updateMouse(e,true);
+      }
+    });
+    const finishDrag=e=>{
+      const dg=window.__qzTowerDrag;
+      if(!dg)return;
+      window.__qzTowerDrag=null;
+      if(!dg.active)return;
+      window.__qzSuppressNextCardClick=true;
+      setTimeout(()=>{window.__qzSuppressNextCardClick=false;},120);
+      updateMouse(e,true);
+      if(G.mode==='play'&&G.placing===dg.key){
+        if(M.in&&!validSpot(M.x,M.y)){
+          const t=dispatch({type:'place',key:dg.key,x:M.x,y:M.y});
+          if(t){G.placing=null;setHint('');select(t);}
+        }else if(!M.in){
+          G.placing=null;setHint('');
+        }
+      }
+    };
+    window.addEventListener('pointerup',finishDrag);
+    window.addEventListener('pointercancel',()=>{window.__qzTowerDrag=null;});
   }
 
   const pl=$('powerList');
@@ -6495,7 +6727,7 @@ function updateUI(){
 
 /* --- progresso local, medalhas de dificuldade e recordes --- */
 const SAVE_KEY='quarentenaz_career_v4';
-let career={bestWave:0,totalKills:0,games:0,lastMap:'four',lastDifficulty:'normal',medals:{},techPoints:0,techPerks:{}};
+let career={bestWave:0,totalKills:0,games:0,lastMap:'four',lastDifficulty:'normal',medals:{},techPoints:0,techPerks:{},activeCommander:'vance',commanderXp:{vance:0,elena:0,marcus:0}};
 function loadCareer(){
   try{
     const raw=localStorage.getItem(SAVE_KEY);
@@ -6514,6 +6746,8 @@ function loadCareer(){
           if(d.medals&&typeof d.medals==='object')career.medals=d.medals;
           if(Number.isFinite(d.techPoints)&&d.techPoints>=0&&d.techPoints<=999999)career.techPoints=Math.floor(d.techPoints);
           if(d.techPerks&&typeof d.techPerks==='object')career.techPerks=d.techPerks;
+          if(['vance','elena','marcus'].includes(d.activeCommander))career.activeCommander=d.activeCommander;
+          if(d.commanderXp&&typeof d.commanderXp==='object')career.commanderXp=Object.assign({vance:0,elena:0,marcus:0},d.commanderXp);
         }
       }
     }
@@ -6530,7 +6764,9 @@ function saveCareer(){
       lastDifficulty:['easy','normal','hard','apocalypse'].includes(career.lastDifficulty)?career.lastDifficulty:'normal',
       medals:career.medals&&typeof career.medals==='object'?career.medals:{},
       techPoints:Math.max(0,Math.min(999999,Math.floor(career.techPoints||0))),
-      techPerks:(career.techPerks&&typeof career.techPerks==='object')?career.techPerks:{}
+      techPerks:(career.techPerks&&typeof career.techPerks==='object')?career.techPerks:{},
+      activeCommander:['vance','elena','marcus'].includes(career.activeCommander)?career.activeCommander:'vance',
+      commanderXp:(career.commanderXp&&typeof career.commanderXp==='object')?career.commanderXp:{vance:0,elena:0,marcus:0}
     };
     const js=JSON.stringify(sanitized);
     localStorage.setItem(SAVE_KEY,js);
@@ -6578,6 +6814,15 @@ function showEnd(victory){
   psAdd(victory?'wins':'losses');if(victory&&activeDifficulty==='apocalypse')psAdd('winApoc');checkAch();
   {const f=G.life/CFG.baseLife;const st=victory?(f>=.9?3:f>=.5?2:1):(WM.num>=30?2:WM.num>=15?1:0);$('endStats').innerHTML+='<span>Avaliação</span><span style="color:#ffb020;letter-spacing:3px">'+'★'.repeat(st)+'☆'.repeat(3-st)+'</span>';}
   if(G.newAch&&G.newAch.length)$('endStats').innerHTML+='<span>Conquistas</span><span style="color:#ffb020">'+G.newAch.length+' nova(s)</span>';
+  // Concede XP de Batalha para o Comandante Ativo (Nível 1 a 15)
+  {
+    const cmdId=career.activeCommander||'vance';
+    if(!career.commanderXp||typeof career.commanderXp!=='object')career.commanderXp={vance:0,elena:0,marcus:0};
+    const xpGain=Math.max(15,(WM.num||1)*32+(victory?180:40));
+    career.commanderXp[cmdId]=(career.commanderXp[cmdId]||0)+xpGain;
+    saveCareer();
+    $('endStats').innerHTML+='<span>XP do Comandante</span><span style="color:#38bdf8">+'+xpGain+' XP</span>';
+  }
   recordRankEntry(WM.num,G.time,G.kills,activeMap,activeDifficulty);
   if(COOP.active && COOP.isMultiplayer && window.QZ_NET_MP && typeof window.QZ_NET_MP.submitMultiplayerScore === 'function'){
     window.QZ_NET_MP.submitMultiplayerScore({
@@ -6624,14 +6869,21 @@ function setSpeed(n){ G.speed=n; setSpeedBtns(); Snd.play('ui'); }
 function togglePause(){ if(G.mode!=='play')return; if(!$('endScreen').classList.contains('hidden'))return; G.paused=!G.paused; Snd.play('ui'); }
 function setAuto(on){ G.auto=on; $('chkAuto').checked=on; if(G.mode==='play'&&WM.state==='idle'&&WM.num>0){WM.prep=on?(WM.prep===null?CFG.prepTime:WM.prep):null;} }
 
-/* --- entrada híbrida mouse / toque (Pointer Events API) --- */
-function updateMouse(e){
-  const r=$('game').getBoundingClientRect();
+/* --- entrada híbrida mouse / toque (Pointer Events API + Finger Offset BTD6) --- */
+function updateMouse(e,applyTouchOffset){
+  const cv=$('game');
+  if(!cv)return;
+  const r=cv.getBoundingClientRect();
   if(!r.width||!r.height)return;
   const sx=(e.clientX-r.left)*(VIEW.cssW/r.width);
   const sy=(e.clientY-r.top)*(VIEW.cssH/r.height);
   M.x=(sx-VIEW.ox)/VIEW.scale;
-  M.y=(sy-VIEW.oy)/VIEW.scale;
+  let wy=(sy-VIEW.oy)/VIEW.scale;
+  // Deslocamento vertical inteligente (Finger Offset) durante arrasto por toque no mobile para ver a torre acima do dedo
+  if(applyTouchOffset&&(e.pointerType==='touch'||IS_MOBILE)){
+    wy=Math.max(18,wy-44);
+  }
+  M.y=wy;
   M.in=M.x>=0&&M.x<=W&&M.y>=0&&M.y<=H;
 }
 function canvasClick(e){
@@ -8324,6 +8576,243 @@ function bindEvents(){
       }
     }
   });
+  let _selectedAuthAvatar='🦅';
+  function renderCommanderCardsHtml(){
+    const btd=window.QZ_BTD6_TOWERS;
+    const cmds=(btd&&btd.COMMANDERS)||{
+      vance:{id:'vance',name:'Comandante Vance',title:'Bastião Blindado',icon:'🛡️',accent:'#38bdf8',role:'Artilharia Balística & Fortificação',desc:'Aumenta o dano balístico/explosivo e reforça a blindagem da Base Alfa.',perkSummary:lv=>`+${Math.round(3+lv*1.5)}% Dano Balístico · +${lv*2} Vida da Base`},
+      elena:{id:'elena',name:'Dra. Elena Kovács',title:'Valquíria Bio-Tech',icon:'⚡',accent:'#a855f7',role:'Energia, Elementos & Recarga',desc:'Amplifica o dano elemental/energia e reduz a recarga das habilidades.',perkSummary:lv=>`+${Math.round(4+lv*1.7)}% Dano Elemental · -${Math.round(3+lv*1.3)}% Recarga`},
+      marcus:{id:'marcus',name:'Major Marcus Sterling',title:'Fantasma Tático',icon:'🎯',accent:'#10b981',role:'Operações Especiais, Alcance & Economia',desc:'Expande o alcance das torres, dá moedas iniciais extras e fortalece Sniper/Dino.',perkSummary:lv=>`+${Math.round(2+lv*1.2)}% Alcance Global · +$${10+lv*8} Moedas`}
+    };
+    const activeId=career.activeCommander||'vance';
+    const xpMap=(career.commanderXp&&typeof career.commanderXp==='object')?career.commanderXp:{};
+    const baseXp=Math.max(0,(career.bestWave||0)*35+(career.games||0)*45);
+    return Object.keys(cmds).map(k=>{
+      const c=cmds[k];
+      const xp=(xpMap[k]!==undefined?xpMap[k]:baseXp);
+      const info=(btd&&typeof btd.getCommanderLevelInfo==='function')?btd.getCommanderLevelInfo(xp):{level:Math.min(15,1+Math.floor(xp/120)),maxLevel:15,progressPct:60};
+      const isSel=activeId===k;
+      return '<div class="cmd-card'+(isSel?' active':'')+'" data-cmd-id="'+k+'" style="border-color:'+(isSel?c.accent:'rgba(148,163,184,0.22)')+'">'
+        +'<div class="cmd-card-head"><span class="cmd-ico">'+c.icon+'</span><div><b>'+escHtml(c.name)+'</b><small style="color:'+c.accent+'">'+escHtml(c.title)+' · Nível '+info.level+'/15</small></div></div>'
+        +'<p class="cmd-desc">'+escHtml(c.desc)+'</p>'
+        +'<div class="cmd-perk-pill">'+escHtml(c.perkSummary(info.level))+'</div>'
+        +'<div class="cmd-xp-bar"><i style="width:'+info.progressPct+'%;background:'+c.accent+'"></i></div>'
+        +'<button type="button" class="coop-sm-btn '+(isSel?'primary':'')+' btn-pick-cmd" data-cmd="'+k+'">'+(isSel?'✓ COMANDANTE EM COMANDO':'SELECIONAR COMANDANTE')+'</button>'
+        +'</div>';
+    }).join('');
+  }
+
+  function renderAuthProfilePanel(){
+    const acct=getActiveOperatorAccount();
+    const pName=acct?acct.operatorName:getPlayerName();
+    const av=(acct&&acct.avatar)||'🦅';
+    const lv=getOperatorAccountLevel();
+    const bw=Math.max(career.bestWave||0,PS.bestWave||0);
+    const tk=Math.max(career.totalKills||0,PS.kills||0);
+    if($('authProfileCard')){
+      $('authProfileCard').innerHTML=
+        '<div class="apc-row">'
+        +'<div class="apc-avatar">'+escHtml(av)+'</div>'
+        +'<div class="apc-meta">'
+        +'<span class="apc-status">'+(acct?'🟢 CONTA DE OPERADOR AUTENTICADA':'⚡ SESSÃO LOCAL ATIVA')+'</span>'
+        +'<h3>'+escHtml(pName)+'</h3>'
+        +'<small>'+(acct?escHtml(acct.email):'Crie sua conta para proteger seu Callsign no Ranking Top Global')+'</small>'
+        +'</div>'
+        +'<div class="apc-stats">'
+        +'<div><span>NÍVEL</span><b>Nv. '+lv+'</b></div>'
+        +'<div><span>PATENTE</span><b>'+escHtml(getPatent(bw))+'</b></div>'
+        +'<div><span>ONDA MÁX.</span><b>Onda '+bw+'</b></div>'
+        +'<div><span>ABATES</span><b>'+Math.floor(tk).toLocaleString('pt-BR')+'</b></div>'
+        +'</div>'
+        +'</div>';
+    }
+    if($('commanderSelectorGrid'))$('commanderSelectorGrid').innerHTML=renderCommanderCardsHtml();
+  }
+
+  function switchAuthTab(tabName){
+    const tabs={login:['tabAuthLogin','authLoginPanel'],register:['tabAuthRegister','authRegisterPanel'],profile:['tabAuthProfile','authProfilePanel']};
+    for(const k of Object.keys(tabs)){
+      const [btnId,panelId]=tabs[k];
+      const active=k===tabName;
+      if($(btnId)){$(btnId).classList.toggle('active',active);$(btnId).setAttribute('aria-selected',active?'true':'false');}
+      if($(panelId))$(panelId).classList.toggle('hidden',!active);
+    }
+    if(tabName==='profile')renderAuthProfilePanel();
+  }
+
+  function openAuthModal(defaultTab){
+    const acct=getActiveOperatorAccount();
+    switchAuthTab(defaultTab||(acct?'profile':'login'));
+    if($('authModal'))$('authModal').classList.remove('hidden');
+    Snd.play('ui');
+  }
+  function closeAuthModal(){
+    if($('authModal'))$('authModal').classList.add('hidden');
+  }
+
+  function renderBestiaryModal(){
+    const zGrid=$('bestiaryGrid');
+    if(zGrid){
+      const keys=Object.keys(ZOMBIES);
+      zGrid.innerHTML=keys.map(k=>{
+        const z=ZOMBIES[k];
+        const unl=(ZOMBIE_META&&ZOMBIE_META.unlock&&ZOMBIE_META.unlock[k])||1;
+        const armPct=Math.round((z.armor||0)*100);
+        const tags=[];
+        if(z.boss)tags.push('🚨 CHEFE');
+        if(z.camo)tags.push('👁️ CAMUFLADO');
+        if(z.flying)tags.push('🦅 VOADOR');
+        if(z.shield)tags.push('🛡️ ESCUDO');
+        if(z.regen)tags.push('💚 REGENERAÇÃO');
+        if(z.healer)tags.push('➕ CURANDEIRO');
+        if(z.speed>=70)tags.push('⚡ ALTA VELOCIDADE');
+        return '<div class="bst-card'+(z.boss?' bst-boss':'')+'">'
+          +'<div class="bst-head"><span class="bst-dot" style="background:'+(z.skin||'#4ade80')+'"></span><div><b>'+escHtml(z.name||k)+'</b><small>Surge na Onda '+unl+'</small></div></div>'
+          +'<div class="bst-stats">'
+          +'<span>❤️ HP: <b>'+z.hp+'</b></span>'
+          +'<span>⚡ Vel: <b>'+z.speed+'</b></span>'
+          +'<span>🛡️ Arm: <b>'+armPct+'%</b></span>'
+          +'<span>💰 Rec: <b>$'+z.reward+'</b></span>'
+          +'</div>'
+          +(tags.length?'<div class="bst-tags">'+tags.map(t=>'<span>'+t+'</span>').join('')+'</div>':'')
+          +'</div>';
+      }).join('');
+    }
+    if($('bestiaryCommanderGrid'))$('bestiaryCommanderGrid').innerHTML=renderCommanderCardsHtml();
+  }
+
+  function openBestiaryModal(){
+    renderBestiaryModal();
+    if($('bestiaryModal'))$('bestiaryModal').classList.remove('hidden');
+    Snd.play('ui');
+  }
+  function closeBestiaryModal(){
+    if($('bestiaryModal'))$('bestiaryModal').classList.add('hidden');
+  }
+
+  if($('btnOpenAuthModal'))$('btnOpenAuthModal').addEventListener('click',()=>openAuthModal());
+  if($('btnHomeAccount'))$('btnHomeAccount').addEventListener('click',()=>openAuthModal());
+  if($('btnAuthClose1'))$('btnAuthClose1').addEventListener('click',closeAuthModal);
+  if($('btnAuthClose2'))$('btnAuthClose2').addEventListener('click',closeAuthModal);
+  if($('btnAuthClose3'))$('btnAuthClose3').addEventListener('click',closeAuthModal);
+  if($('tabAuthLogin'))$('tabAuthLogin').addEventListener('click',()=>{switchAuthTab('login');Snd.play('ui');});
+  if($('tabAuthRegister'))$('tabAuthRegister').addEventListener('click',()=>{switchAuthTab('register');Snd.play('ui');});
+  if($('tabAuthProfile'))$('tabAuthProfile').addEventListener('click',()=>{switchAuthTab('profile');Snd.play('ui');});
+
+  if($('authAvatarPicker')){
+    $('authAvatarPicker').addEventListener('click',e=>{
+      const b=e.target.closest('.auth-av-btn');
+      if(!b)return;
+      _selectedAuthAvatar=b.dataset.avatar||'🦅';
+      $('authAvatarPicker').querySelectorAll('.auth-av-btn').forEach(el=>el.classList.toggle('active',el===b));
+      Snd.play('ui');
+    });
+  }
+
+  if($('btnAuthLoginSubmit'))$('btnAuthLoginSubmit').addEventListener('click',async()=>{
+    const idf=($('authLoginIdentifier')&&$('authLoginIdentifier').value)||'';
+    const pwd=($('authLoginPassword')&&$('authLoginPassword').value)||'';
+    const fb=$('authLoginFeedback');
+    if(!window.QZ_CLOUD_DB||typeof window.QZ_CLOUD_DB.loginAccount!=='function')return;
+    const res=await window.QZ_CLOUD_DB.loginAccount({identifier:idf,password:pwd});
+    if(res&&res.ok&&res.account){
+      setPlayerName(res.account.operatorName);
+      if(fb){fb.className='coop-feedback-text good';fb.textContent='🟢 Autenticado com sucesso como '+res.account.operatorName+'!';fb.classList.remove('hidden');}
+      updateHomeStats();renderRank();
+      toast('🛡️ Bem-vindo de volta, Operador '+res.account.operatorName+'!','good');
+      Snd.play('up');
+      switchAuthTab('profile');
+    }else{
+      if(fb){fb.className='coop-feedback-text bad';fb.textContent='❌ '+((res&&res.error)||'Falha na autenticação.');fb.classList.remove('hidden');}
+      Snd.play('err');
+    }
+  });
+
+  if($('btnAuthQuickGuest'))$('btnAuthQuickGuest').addEventListener('click',async()=>{
+    const callsign=(($('authLoginIdentifier')&&$('authLoginIdentifier').value)||getPlayerName()||'OperadorAlfa').trim();
+    setPlayerName(callsign);
+    updateHomeStats();renderRank();
+    toast('⚡ Sessão rápida ativada como '+callsign+'!','good');
+    Snd.play('ui');
+    switchAuthTab('profile');
+  });
+
+  if($('btnAuthRegisterSubmit'))$('btnAuthRegisterSubmit').addEventListener('click',async()=>{
+    const opName=($('authRegOperatorName')&&$('authRegOperatorName').value)||'';
+    const email=($('authRegEmail')&&$('authRegEmail').value)||'';
+    const pwd=($('authRegPassword')&&$('authRegPassword').value)||'';
+    const mig=$('authRegMigrateCheck')?$('authRegMigrateCheck').checked:true;
+    const fb=$('authRegFeedback');
+    if(!window.QZ_CLOUD_DB||typeof window.QZ_CLOUD_DB.registerAccount!=='function')return;
+    const migrateData=mig?{
+      bestWave:Math.max(career.bestWave||0,PS.bestWave||0),
+      totalKills:Math.max(career.totalKills||0,PS.kills||0),
+      games:Math.max(career.games||0,(PS.wins||0)+(PS.losses||0)),
+      medals:career.medals||{},
+      achievements:achLoad()
+    }:null;
+    const res=await window.QZ_CLOUD_DB.registerAccount({
+      operatorName:opName,
+      email,
+      password:pwd,
+      avatar:_selectedAuthAvatar,
+      commander:career.activeCommander||'vance',
+      migrateData
+    });
+    if(res&&res.ok&&res.account){
+      setPlayerName(res.account.operatorName);
+      if(fb){fb.className='coop-feedback-text good';fb.textContent='🟢 Conta criada e progresso migrado com sucesso!';fb.classList.remove('hidden');}
+      updateHomeStats();renderRank();
+      toast('🛡️ Conta de Operador '+res.account.operatorName+' criada com sucesso!','good');
+      Snd.play('up');
+      switchAuthTab('profile');
+    }else{
+      if(fb){fb.className='coop-feedback-text bad';fb.textContent='❌ '+((res&&res.error)||'Não foi possível criar a conta.');fb.classList.remove('hidden');}
+      Snd.play('err');
+    }
+  });
+
+  if($('btnAuthLogout'))$('btnAuthLogout').addEventListener('click',()=>{
+    if(window.QZ_CLOUD_DB&&typeof window.QZ_CLOUD_DB.logoutAccount==='function')window.QZ_CLOUD_DB.logoutAccount();
+    updateHomeStats();renderRank();
+    toast('Sessão encerrada.','good');
+    Snd.play('ui');
+    switchAuthTab('login');
+  });
+
+  document.addEventListener('click',e=>{
+    const cmdBtn=e.target.closest('.btn-pick-cmd');
+    if(!cmdBtn||!cmdBtn.dataset.cmd)return;
+    career.activeCommander=cmdBtn.dataset.cmd;
+    saveCareer();
+    renderAuthProfilePanel();
+    renderBestiaryModal();
+    Snd.play('up');
+    const btd=window.QZ_BTD6_TOWERS;
+    const cName=(btd&&btd.COMMANDERS&&btd.COMMANDERS[cmdBtn.dataset.cmd])?btd.COMMANDERS[cmdBtn.dataset.cmd].name:cmdBtn.dataset.cmd;
+    toast('🎖 '+cName+' assumiu o comando das operações!','good');
+  });
+
+  if($('btnHomeBestiary'))$('btnHomeBestiary').addEventListener('click',openBestiaryModal);
+  if($('btnBestiaryClose'))$('btnBestiaryClose').addEventListener('click',closeBestiaryModal);
+  ['Zombies','Commanders','Barriers'].forEach(tab=>{
+    const btn=$('tabBestiary'+tab);
+    if(btn){
+      btn.addEventListener('click',()=>{
+        ['Zombies','Commanders','Barriers'].forEach(t=>{
+          const b=$('tabBestiary'+t),p=$('bestiary'+t+'Panel');
+          if(b){b.classList.toggle('active',t===tab);b.setAttribute('aria-selected',t===tab?'true':'false');}
+          if(p)p.classList.toggle('hidden',t!==tab);
+        });
+        Snd.play('ui');
+      });
+    }
+  });
+
+  ['rankFilterMode','rankFilterMap','rankFilterDiff'].forEach(fid=>{
+    if($(fid))$(fid).addEventListener('change',()=>{renderRank();Snd.play('ui');});
+  });
+
   $('btnHomeAch').addEventListener('click',()=>{checkAch();renderAch();showScreen('achScreen');});
   const openRankScreen=()=>{Snd.init();renderRank();OnlineAPI.sync();showScreen('rankScreen');};
   $('btnHomeRank').addEventListener('click',openRankScreen);
@@ -8641,7 +9130,7 @@ function init(){
     if(typeof navigator!=='undefined'&&'serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
       let refreshing=false;
       navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;location.reload();}});
-      navigator.serviceWorker.register('./sw.js?v=19.33').then(reg=>{try{reg.update();}catch(_){}}).catch(()=>{});
+      navigator.serviceWorker.register('./sw.js?v=19.34').then(reg=>{try{reg.update();}catch(_){}}).catch(()=>{});
     }
   }catch(_){}
   document.querySelectorAll('.map-card').forEach(c=>c.classList.toggle('selected',c.dataset.map===$('mapSelect').value));

@@ -15,8 +15,8 @@
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/icon.svg">
 <title>Quarentena Z — Tower Defense de Zumbis</title>
-<link rel="stylesheet" href="style.css?v=19.33">
-<link rel="stylesheet" href="theme-v19.css?v=19.33">
+<link rel="stylesheet" href="style.css?v=19.34">
+<link rel="stylesheet" href="theme-v19.css?v=19.34">
 </head>
 <body class="menu-mode">
 <div id="app">
@@ -218,14 +218,15 @@
               <span class="status-online">CONTENÇÃO ATIVA</span>
             </div>
             <div class="home-quick-stats">
-              <button type="button" id="btnQuickRank" class="hq-pill hq-cmd-pill" title="Clique para abrir o Ranking e alterar seu nome">
-                <span class="hq-lbl">JOGADOR</span>
-                <b id="homeStatPlayer">Comandante</b>
+              <button type="button" id="btnOpenAuthModal" class="hq-pill hq-cmd-pill" title="Clique para abrir sua Conta de Operador, Login ou trocar Comandante">
+                <span class="hq-lbl" id="homeOperatorStatus">🟢 CONTA / PERFIL</span>
+                <b id="homeStatPlayer">🦅 Comandante</b>
+                <small id="homeOperatorLevel" style="font-size:9px;color:#38bdf8;margin-left:4px;">Nv.1 · Recruta</small>
               </button>
-              <div class="hq-pill" title="Maior onda alcançada">
-                <span class="hq-lbl">ONDA MÁX.</span>
+              <button type="button" id="btnQuickRank" class="hq-pill" title="Abrir Placar Top Global">
+                <span class="hq-lbl">TOP GLOBAL</span>
                 <b id="homeStatWave">Onda 0</b>
-              </div>
+              </button>
               <div class="hq-pill" title="Total de zumbis eliminados na carreira">
                 <span class="hq-lbl">MORTOS</span>
                 <b id="homeStatKills">0</b>
@@ -318,11 +319,27 @@
                   </span>
                   <span class="mb-arrow">→</span>
                 </button>
+                <button id="btnHomeBestiary" class="menu-button">
+                  <span class="mb-ico">☣️</span>
+                  <span class="mb-text">
+                    <span class="mb-title">BESTIÁRIO &amp; COMANDANTES</span>
+                    <small id="homeBestiarySub" class="mb-sub">21 classes de infectados e 3 Comandantes (Nv. 1–15)</small>
+                  </span>
+                  <span class="mb-arrow">→</span>
+                </button>
+                <button id="btnHomeAccount" class="menu-button">
+                  <span class="mb-ico">🛡️</span>
+                  <span class="mb-text">
+                    <span class="mb-title">CONTA &amp; LOGIN ONLINE</span>
+                    <small id="homeAccountSub" class="mb-sub">Autenticação de operador, patente e nuvem</small>
+                  </span>
+                  <span class="mb-arrow">→</span>
+                </button>
                 <button id="btnHomeRank" class="menu-button">
                   <span class="mb-ico">👑</span>
                   <span class="mb-text">
-                    <span class="mb-title">RANKING</span>
-                    <small id="homeRankSub" class="mb-sub">Placar de líderes, onda máxima, tempo e abates</small>
+                    <span class="mb-title">RANKING TOP GLOBAL</span>
+                    <small id="homeRankSub" class="mb-sub">Placar global em tempo real (Solo &amp; Co-op)</small>
                   </span>
                   <span class="mb-arrow">→</span>
                 </button>
@@ -515,14 +532,42 @@
           <div class="rank-board-box">
             <div class="rank-board-bar">
               <div class="rbb-left">
-                <h2>REGISTRO DE OPERAÇÕES (PLACAR DE LÍDERES)</h2>
+                <h2>REGISTRO DE OPERAÇÕES (TOP GLOBAL EM TEMPO REAL)</h2>
+                <div id="rankPlayerPositionBanner" class="rank-pos-banner">🏆 Sua Posição no Placar Atual: <b>—</b></div>
               </div>
               <div class="rbb-sort" role="tablist" aria-label="Ordenar ranking">
                 <span>ORDENAR POR:</span>
                 <button type="button" class="rank-sort active" data-sort="wave">🌊 ONDA MÁXIMA</button>
                 <button type="button" class="rank-sort" data-sort="kills">☠ ZUMBIS MORTOS</button>
                 <button type="button" class="rank-sort" data-sort="time">⏱ TEMPO DE JOGO</button>
-                <button type="button" id="btnClearRank" class="rank-clear-btn" title="Excluir todos os registros do ranking">🗑 EXCLUIR RANKS</button>
+                <button type="button" id="btnClearRank" class="rank-clear-btn" title="Excluir seus registros locais do ranking">🗑 EXCLUIR RANKS</button>
+              </div>
+            </div>
+            <!-- Barra de Filtros do Placar Top Global (Geral, Por Mapa, Por Dificuldade e Modo Co-op) -->
+            <div class="rank-filters-bar" aria-label="Filtros do Placar Top Global">
+              <div class="rf-group">
+                <label for="rankFilterMode">MODO DE JOGO:</label>
+                <select id="rankFilterMode">
+                  <option value="all" selected>🌐 Geral (Solo + Co-op)</option>
+                  <option value="solo">🎖 Operação Solo</option>
+                  <option value="coop">🤝 Modo Cooperativo (Co-op)</option>
+                </select>
+              </div>
+              <div class="rf-group">
+                <label for="rankFilterMap">FILTRAR POR MAPA:</label>
+                <select id="rankFilterMap">
+                  <option value="all" selected>🗺 Todas as 18 Zonas</option>
+                </select>
+              </div>
+              <div class="rf-group">
+                <label for="rankFilterDiff">DIFICULDADE:</label>
+                <select id="rankFilterDiff">
+                  <option value="all" selected>⚡ Todas as Dificuldades</option>
+                  <option value="easy">🥉 Fácil</option>
+                  <option value="normal">🥈 Normal</option>
+                  <option value="hard">🥇 Difícil</option>
+                  <option value="apocalypse">☣️ Apocalipse</option>
+                </select>
               </div>
             </div>
             <div class="rank-table-wrap">
@@ -530,11 +575,11 @@
                 <thead>
                   <tr>
                     <th>POS.</th>
-                    <th>NOME DO JOGADOR</th>
+                    <th>OPERADOR / PATENTE</th>
                     <th>ONDA MÁXIMA</th>
                     <th>TEMPO DE JOGO</th>
                     <th>ZUMBIS MORTOS</th>
-                    <th>ZONA / DIFICULDADE</th>
+                    <th>ZONA / DIFICULDADE / MODO</th>
                     <th>DATA</th>
                     <th>AÇÃO</th>
                   </tr>
@@ -1008,6 +1053,134 @@
   </div>
 </div>
 
+<!-- Modal Sci-Fi de Login, Cadastro de Operador Único e Perfil / Comandantes -->
+<div id="authModal" class="confirm-modal-overlay home-confirm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+  <div class="home-confirm-card coop-modal-card auth-modal-card">
+    <div class="coop-modal-header">
+      <span class="hc-badge coop-head-badge">🛡️ REDE CENTRAL DE OPERADORES · AUTENTICAÇÃO &amp; NUVEM</span>
+      <h2 id="authModalTitle">CREDENCIAL DE OPERADOR TÁTICO</h2>
+      <p class="coop-desc-sub">Vincule seu Nome de Operador único ao Ranking Top Global, sincronize suas medalhas na nuvem e escolha seu Comandante de Operação.</p>
+    </div>
+
+    <div class="coop-tabs-bar" role="tablist">
+      <button type="button" id="tabAuthLogin" class="coop-tab-btn active" role="tab" aria-selected="true">🔑 ENTRAR (LOGIN)</button>
+      <button type="button" id="tabAuthRegister" class="coop-tab-btn" role="tab" aria-selected="false">🛡️ CRIAR CONTA (REGISTRO)</button>
+      <button type="button" id="tabAuthProfile" class="coop-tab-btn" role="tab" aria-selected="false">🎖 DOSSIÊ &amp; COMANDANTE</button>
+    </div>
+
+    <!-- Aba 1: Login -->
+    <div id="authLoginPanel" class="coop-tab-panel">
+      <div class="auth-form-grid">
+        <label class="auth-field">
+          <span>NOME DE OPERADOR OU E-MAIL TÁTICO</span>
+          <input id="authLoginIdentifier" type="text" maxlength="80" placeholder="Ex: ComandanteAlfa ou operador@setorz.com" autocomplete="username">
+        </label>
+        <label class="auth-field">
+          <span>SENHA DE ACESSO</span>
+          <input id="authLoginPassword" type="password" maxlength="64" placeholder="••••••••" autocomplete="current-password">
+        </label>
+      </div>
+      <p id="authLoginFeedback" class="coop-feedback-text hidden"></p>
+      <div class="hc-actions">
+        <button type="button" id="btnAuthClose1" class="hc-btn hc-btn-stay">← FECHAR</button>
+        <button type="button" id="btnAuthQuickGuest" class="hc-btn">⚡ SESSÃO RÁPIDA</button>
+        <button type="button" id="btnAuthLoginSubmit" class="hc-btn coop-btn-launch">🔑 AUTENTICAR OPERADOR</button>
+      </div>
+    </div>
+
+    <!-- Aba 2: Cadastro + Migração de Progresso -->
+    <div id="authRegisterPanel" class="coop-tab-panel hidden">
+      <div class="auth-form-grid">
+        <label class="auth-field">
+          <span>NOME DE OPERADOR ÚNICO (EXIBIDO NO TOP GLOBAL)</span>
+          <input id="authRegOperatorName" type="text" maxlength="22" placeholder="Ex: Blackfild_Z" autocomplete="nickname">
+        </label>
+        <label class="auth-field">
+          <span>E-MAIL DO OPERADOR</span>
+          <input id="authRegEmail" type="email" maxlength="80" placeholder="operador@quarentenaz.com" autocomplete="email">
+        </label>
+        <label class="auth-field">
+          <span>SENHA TÁTICA (MÍN. 4 CARACTERES)</span>
+          <input id="authRegPassword" type="password" maxlength="64" placeholder="Crie sua senha..." autocomplete="new-password">
+        </label>
+        <div class="auth-field">
+          <span>INSÍGNIA / AVATAR TÁTICO</span>
+          <div id="authAvatarPicker" class="auth-avatar-picker">
+            <button type="button" class="auth-av-btn active" data-avatar="🦅">🦅 Comando</button>
+            <button type="button" class="auth-av-btn" data-avatar="☣️">☣️ Bio-Z</button>
+            <button type="button" class="auth-av-btn" data-avatar="🎯">🎯 Sniper</button>
+            <button type="button" class="auth-av-btn" data-avatar="⚡">⚡ Tesla</button>
+            <button type="button" class="auth-av-btn" data-avatar="🛡️">🛡️ Blindado</button>
+            <button type="button" class="auth-av-btn" data-avatar="🦖">🦖 Apex</button>
+          </div>
+        </div>
+        <label class="auth-migrate-check">
+          <input id="authRegMigrateCheck" type="checkbox" checked>
+          <span><b>Migrar progresso local existente</b> (transferir recordes, medalhas, conquistas e Biocélulas atuais para a nova conta)</span>
+        </label>
+      </div>
+      <p id="authRegFeedback" class="coop-feedback-text hidden"></p>
+      <div class="hc-actions">
+        <button type="button" id="btnAuthClose2" class="hc-btn hc-btn-stay">← FECHAR</button>
+        <button type="button" id="btnAuthRegisterSubmit" class="hc-btn coop-btn-launch">🛡️ CRIAR CONTA &amp; SINCRONIZAR</button>
+      </div>
+    </div>
+
+    <!-- Aba 3: Perfil do Jogador & Seleção dos 3 Comandantes (Nível 1 a 15) -->
+    <div id="authProfilePanel" class="coop-tab-panel hidden">
+      <div id="authProfileCard" class="auth-profile-card"></div>
+      <div class="coop-sec-title" style="margin-top:10px;">🎖 SELECIONE SEU COMANDANTE DE OPERAÇÃO (NÍVEL 1 A 15)</div>
+      <div id="commanderSelectorGrid" class="commander-selector-grid"></div>
+      <div class="hc-actions">
+        <button type="button" id="btnAuthClose3" class="hc-btn hc-btn-stay">← VOLTAR AO MENU</button>
+        <button type="button" id="btnAuthLogout" class="hc-btn hc-btn-danger">🚪 ENCERRAR SESSÃO</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal do Bestiário de Infectados & Comandantes (21 Classes + 3 Comandantes) -->
+<div id="bestiaryModal" class="confirm-modal-overlay home-confirm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="bestiaryModalTitle">
+  <div class="home-confirm-card coop-modal-card bestiary-modal-card">
+    <div class="coop-modal-header">
+      <span class="hc-badge coop-head-badge">☣️ INTELIGÊNCIA BIOLÓGICA · DOSSIÊ DE AMEAÇAS &amp; COMANDANTES</span>
+      <h2 id="bestiaryModalTitle">BESTIÁRIO DE INFECTADOS &amp; COMANDANTES TÁTICOS</h2>
+      <p class="coop-desc-sub">Consulte as fraquezas, blindagens e velocidades das 21 classes de zumbis catalogadas e escolha seu Comandante ativo (Nível 1 a 15).</p>
+    </div>
+
+    <div class="coop-tabs-bar" role="tablist">
+      <button type="button" id="tabBestiaryZombies" class="coop-tab-btn active" role="tab" aria-selected="true">🧟 21 CLASSES DE INFECTADOS</button>
+      <button type="button" id="tabBestiaryCommanders" class="coop-tab-btn" role="tab" aria-selected="false">🎖 3 COMANDANTES (NV. 1–15)</button>
+      <button type="button" id="tabBestiaryBarriers" class="coop-tab-btn" role="tab" aria-selected="false">🧱 BARREIRAS &amp; LINHA DE VISÃO</button>
+    </div>
+
+    <div id="bestiaryZombiesPanel" class="coop-tab-panel">
+      <div id="bestiaryGrid" class="bestiary-grid"></div>
+    </div>
+
+    <div id="bestiaryCommandersPanel" class="coop-tab-panel hidden">
+      <div id="bestiaryCommanderGrid" class="commander-selector-grid"></div>
+    </div>
+
+    <div id="bestiaryBarriersPanel" class="coop-tab-panel hidden">
+      <div class="bestiary-los-guide">
+        <div class="blg-card">
+          <b>🎯 Bloqueio Geométrico de Linha de Visão (Estilo Sniper BTD6)</b>
+          <p>Pilares de concreto, vagões blindados, rochas e reatores bloqueiam a linha de tiro direta do <b>Sniper</b>, da <b>Metralhadora Direcional</b> e de armas balísticas rasas. Ao selecionar ou arrastar uma torre perto de uma barreira, a <b>Zona de Sombra (Visão Bloqueada)</b> é projetada em vermelho no mapa.</p>
+        </div>
+        <div class="blg-card">
+          <b>💰 Demolição Tática ou Contorno por Upgrade</b>
+          <p>Você pode <b>tocar/clicar na barreira durante a partida para demoli-la com Moedas</b>, liberando o campo de visão e o espaço de construção, ou adquirir melhorias de <b>Tier 4+ de Tecnologia/Óptica (Mira Térmica / Satélite / Perfuração Total / Ascensão)</b> para enxergar e disparar através das barreiras!</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="hc-actions">
+      <button type="button" id="btnBestiaryClose" class="hc-btn coop-btn-launch">← VOLTAR AO COMANDO</button>
+    </div>
+  </div>
+</div>
+
 <!-- Camada de Aviso de Orientação Obrigatória (Landscape / Celular Deitado) -->
 <div id="rotateDeviceOverlay" role="alert" aria-live="assertive">
   <div class="rotate-card">
@@ -1028,13 +1201,13 @@
 </div>
 
 <script src="modules/peerjs.min.js"></script>
-<script src="modules/security-vault.js?v=19.33"></script>
-<script src="modules/cloud-db.js?v=19.33"></script>
-<script src="modules/network-multiplayer.js?v=19.33"></script>
-<script src="modules/coop-system.js?v=19.33"></script>
-<script src="modules/object-pool.js?v=19.33"></script>
-<script src="modules/btd6-towers.js?v=19.33"></script>
-<script src="modules/btd6-ui.js?v=19.33"></script>
-<script src="game.js?v=19.33"></script>
+<script src="modules/security-vault.js?v=19.34"></script>
+<script src="modules/cloud-db.js?v=19.34"></script>
+<script src="modules/network-multiplayer.js?v=19.34"></script>
+<script src="modules/coop-system.js?v=19.34"></script>
+<script src="modules/object-pool.js?v=19.34"></script>
+<script src="modules/btd6-towers.js?v=19.34"></script>
+<script src="modules/btd6-ui.js?v=19.34"></script>
+<script src="game.js?v=19.34"></script>
 </body>
 </html>
