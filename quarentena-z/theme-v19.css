@@ -3351,22 +3351,36 @@ body.is-mobile .mobile-quick-bar {
   display: none !important;
 }
 
-/* Topbar Mobile Slim 32px — Layout Tático Ultracompacto com Zero Overflow */
+/* Topbar Mobile Flutuante Estilo Bloons TD 6 Mobile — Zero Barras Pretas, Mapa 100% Tela Cheia */
 body.is-mobile #topbar {
-  height: 32px !important;
-  min-height: 32px !important;
-  max-height: 32px !important;
-  padding: 2px 6px !important;
+  position: fixed !important;
+  top: 4px !important;
+  left: 6px !important;
+  right: 6px !important;
+  width: auto !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  max-height: 28px !important;
+  padding: 0 2px !important;
   gap: 4px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  background: rgba(11, 17, 29, 0.98) !important;
-  border-bottom: 1px solid rgba(56, 189, 248, 0.25) !important;
-  z-index: 30 !important;
-  overflow: hidden !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  pointer-events: none !important;
+  z-index: 45 !important;
+  overflow: visible !important;
   flex-wrap: nowrap !important;
-  width: 100% !important;
+}
+
+body.is-mobile #topbar .life-hud,
+body.is-mobile #topbar .hud-mod,
+body.is-mobile #topbar button,
+body.is-mobile #topbar .ingame-nav {
+  pointer-events: auto !important;
+  backdrop-filter: blur(6px) !important;
 }
 
 /* Oculta SVGs pesados de desktop e elementos decorativos no mobile */
@@ -3498,12 +3512,14 @@ body.is-installed-app #btnHomeInstall,
   }
 }
 
-/* Área de Jogo (Stage 100% de largura no mobile) */
+/* Área de Jogo Mobile 100% Tela Cheia (Estilo Bloons TD 6 Mobile: Zero Bordas Pretas) */
 body.is-mobile #main {
   flex-direction: row !important;
-  position: relative !important;
-  width: 100% !important;
-  height: calc(100% - 74px) !important;
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
   overflow: hidden !important;
 }
 
@@ -3513,11 +3529,21 @@ body.is-mobile #stage {
   height: 100% !important;
   min-width: 0 !important;
   position: relative !important;
-  background: #070b14 !important;
+  background: transparent !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   overflow: hidden !important;
+}
+
+body.is-mobile .sidebar-toggle-tab {
+  top: 36px !important;
+  right: 8px !important;
+}
+
+body.is-mobile .coop-hud-widget {
+  top: 36px !important;
+  left: 8px !important;
 }
 
 /* Gaveta Lateral de Torres Retrátil no Mobile */
@@ -3608,18 +3634,42 @@ body.is-mobile #sidebar.mobile-open {
   cursor: pointer;
 }
 
-/* Barra Inferior Unificada Mobile (38px de altura) */
+/* Barra Inferior Flutuante Mobile (Estilo Bloons TD 6: Transparente, Zero Bordas Pretas) */
 body.is-mobile #bottombar {
-  height: 38px !important;
-  min-height: 38px !important;
-  max-height: 38px !important;
-  padding: 0 8px !important;
+  position: fixed !important;
+  bottom: 4px !important;
+  left: 6px !important;
+  right: 6px !important;
+  width: auto !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+  padding: 0 2px !important;
   gap: 6px !important;
-  background: rgba(11, 17, 29, 0.96) !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  pointer-events: none !important;
   display: flex !important;
   align-items: center !important;
   justify-content: flex-start !important;
-  z-index: 30 !important;
+  z-index: 45 !important;
+}
+
+body.is-mobile #bottombar button,
+body.is-mobile #bottombar label.auto {
+  pointer-events: auto !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+body.is-mobile #bottombar label.auto {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+  border-radius: 6px !important;
+  padding: 4px 8px !important;
+  height: 28px !important;
+  display: inline-flex !important;
+  align-items: center !important;
 }
 
 body.is-mobile #bottombar #btnNext {

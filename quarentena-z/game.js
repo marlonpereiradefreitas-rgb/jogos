@@ -886,12 +886,16 @@ function nearestPathProg(x,y){ // progresso (distância ao longo do caminho) do 
   return best;
 }
 
-/* ===================== 3. FUNDO TÁTICO HD (GERADO POR CÓDIGO — 18 MAPAS ÚNICOS) ===================== */
+/* ===================== 3. FUNDO TÁTICO HD (GERADO POR CÓDIGO — 18 MAPAS ÚNICOS + EXTENSÃO WIDESCREEN SEM BORDAS PRETAS) ===================== */
 let BG = null;
+const BG_PAD_X = 360;
+const BG_PAD_Y = 120;
 function buildBackground(){
   const bgSkin=(MAPS[activeMap]&&MAPS[activeMap].skin)||activeMap;
-  const c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d');
+  const c=document.createElement('canvas'); c.width=W+BG_PAD_X*2; c.height=H+BG_PAD_Y*2; const g=c.getContext('2d');
+  g.translate(BG_PAD_X,BG_PAD_Y);
   const rng=mulberry32(20261028 + (Object.keys(MAPS).indexOf(activeMap)+1)*137);
+  const extRng=mulberry32(20269991 + (Object.keys(MAPS).indexOf(activeMap)+1)*251);
   const rr=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
 
   // Paleta e estilo de pista exclusivos para cada um dos 18 mapas
@@ -917,16 +921,24 @@ function buildBackground(){
   };
   const th=mapThemes[activeMap]||mapThemes.four;
 
-  // 1. Base do terreno com gradiente radial e manchas orgânicas
-  const baseGrd=g.createRadialGradient(W*.48,H*.45,40,W*.5,H*.5,W*.75);
+  // 1. Base do terreno com gradiente radial e manchas orgânicas (cobrindo área principal + extensão widescreen mobile)
+  const baseGrd=g.createRadialGradient(W*.48,H*.45,40,W*.5,H*.5,(W+BG_PAD_X*2)*.62);
   baseGrd.addColorStop(0,th.bg0);baseGrd.addColorStop(1,th.bg1);
-  g.fillStyle=baseGrd;g.fillRect(0,0,W,H);
+  g.fillStyle=baseGrd;g.fillRect(-BG_PAD_X,-BG_PAD_Y,W+BG_PAD_X*2,H+BG_PAD_Y*2);
 
   for(let i=0;i<90;i++){
     const px=rng()*W,py=rng()*H,rx=24+rng()*65,ry=16+rng()*45;
     g.fillStyle=th.patches[(rng()*th.patches.length)|0];
     g.globalAlpha=.34+rng()*.28;
     g.beginPath();g.ellipse(px,py,rx,ry,rng()*3.14,0,6.283);g.fill();
+  }
+  for(let i=0;i<75;i++){
+    const px=-BG_PAD_X+extRng()*(W+BG_PAD_X*2),py=-BG_PAD_Y+extRng()*(H+BG_PAD_Y*2);
+    if(px>=0&&px<=W&&py>=0&&py<=H)continue;
+    const rx=26+extRng()*68,ry=18+extRng()*46;
+    g.fillStyle=th.patches[(extRng()*th.patches.length)|0];
+    g.globalAlpha=.34+extRng()*.28;
+    g.beginPath();g.ellipse(px,py,rx,ry,extRng()*3.14,0,6.283);g.fill();
   }
   g.globalAlpha=1;
 
@@ -935,6 +947,11 @@ function buildBackground(){
     const gx=rng()*W,gy=rng()*H;
     g.fillStyle=rng()<.5?'rgba(255,255,255,.035)':'rgba(0,0,0,.12)';
     g.fillRect(gx,gy,rng()<.3?3:2,2);
+  }
+  for(let i=0;i<700;i++){
+    const gx=-BG_PAD_X+extRng()*(W+BG_PAD_X*2),gy=-BG_PAD_Y+extRng()*(H+BG_PAD_Y*2);
+    g.fillStyle=extRng()<.5?'rgba(255,255,255,.035)':'rgba(0,0,0,.12)';
+    g.fillRect(gx,gy,extRng()<.3?3:2,2);
   }
 
   // 1B. Texturas de solo exclusivas de cada mapa (antes da pista)
@@ -1137,11 +1154,11 @@ function buildBackground(){
     g.strokeStyle=th.edge;g.lineWidth=2.5;g.strokeRect(bx,by,bw,bh);
   }
 
-  // 3. Traçado Principal da Estrada / Caminho com Textura Exclusiva por Mapa
+  // 3. Traçado Principal da Estrada / Caminho com Textura Exclusiva por Mapa (estendido até a borda widescreen)
   g.lineJoin='round';g.lineCap='round';
   const strokePath=(col,w,dash)=>{
-    g.beginPath();g.moveTo(PATH_PTS[0][0],PATH_PTS[0][1]);
-    for(let i=1;i<PATH_PTS.length;i++)g.lineTo(PATH_PTS[i][0],PATH_PTS[i][1]);
+    g.beginPath();g.moveTo(-BG_PAD_X-20,PATH_PTS[0][1]);
+    for(let i=0;i<PATH_PTS.length;i++)g.lineTo(PATH_PTS[i][0],PATH_PTS[i][1]);
     g.strokeStyle=col;g.lineWidth=w;
     if(dash)g.setLineDash(dash);else g.setLineDash([]);
     g.stroke();g.setLineDash([]);
@@ -1396,6 +1413,21 @@ function buildBackground(){
     if(!free(x,y,k[1]))continue;
     items.push({x,y,r:k[1]});k[0](x,y);placed++;
   }
+  // Preenche o terreno widescreen lateral (-BG_PAD_X..0 e W..W+BG_PAD_X) com árvores/rochas/elementos naturais do bioma
+  const spY0=PATH_PTS[0][1]||150;
+  let extPlaced=0;
+  for(let i=0;i<600&&extPlaced<52;i++){
+    let r=extRng()*totalW,k=kinds[0];
+    for(const kk of kinds){r-=kk[2];if(r<=0){k=kk;break;}}
+    const isLeft=extRng()<0.5;
+    const x=isLeft?(-BG_PAD_X+28+extRng()*(BG_PAD_X-56)):(W+28+extRng()*(BG_PAD_X-56));
+    const y=-BG_PAD_Y+32+extRng()*(H+BG_PAD_Y*2-64);
+    if(isLeft&&Math.abs(y-spY0)<k[1]+44)continue;
+    let overlap=false;
+    for(const it of items){if(Math.hypot(it.x-x,it.y-y)<it.r+k[1]){overlap=true;break;}}
+    if(overlap)continue;
+    items.push({x,y,r:k[1]});k[0](x,y);extPlaced++;
+  }
 
   // 5. Monumentos e Estruturas Arquitetônicas Exclusivas por Mapa
   if(activeMap==='four'){
@@ -1538,7 +1570,7 @@ function buildBackground(){
     labirinto:  {t:'rgba(88,28,135,.20)',l:[[350,240,180,'192,132,252'],[580,425,180,'232,121,249']]}
   }[activeMap]||{t:'rgba(0,0,0,0)',l:[]};
 
-  g.fillStyle=mood.t;g.fillRect(0,0,W,H);
+  g.fillStyle=mood.t;g.fillRect(-BG_PAD_X,-BG_PAD_Y,W+BG_PAD_X*2,H+BG_PAD_Y*2);
   g.globalCompositeOperation='lighter';
   for(const [lx,ly,lr,lc] of mood.l){
     const lg=g.createRadialGradient(lx,ly,0,lx,ly,lr);
@@ -1557,12 +1589,11 @@ function syncBgCanvas(){
     const bgCtx=bgCv.getContext('2d');
     if(!bgCtx)return;
     bgCtx.setTransform(1,0,0,1,0,0);
-    bgCtx.fillStyle='#070b14';
-    bgCtx.fillRect(0,0,bgCv.width,bgCv.height);
+    bgCtx.clearRect(0,0,bgCv.width,bgCv.height);
     const s=(VIEW&&VIEW.scale?VIEW.scale:1)*(CANVAS_DPR||1);
     bgCtx.setTransform(s,0,0,s,(VIEW&&VIEW.ox?VIEW.ox:0)*(CANVAS_DPR||1),(VIEW&&VIEW.oy?VIEW.oy:0)*(CANVAS_DPR||1));
     bgCtx.imageSmoothingEnabled=false;
-    bgCtx.drawImage(BG,0,0);
+    bgCtx.drawImage(BG,-BG_PAD_X,-BG_PAD_Y);
   }catch(_){}
 }
 
@@ -5750,24 +5781,8 @@ function render(){
   if(IS_MOBILE)ctx.shadowBlur=0;
   ctx.save();
   if(G.shake>0)ctx.translate((rand(-G.shake,G.shake))|0,(rand(-G.shake,G.shake))|0);
-  // Limpa e estiliza margens táticas em telas ultra-wide / widescreen sem distorções, repetições ou cortes
-  if(VIEW.padX>0){
-    ctx.fillStyle='#070b14';
-    ctx.fillRect(-VIEW.padX-4,-VIEW.padY-4,VIEW.padX+4,H+VIEW.padY*2+8);
-    ctx.fillRect(W,-VIEW.padY-4,VIEW.padX+4,H+VIEW.padY*2+8);
-    ctx.fillStyle='rgba(30,41,59,0.7)';
-    ctx.fillRect(-1,0,1,H);
-    ctx.fillRect(W,0,1,H);
-  }
-  if(VIEW.padY>0){
-    ctx.fillStyle='#070b14';
-    ctx.fillRect(-VIEW.padX-4,-VIEW.padY-4,W+VIEW.padX*2+8,VIEW.padY+4);
-    ctx.fillRect(-VIEW.padX-4,H,W+VIEW.padX*2+8,VIEW.padY+4);
-    ctx.fillStyle='rgba(30,41,59,0.7)';
-    ctx.fillRect(0,-1,W,1);
-    ctx.fillRect(0,H,W,1);
-  }
-  ctx.drawImage(BG,0,0);
+  // Desenha o terreno contínuo widescreen completo (-BG_PAD_X..W+BG_PAD_X) sem nenhuma borda preta
+  ctx.drawImage(BG,-BG_PAD_X,-BG_PAD_Y);
   if(G.mode!=='menu'){
     // barra de vida da base usando sprite pré-renderizado em off-screen canvas
     const f=G.life/CFG.baseLife;
@@ -6982,14 +6997,17 @@ function fitCanvas(){
   CANVAS_DPR=dpr;
   VIEW.cssW=aw;
   VIEW.cssH=ah;
-  // Escala 100% uniforme (scaleX === scaleY) para nunca achatar/deformar os 18 mapas no mobile ou PC.
-  // Em telas widescreen (aw/ah > W/H), utiliza H_SAFE = 584 (todos os 18 caminhos e a base ficam em Y=75..575)
-  // para aproveitar melhor a altura útil sem cortar nenhum caminho, torre ou base.
-  const hSafe=(aw/ah>W/H)?584:H;
+  // Escala 100% uniforme (scaleX === scaleY) para nunca achatar/esticar os 18 mapas no mobile ou PC.
+  // No mobile widescreen (Estilo Bloons TD 6 Mobile), o palco ocupa 100% da tela sem barras pretas e
+  // foca na faixa útil do mapa (hSafe = 532, centro em Y = 324) deixando o mapa muito maior e preenchendo
+  // as laterais com o terreno natural contínuo do bioma (BG_PAD_X = 360).
+  const isWide=(aw/ah)>(W/H);
+  const hSafe=isWide?(IS_MOBILE?532:576):H;
   const sc=Math.min(aw/W,ah/hSafe);
   VIEW.scale=sc>0?sc:1;
   VIEW.ox=(aw-W*VIEW.scale)*0.5;
-  VIEW.oy=(ah-H*VIEW.scale)*0.5;
+  const centerY=(isWide&&IS_MOBILE)?324:(H*0.5);
+  VIEW.oy=(ah*0.5)-(centerY*VIEW.scale);
   VIEW.padX=VIEW.ox>0?Math.ceil(VIEW.ox/VIEW.scale)+2:0;
   VIEW.padY=VIEW.oy>0?Math.ceil(VIEW.oy/VIEW.scale)+2:0;
   const targetW=Math.max(1,Math.round(aw*dpr)),targetH=Math.max(1,Math.round(ah*dpr));
@@ -9130,7 +9148,7 @@ function init(){
     if(typeof navigator!=='undefined'&&'serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
       let refreshing=false;
       navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;location.reload();}});
-      navigator.serviceWorker.register('./sw.js?v=19.34').then(reg=>{try{reg.update();}catch(_){}}).catch(()=>{});
+      navigator.serviceWorker.register('./sw.js?v=19.35').then(reg=>{try{reg.update();}catch(_){}}).catch(()=>{});
     }
   }catch(_){}
   document.querySelectorAll('.map-card').forEach(c=>c.classList.toggle('selected',c.dataset.map===$('mapSelect').value));
